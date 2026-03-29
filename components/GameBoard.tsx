@@ -13,6 +13,7 @@ import ThemeSelect from './ThemeSelect'
 import { getFinalRanking } from '@/engine/resolveGame'
 import { getSignalForRound } from '@/engine/events'
 import SpeakBtn from './SpeakBtn'
+import CoachPanel from './CoachPanel'
 
 const PLAYER_COLORS: Record<string, {
   text: string; border: string; bg: string; ring: string; dot: string
@@ -54,7 +55,7 @@ export default function GameBoard() {
   const currentNarration = roundNarrations[roundNarrations.length - 1] ?? ''
   const rankingOrder = getFinalRanking(players)
   const rankMap = Object.fromEntries(rankingOrder.map((p, i) => [p.id, i + 1]))
-  const signal = isSubmitting ? getSignalForRound(global.eventQueue, global.roundNumber) : null
+  const signal = isSubmitting ? getSignalForRound(global.eventQueue ?? [], global.roundNumber) : null
 
   const t = theme // 主题简写
   const customersLabel = t?.terms.customers ?? '客流'
@@ -297,6 +298,9 @@ export default function GameBoard() {
       })()}
 
       {showAuditLog && <AuditLogPanel logs={auditLogs} onClose={toggleAuditLog} />}
+
+      {/* 教练问答浮动面板 */}
+      <CoachPanel />
     </div>
   )
 }

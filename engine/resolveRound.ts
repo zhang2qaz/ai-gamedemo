@@ -169,9 +169,9 @@ export function resolveRound(
 
     // 情报加成
     let intelBonus = 0
-    if (roundIntelCards) {
+    if (roundIntelCards && Array.isArray(roundIntelCards)) {
       for (const card of roundIntelCards) {
-        if (card.impliedAction === action) {
+        if (card && card.impliedAction === action) {
           intelBonus += card.isTrue ? 1.0 : -1.0
         }
       }

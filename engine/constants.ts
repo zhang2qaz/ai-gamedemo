@@ -68,10 +68,18 @@ export const INITIAL_PLAYER_STATES = [
   { id: 'D' as const, name: '稳杯茶饮', cash: 1000000, marketShare: 0.25, qualityScore: 70, brandHeat: 30, cumulativeProfit: 0, marketMomentum: 0, fatigueIndex: 0, qualityCharge: 0, lastAction: null, consecutiveHoldCount: 0 },
 ]
 
-export const INITIAL_GLOBAL_STATE = {
+export const INITIAL_GLOBAL_STATE: {
+  roundNumber: number
+  maxRounds: number
+  totalCustomers: number
+  priceSensitivity: number
+  qualityWeight: number
+  eventQueue: import('./types').GameEvent[]
+} = {
   roundNumber: 1,
   maxRounds: 5,
   totalCustomers: 100000,
   priceSensitivity: 0.6,
   qualityWeight: 0.4,
+  eventQueue: [],
 }

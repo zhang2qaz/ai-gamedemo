@@ -40,29 +40,34 @@ function getVoice(): SpeechSynthesisVoice | null {
 }
 
 export function speak(text: string, rate = 0.88) {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return
+  try {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return
 
-  const doSpeak = () => {
-    window.speechSynthesis.cancel()
-    const utt = new SpeechSynthesisUtterance(text)
-    utt.lang = 'zh-CN'
-    utt.rate = rate    // 0.88 — 偏慢，从容不迫
-    utt.pitch = 0.82   // 偏低，沉稳有力
-    utt.volume = 1.0
-    const voice = getVoice()
-    if (voice) utt.voice = voice
-    window.speechSynthesis.speak(utt)
-  }
+    const doSpeak = () => {
+      try {
+        window.speechSynthesis.cancel()
+        const utt = new SpeechSynthesisUtterance(text)
+        utt.lang = 'zh-CN'
+        utt.rate = rate    // 0.88 — 偏慢，从容不迫
+        utt.pitch = 0.82   // 偏低，沉稳有力
+        utt.volume = 1.0
+        const voice = getVoice()
+        if (voice) utt.voice = voice
+        utt.onerror = () => {} // 静默处理语音错误
+        window.speechSynthesis.speak(utt)
+      } catch { /* 语音合成失败不阻塞游戏 */ }
+    }
 
-  const voices = window.speechSynthesis.getVoices()
-  if (voices.length === 0) {
-    window.speechSynthesis.onvoiceschanged = () => {
-      cachedVoice = null
+    const voices = window.speechSynthesis.getVoices()
+    if (voices.length === 0) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        cachedVoice = null
+        doSpeak()
+      }
+    } else {
       doSpeak()
     }
-  } else {
-    doSpeak()
-  }
+  } catch { /* 静默处理 */ }
 }
 
 export function stopSpeaking() {

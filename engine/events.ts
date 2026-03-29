@@ -27,7 +27,7 @@ export const DEMO_EVENTS: GameEvent[] = [
  * 事件只改环境变量，不改动作公式
  */
 export function applyEvent(global: GlobalState, roundNumber: number): { newGlobal: GlobalState; eventApplied: string | null } {
-  const event = global.eventQueue.find(e => e.effectRound === roundNumber)
+  const event = (global.eventQueue ?? []).find(e => e.effectRound === roundNumber)
   if (!event) {
     return { newGlobal: global, eventApplied: null }
   }
@@ -60,7 +60,8 @@ export function applyEvent(global: GlobalState, roundNumber: number): { newGloba
 /**
  * 获取当前回合的信号文案（给玩家看的预告）
  */
-export function getSignalForRound(events: GameEvent[], roundNumber: number): string | null {
+export function getSignalForRound(events: GameEvent[] | undefined, roundNumber: number): string | null {
+  if (!events) return null
   const event = events.find(e => e.signalRound === roundNumber)
   return event ? event.signalText : null
 }

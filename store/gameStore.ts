@@ -93,7 +93,7 @@ function createInitialState() {
     phase: 'THEME_SELECT' as GamePhase,
     themeId: null as string | null,
     theme: null as ThemeConfig | null,
-    global: INITIAL_GLOBAL_STATE as GlobalState,
+    global: { ...INITIAL_GLOBAL_STATE, eventQueue: [] } as GlobalState,
     players: INITIAL_PLAYER_STATES.map(p => ({ ...p })) as PlayerState[],
     pendingInputs: createInitialPendingInputs(),
     auditLogs: [] as RoundAuditLog[],
@@ -110,13 +110,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
   ...createInitialState(),
 
   selectTheme: (themeId: string) => {
-    const theme = getTheme(themeId)
-    const generatedIntel = theme.generateIntel()
-    set({
-      ...createGameState(theme),
-      generatedIntel,
-      intelTruth: buildIntelTruth(generatedIntel),
-    })
+    try {
+      const theme = getTheme(themeId)
+      const generatedIntel = theme.generateIntel()
+      set({
+        ...createGameState(theme),
+        generatedIntel,
+        intelTruth: buildIntelTruth(generatedIntel),
+      })
+    } catch (err) {
+      console.error('[弈战] selectTheme error:', err)
+    }
   },
 
   ensureIntel: () => {
@@ -154,49 +158,53 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   submitRound: () => {
-    const state = get()
-    const { global, players, pendingInputs, theme } = state
-    if (!theme) return
+    try {
+      const state = get()
+      const { global, players, pendingInputs, theme } = state
+      if (!theme) return
 
-    const allSubmitted = (['A', 'B', 'C', 'D'] as PlayerId[]).every(
-      id => pendingInputs[id].action !== null
-    )
-    if (!allSubmitted) return
+      const allSubmitted = (['A', 'B', 'C', 'D'] as PlayerId[]).every(
+        id => pendingInputs[id]?.action !== null
+      )
+      if (!allSubmitted) return
 
-    const inputs: RoundInput[] = (['A', 'B', 'C', 'D'] as PlayerId[]).map(id => ({
-      playerId: id,
-      action: pendingInputs[id].action!,
-      finalShift: pendingInputs[id].finalShift,
-    }))
+      const inputs: RoundInput[] = (['A', 'B', 'C', 'D'] as PlayerId[]).map(id => ({
+        playerId: id,
+        action: pendingInputs[id].action!,
+        finalShift: pendingInputs[id].finalShift ?? 'NONE',
+      }))
 
-    const currentIntel = state.generatedIntel.find(r => r.round === global.roundNumber) ?? null
-    const roundIntelCards = currentIntel
-      ? currentIntel.cards.map(card => ({
-          impliedAction: card.impliedAction,
-          isTrue: card.isTrue,
-        }))
-      : undefined
+      const currentIntel = (state.generatedIntel ?? []).find(r => r.round === global.roundNumber) ?? null
+      const roundIntelCards = currentIntel
+        ? currentIntel.cards.map(card => ({
+            impliedAction: card.impliedAction,
+            isTrue: card.isTrue,
+          }))
+        : undefined
 
-    const { newGlobal, newPlayers, auditLog } = resolveRound(global, players, inputs, roundIntelCards)
-    const narration = generateRoundNarration(auditLog, players, theme)
-    const newAuditLogs = [...state.auditLogs, auditLog]
-    const newNarrations = [...state.roundNarrations, narration]
+      const { newGlobal, newPlayers, auditLog } = resolveRound(global, players, inputs, roundIntelCards)
+      const narration = generateRoundNarration(auditLog, players, theme)
+      const newAuditLogs = [...state.auditLogs, auditLog]
+      const newNarrations = [...state.roundNarrations, narration]
 
-    const isGameOver = global.roundNumber >= global.maxRounds
-    let gameNarration = ''
-    if (isGameOver) {
-      gameNarration = generateGameNarration(newPlayers, newAuditLogs, theme)
+      const isGameOver = global.roundNumber >= global.maxRounds
+      let gameNarration = ''
+      if (isGameOver) {
+        gameNarration = generateGameNarration(newPlayers, newAuditLogs, theme)
+      }
+
+      set({
+        global: newGlobal,
+        players: newPlayers,
+        auditLogs: newAuditLogs,
+        roundNarrations: newNarrations,
+        currentRoundResult: auditLog,
+        phase: isGameOver ? 'GAME_OVER' : 'ROUND_RESULT',
+        gameNarration,
+      })
+    } catch (err) {
+      console.error('[弈战] submitRound error:', err)
     }
-
-    set({
-      global: newGlobal,
-      players: newPlayers,
-      auditLogs: newAuditLogs,
-      roundNarrations: newNarrations,
-      currentRoundResult: auditLog,
-      phase: isGameOver ? 'GAME_OVER' : 'ROUND_RESULT',
-      gameNarration,
-    })
   },
 
   nextRound: () => {
@@ -208,15 +216,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   resetGame: () => {
-    const state = get()
-    if (state.theme) {
-      const generatedIntel = state.theme.generateIntel()
-      set({
-        ...createGameState(state.theme),
-        generatedIntel,
-        intelTruth: buildIntelTruth(generatedIntel),
-      })
-    } else {
+    try {
+      const state = get()
+      if (state.theme) {
+        const generatedIntel = state.theme.generateIntel()
+        set({
+          ...createGameState(state.theme),
+          generatedIntel,
+          intelTruth: buildIntelTruth(generatedIntel),
+        })
+      } else {
+        set(createInitialState())
+      }
+    } catch (err) {
+      console.error('[弈战] resetGame error:', err)
       set(createInitialState())
     }
   },
