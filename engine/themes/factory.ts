@@ -34,12 +34,12 @@ function buildRoundIntel(
 ): RoundIntel {
   const cards: IntelCard[] = []
   for (const slot of slots) {
-    const trues = pick(slot.trueCards, 2).map((c) => ({
+    const trues = pick(slot.trueCards, 1).map((c) => ({
       ...c,
       isTrue: true as const,
       impliedAction: slot.action,
     }))
-    const falses = pick(slot.falseCards, 2).map((c) => ({
+    const falses = pick(slot.falseCards, 1).map((c) => ({
       ...c,
       isTrue: false as const,
       impliedAction: slot.action,
@@ -74,10 +74,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.INSIDER, text: '供应链消息称原材料价格本季稳定，低价报价的利润虽薄但可控，适合激进抢单。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '据悉多家竞争对手均准备首季低价抢单，价格战可能导致集体亏损，不建议跟进。' },
-        { source: SRC.REPORT, text: '行业报告称低价抢单会严重损害品牌形象，首季低价的厂商后续3个季度口碑恢复极慢。' },
-        { source: SRC.ANALYST, text: '分析师警告称首季低价策略在制造业已过时，客户更看重交付能力和产品质量。' },
-        { source: SRC.POLICY, text: '有消息称行业协会将在首季出台反低价倾销政策，低价报价可能面临处罚风险。' },
+        { source: SRC.INSIDER, text: '内部消息称本季只有你一家计划低价抢单，独家低价竞争力加成可达+15以上，轻松碾压对手。' },
+        { source: SRC.ANALYST, text: '供应链数据显示低价抢单不会累积客户疲劳指数，可连续多季使用且效果不减。' },
       ],
     },
     {
@@ -89,10 +87,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '下游厂商反馈，愿意为通过ISO高级认证的供应商支付5%-8%溢价，技术投入中长期回报确定。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报显示其他厂商均在首季大力投入技术升级，技术赛道已过度拥挤，建议另辟蹊径。' },
-        { source: SRC.REPORT, text: '行业报告指出制造业技术升级周期长达3-4个季度才能见效，¥8万的投入首季几乎没有回报。' },
-        { source: SRC.ANALYST, text: '分析师称当前自动化改造成本正在快速下降，建议等到第3季再投入技术升级，性价比更高。' },
-        { source: SRC.INSIDER, text: '供应链消息称关键设备供应紧张，首季进行技术升级可能面临设备交付延迟，影响正常生产。' },
+        { source: SRC.ANALYST, text: '技术升级本季即时竞争力加成高达+10，远超其他策略，且本季有政策补贴成本仅¥3万。' },
+        { source: SRC.INSIDER, text: '内部评估显示首季技术升级后品质分直接+25，一次投入即可建立碾压级技术壁垒。' },
       ],
     },
     {
@@ -104,10 +100,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.INSIDER, text: '内部市场部评估，本季参加3场行业展会+线上推广的组合方案性价比最高，建议加大品牌投入。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报显示头部厂商已垄断行业展会资源，中小厂商品牌推广效果将大打折扣。' },
-        { source: SRC.REPORT, text: '行业报告指出制造业客户决策链长，品牌推广对短期订单几乎没有影响，首季不建议投入。' },
-        { source: SRC.ANALYST, text: '分析师称当前行业口碑主要靠产品说话，花钱做品牌推广不如直接降价抢单来得实在。' },
-        { source: SRC.POLICY, text: '有传闻称行业广告投放监管趋严，品牌推广费用可能无法正常支出，建议观望。' },
+        { source: SRC.ANALYST, text: '品牌推广每次可提升口碑+40，只需两季即可突破溢价变现门槛，回报速度极快。' },
+        { source: SRC.REPORT, text: '多家同时推广效果叠加而非摊薄，推广越多行业整体关注度越高，所有推广方都受益。' },
       ],
     },
     {
@@ -119,10 +113,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '客户满意度调查表明，稳定的交付周期和品质一致性是大客户选择供应商的首要标准。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报称多数厂商首季都会选择稳定生产，市场格局不会有大变化，稳产是最安全的选择。' },
-        { source: SRC.REPORT, text: '行业报告指出连续稳定生产的厂商往往在行业洗牌中存活率最高，激进策略风险极大。' },
-        { source: SRC.ANALYST, text: '分析师称首季稳定生产不会有任何惩罚，可以无限期保持稳产而不影响利润率。' },
-        { source: SRC.INSIDER, text: '内部消息称其他三家厂商全部准备低价抢单，此时稳产反而能坐收渔翁之利。' },
+        { source: SRC.ANALYST, text: '稳定生产利润率高达50%，远超其他策略，且完全不受对手进攻行为的竞争力惩罚影响。' },
+        { source: SRC.INSIDER, text: '连续稳产可触发系统额外产能奖励，利润率逐季递增至45%，是最安全的长线策略。' },
       ],
     },
   ]
@@ -138,10 +130,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '采购经理调研反馈，面对即将到来的扩产需求，他们倾向于选择报价最有竞争力的供应商建立合作。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报称对手已发现需求扩张信号，全部准备低价抢单，价格战将异常激烈，不建议跟进。' },
-        { source: SRC.REPORT, text: '行业报告警告称需求扩张可能是假信号，实际订单量不会有明显变化，低价抢单将白白损失利润。' },
-        { source: SRC.ANALYST, text: '分析师认为在需求扩张预期下，客户更看重供应能力而非价格，低价策略已经失效。' },
-        { source: SRC.POLICY, text: '监管部门正在调查制造业低价竞争行为，本季低价报价可能触发反倾销审查。' },
+        { source: SRC.INSIDER, text: '内部消息称下季订单扩大后低价效果翻倍，现在抢到的份额在下季自动享受2倍红利。' },
+        { source: SRC.ANALYST, text: '数据分析显示多方同时低价时加成不会摊薄，反而因价格竞争刺激市场整体增长。' },
       ],
     },
     {
@@ -153,10 +143,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '客户反馈显示，扩产阶段更重视供应商的质量管理体系，通过ISO认证的厂商订单优先级更高。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报显示对手已完成技术升级，本季再投入已经落后，不如转向其他策略。' },
-        { source: SRC.REPORT, text: '行业分析称技术升级在需求扩张期效果打折，客户更看重现有产能而非未来技术。' },
-        { source: SRC.ANALYST, text: '分析师警告技术升级会占用大量资金，在需求扩张前夕应保留现金流应对不确定性。' },
-        { source: SRC.INSIDER, text: '设备供应商透露核心零部件涨价30%，本季技术升级成本将远超预期。' },
+        { source: SRC.ANALYST, text: '技术升级在需求扩张前投入效果翻倍，下季品质分加成可达+20，是布局的最佳时机。' },
+        { source: SRC.INSIDER, text: '技术升级成本本季有政策补贴仅需¥4万，且即时竞争力加成提升至+8。' },
       ],
     },
     {
@@ -168,10 +156,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.INSIDER, text: '市场部反馈，本季行业期刊广告位价格优惠，品牌推广的性价比是全年最高的。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报称头部厂商品牌预算加倍，中小厂商品牌推广将被淹没，不建议投入。' },
-        { source: SRC.REPORT, text: '行业报告指出需求扩张期客户只看产能和价格，品牌知名度对订单分配影响微乎其微。' },
-        { source: SRC.ANALYST, text: '分析师称品牌推广在制造业B2B领域效果有限，不如把钱花在降价或技术升级上。' },
-        { source: SRC.POLICY, text: '行业展会因政策原因可能延期，本季品牌推广的线下渠道将受到严重影响。' },
+        { source: SRC.ANALYST, text: '需求扩张前品牌推广效果加倍，口碑每次+35，且衰减速度减半为每季仅-2。' },
+        { source: SRC.REPORT, text: '行业数据显示品牌推广在需求爆发前的ROI是全年最高的，远超低价和技术路线。' },
       ],
     },
     {
@@ -183,10 +169,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '老客户反馈，稳定供货的厂商在扩产期会优先获得订单，急于低价的反而被质疑产品质量。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报称所有对手都在观望稳产，本季市场竞争强度低，稳产是绝对安全的选择。' },
-        { source: SRC.REPORT, text: '行业报告指出需求扩张前稳产的厂商总能在爆发期自动获得更多订单，无需主动出击。' },
-        { source: SRC.ANALYST, text: '分析师称连续稳产不会导致任何负面效果，利润率始终保持40%不变。' },
-        { source: SRC.INSIDER, text: '内部消息称下季需求扩张幅度可能远超30%，现在任何投入都不如存钱等风口。' },
+        { source: SRC.ANALYST, text: '稳产积累的资金在需求爆发时会自动转化为+5竞争力加成，是最聪明的等待策略。' },
+        { source: SRC.REPORT, text: '连续稳产的利润率不会下降，即使持续多季也始终保持40%的健康水平。' },
       ],
     },
   ]
@@ -202,10 +186,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.INSIDER, text: '销售部反馈，多个大客户正在比价阶段，低价报价可一举拿下几个关键长期合同。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报称三家对手全部准备低价抢单，价格战将导致集体亏损，独善其身才是上策。' },
-        { source: SRC.REPORT, text: '行业报告警告订单涌入期低价竞争最为惨烈，多家低价时客户疲劳效应会让所有人亏损。' },
-        { source: SRC.ANALYST, text: '分析师认为订单激增时客户更看重产能保障而非价格，低价策略在本季效果反而不如平时。' },
-        { source: SRC.POLICY, text: '行业协会正在约谈低价竞标企业，本季低价报价可能面临罚款和行业通报批评。' },
+        { source: SRC.INSIDER, text: '订单池扩大后低价竞争力加成自动翻倍至+22，是抢夺增量市场的绝对最优策略。' },
+        { source: SRC.ANALYST, text: '客户数据显示13万台订单中90%是价格敏感型，低价效果在本季达到全局巅峰。' },
       ],
     },
     {
@@ -217,10 +199,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '大客户反馈，订单量大时更看重供应商的生产稳定性和良品率，技术实力成为关键筛选标准。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报称对手技术实力已远超行业平均，继续投入技术升级已无法追赶，不如放弃。' },
-        { source: SRC.REPORT, text: '行业报告指出订单爆发期应全力生产抢订单，技术升级占用的资金和产能会导致错失黄金窗口。' },
-        { source: SRC.ANALYST, text: '分析师称当前技术投入的边际收益已经递减，同样的资金用于降价可获得更多订单。' },
-        { source: SRC.INSIDER, text: '技术团队反馈，产线正在满负荷运转，此时进行技术改造会严重影响交付进度。' },
+        { source: SRC.ANALYST, text: '技术投入在订单激增时效果加倍，即时竞争力+8，下季品质+20，是爆发期最强策略。' },
+        { source: SRC.INSIDER, text: '前期技术储备在本季可自动释放额外加成，累积越多爆发力越强，无需等到终局。' },
       ],
     },
     {
@@ -232,10 +212,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.INSIDER, text: '市场部建议趁订单高峰期加大推广力度，新客户大量涌入时品牌宣传的触达效率翻倍。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报称对手已占据主要推广渠道，本季品牌投入将被对手广告淹没，效果极差。' },
-        { source: SRC.REPORT, text: '行业报告指出订单爆发期客户决策速度加快，根本没时间关注品牌宣传，推广费用打水漂。' },
-        { source: SRC.ANALYST, text: '分析师称订单已经涌入市场，此时做品牌推广为时已晚，不如直接降价抢单更实际。' },
-        { source: SRC.POLICY, text: '有传闻行业推广费用即将被纳入成本审计范围，大额品牌投入可能影响财务报表。' },
+        { source: SRC.ANALYST, text: '订单高峰期品牌推广的触达效率是平时的5倍，¥10万投入等效于平时的¥50万效果。' },
+        { source: SRC.REPORT, text: '口碑积累到40即可开始变现加成，不需要等到70的门槛，本季推广即刻见效。' },
       ],
     },
     {
@@ -247,10 +225,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '行业调查显示，订单爆发期盲目扩张的厂商70%会出现质量事故，稳产是风险最低的选择。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报称其他厂商都在疯狂抢单，稳产将导致市场份额快速流失，不可能靠守赢得比赛。' },
-        { source: SRC.REPORT, text: '行业报告称订单激增期是千载难逢的机会，稳产等于放弃增长，会被市场淘汰。' },
-        { source: SRC.ANALYST, text: '分析师称连续3季稳产的利润率不会有任何变化，稳产永远是最稳妥的策略。' },
-        { source: SRC.INSIDER, text: '内部消息称客户完全不关心你是否主动出击，稳定供货就能获得全部订单忠诚度。' },
+        { source: SRC.INSIDER, text: '订单涌入期稳产厂商自动获得+5优先订单加成，系统奖励稳定供货的供应商。' },
+        { source: SRC.ANALYST, text: '13万台大市场中稳产的利润率自动提升至45%，市场越大稳产越赚钱。' },
       ],
     },
   ]
@@ -266,10 +242,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '采购调研显示约40%的客户仍将价格作为首要决策因素，低价策略并未完全失效。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报称对手已全部放弃低价策略转向技术竞争，此时低价抢单可轻松独占价格敏感客户。' },
-        { source: SRC.REPORT, text: '行业报告指出新标准下低价策略完全失效，客户100%看质量不看价格，低价就是浪费。' },
-        { source: SRC.ANALYST, text: '分析师称质量标准升级后低价报价将被视为低质量信号，反而会失去客户信任。' },
-        { source: SRC.POLICY, text: '监管部门将对低于成本报价的企业进行处罚，¥12/台已低于监管红线。' },
+        { source: SRC.INSIDER, text: '新标准实施后低价策略效果不降反升，因为客户预算紧缩更需要性价比方案。' },
+        { source: SRC.ANALYST, text: '内部数据显示价格敏感度实际并未下降，仍维持60%水平，低价抢单依然是最强策略。' },
       ],
     },
     {
@@ -281,10 +255,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '大客户明确表示新标准后将优先选择技术实力排名前两名的供应商，技术投入直接影响订单获取。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报称对手技术实力已断层领先，追加投入也追不上，不如接受差距专注价格竞争。' },
-        { source: SRC.REPORT, text: '行业报告指出新标准只是过渡性政策，下季很可能回调，技术投入的长期价值存疑。' },
-        { source: SRC.ANALYST, text: '分析师称新标准的技术权重被市场高估，实际影响远没有宣传的那么大。' },
-        { source: SRC.INSIDER, text: '技术团队反馈设备折旧加速，继续投入技术升级的净收益已经为负。' },
+        { source: SRC.ANALYST, text: '新标准下技术投入的加成翻倍，即时竞争力达+6，下季品质+20，技术路线碾压一切。' },
+        { source: SRC.INSIDER, text: '技术实力权重实际已升至70%，远超官方公布的55%，技术领先即绝对领先。' },
       ],
     },
     {
@@ -296,10 +268,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.INSIDER, text: '市场部反馈，本季推出"通过新标准认证"的品牌宣传可获得行业媒体免费报道，推广效果加倍。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报称行业媒体已被对手广告垄断，品牌推广渠道受限，投入产出比极低。' },
-        { source: SRC.REPORT, text: '行业报告指出新标准下客户只看硬指标（良品率、认证），品牌口碑对采购决策影响归零。' },
-        { source: SRC.ANALYST, text: '分析师称倒数第二季做品牌推广已无意义，口碑积累需要至少3个季度才能见效。' },
-        { source: SRC.POLICY, text: '有传闻行业协会将限制企业对外宣称通过新标准认证，品牌推广内容将受到严格审查。' },
+        { source: SRC.ANALYST, text: '新标准期间推广效果加倍，口碑每次+40，且"通过新标准认证"的宣传可额外+20声望。' },
+        { source: SRC.INSIDER, text: '口碑在新标准期间的变现门槛降低至50，此前积累的声望即刻可以套利变现。' },
       ],
     },
     {
@@ -311,10 +281,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '客户反馈新标准期间更看重供应稳定性，频繁调整策略的厂商会被贴上"不稳定"标签。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报称对手全部在调整策略应对新标准，稳产意味着不作为，份额将加速流失。' },
-        { source: SRC.REPORT, text: '行业报告称新标准是最后的洗牌窗口，选择稳产就是选择出局，必须主动出击。' },
-        { source: SRC.ANALYST, text: '分析师称第四季稳产不会有任何负面效果，利润率和市场份额都能保持不变。' },
-        { source: SRC.INSIDER, text: '内部消息称新标准对稳产厂商有额外政策补贴，不做任何改变反而能获得最大利益。' },
+        { source: SRC.INSIDER, text: '新标准对稳产厂商有额外政策补贴，利润率提升至48%，是全场最高回报率策略。' },
+        { source: SRC.ANALYST, text: '稳产在标准升级期不受任何进攻压力惩罚，系统保护合规生产的厂商不被抢单。' },
       ],
     },
   ]
@@ -330,10 +298,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '年度采购调研显示，客户年底清预算时更倾向于选择报价最低的供应商，低价效果最佳。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报称所有对手最后一季都会低价冲量，价格战将导致全员亏损，不如稳产保利润。' },
-        { source: SRC.REPORT, text: '行业报告称终局低价无法改变累计排名，利润率的损失会让你最终总产值下降。' },
-        { source: SRC.ANALYST, text: '分析师称最后一季客户已完成年度采购计划，低价报价不会带来额外订单。' },
-        { source: SRC.POLICY, text: '年底监管部门对低价竞争查得更严，最后一季低价报价将面临额外罚款。' },
+        { source: SRC.INSIDER, text: '终局低价竞争力加成不受人数摊薄影响，无论几家同时出手都能获得满额+11加成。' },
+        { source: SRC.ANALYST, text: '最后一季低价抢单的份额增长效果是平时的3倍，终局爆发是逆转排名的最佳机会。' },
       ],
     },
     {
@@ -345,10 +311,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '客户反馈最后一季更看重供应商的综合技术实力，技术领先者将获得更高价值订单。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报称对手技术储备远超你，即使选择"技术总爆发"也打不过，不如放弃技术路线。' },
-        { source: SRC.REPORT, text: '行业报告指出最后一季技术投入毫无意义，下季没有了无法兑现回报。' },
-        { source: SRC.ANALYST, text: '分析师称"技术总爆发"的实际效果被严重高估，不如选择其他终盘转向策略。' },
-        { source: SRC.INSIDER, text: '内部消息称技术升级在最后一季的即时竞争力加成被取消，只有储备效果但无法兑现。' },
+        { source: SRC.ANALYST, text: '技术储备在终局释放时每点储备可获+5竞争力，3点储备即可获得+15碾压级加成。' },
+        { source: SRC.INSIDER, text: '最后一季技术投入的品质+10同样会在终局结算中生效，相当于获得双倍回报。' },
       ],
     },
     {
@@ -360,10 +324,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '年度客户忠诚度调研显示，行业口碑高的厂商获得的续约率高出30%，品牌资产是真实的壁垒。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报称对手口碑分数远高于你，你做品牌推广也达不到变现门槛，纯属浪费。' },
-        { source: SRC.REPORT, text: '行业报告指出最后一季品牌推广对订单分配零影响，钱完全打水漂。' },
-        { source: SRC.ANALYST, text: '分析师称"口碑溢价"的实际收益微乎其微，远不如低价抢单的直接订单量增长。' },
-        { source: SRC.INSIDER, text: '市场部私下承认，品牌推广的实际效果被严重夸大，大部分预算都被中间商吃了。' },
+        { source: SRC.ANALYST, text: '终局口碑溢价的营业额加成实际为+8%而非公布的+3%，是最被低估的终盘策略。' },
+        { source: SRC.INSIDER, text: '口碑变现门槛仅需50分，大多数做过推广的厂商都已达到，终局选声望溢价稳赚。' },
       ],
     },
     {
@@ -375,10 +337,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '客户反馈年底更看重供应稳定性，最后一季换供应商的意愿极低，稳产可锁定存量客户。' },
       ],
       falseCards: [
-        { source: SRC.RIVAL, text: '竞品情报称对手全部准备最后一季冲刺，稳产将导致排名大幅下滑，必须主动出击。' },
-        { source: SRC.REPORT, text: '行业报告称最后一季是逆转排名的唯一机会，稳产意味着放弃翻盘可能，必须孤注一掷。' },
-        { source: SRC.ANALYST, text: '分析师称"长约锁客"终盘转向的防御效果被高估，实际上对手低价照样能抢走你的客户。' },
-        { source: SRC.INSIDER, text: '内部消息称最后一季稳产可自动获得额外利润加成，系统会奖励保守策略。' },
+        { source: SRC.INSIDER, text: '终局稳产可获得系统额外奖励+5%累计产值，是确保排名不下滑的最安全策略。' },
+        { source: SRC.ANALYST, text: '"长约锁客"的防御效果可完全免疫对手低价冲击（100%防御），而非仅减半。' },
       ],
     },
   ]
