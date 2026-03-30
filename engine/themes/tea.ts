@@ -57,65 +57,65 @@ export const TEA_THEME: ThemeConfig = {
   actionNarrative: {
     ATK: {
       title: '搞促销',
-      desc: '推出¥12限时特惠（正价¥15），快速吸引新顾客抢占客流。毛利32%，每杯¥3.8。',
-      risk: '频繁打折会累积疲劳指数，连续促销效果递减。多家同时促销竞争力互相摊薄。',
+      desc: '推出¥12限时特惠吸引新顾客，价格便宜客流来得快，但每杯赚得少。',
+      risk: '频繁打折顾客会疲劳，连续促销效果递减。多家同时促销效果互相摊薄。',
     },
     QUA: {
       title: '研发新品',
-      desc: '投入¥8万研发费用，开发爆款新饮品（生椰拿铁、芝士莓果等），本季即时+3竞争力，下季品质分+10竞争力大增。',
-      risk: '本季支出¥80,000，即时收益有限（+3），需要有耐心等下一季品质分生效才能见到全部回报。',
+      desc: '投入¥8万研发爆款新饮品，本季小幅提升实力，下季推出后产品力大增。',
+      risk: '本季花钱多、见效慢，需要耐心等下一季新品推出后才能看到全部回报。',
     },
     MKT: {
       title: '做推广',
-      desc: '投入¥10万做KOL合作、抖音/小红书投放、门店打卡活动，拉升品牌热度（+20/轮）与营销动能。',
-      risk: '多家同时推广效果互相摊薄；停止推广后热度每轮-5自然衰减，动能也逐渐消失。',
+      desc: '投入¥10万做KOL合作、抖音/小红书投放，提升品牌热度和知名度。',
+      risk: '多家同时推广效果互相摊薄；停止推广后热度会自然衰减。',
     },
     HOLD: {
       title: '精细运营',
-      desc: '不花钱，正价¥15出品毛利40%（每杯¥6）。没有行动成本，但也不增加竞争力。',
-      risk: '对手搞促销/推广时，每多一方进攻你就受-1.1份额压力惩罚。营销动能在HOLD时归零。',
+      desc: '不花钱、正价¥15出品，利润最高。适合对手都不动的时候。',
+      risk: '对手搞促销或推广时你会被压制，守的人越少、攻的人越多，守势越吃亏。',
     },
   },
 
   actionCards: {
     ATK: {
       emoji: '⚔',
-      cost: `单价降至¥${CONFIG.discountPrice}（正常¥${CONFIG.normalPrice}）· 利润率仅${Math.round(CONFIG.discountMargin * 100)}%`,
+      cost: '限时特价¥12/杯，薄利多销抢客流',
     },
     QUA: {
       emoji: '🔬',
-      cost: `本季花¥${(CONFIG.qualityInvestCost / 10000).toFixed(0)}万 · 即时+${CONFIG.qualitySignalBonus}竞争力 · 下季品质+10`,
+      cost: '投入¥8万研发新品，下季推出更好的产品',
     },
     MKT: {
       emoji: '📣',
-      cost: `本季花¥${(CONFIG.marketingCost / 10000).toFixed(0)}万 · 品牌热度+${CONFIG.brandHeatGainFromMkt}`,
+      cost: '投入¥10万做KOL推广，提升品牌知名度',
     },
     HOLD: {
       emoji: '🛡',
-      cost: `单价¥${CONFIG.normalPrice} · 利润率${Math.round(CONFIG.normalMargin * 100)}%（连续≥2季降至${Math.round(CONFIG.holdReducedMargin * 100)}%）`,
+      cost: '正价¥15出品，利润最高但不主动抢客',
     },
   },
 
   finalShiftNarrative: {
     NONE: {
       title: '不附加',
-      desc: '按正常流程结算',
+      desc: '最后一轮正常比赛，不做额外操作',
     },
     FINAL_PUSH: {
       title: '全力冲刺',
-      desc: '竞争力+4，但利润只拿80%',
+      desc: '所有门店延长营业、加派人手，不惜代价抢客流（利润打八折）',
     },
     QUALITY_CONVERT: {
       title: '新品总爆发',
-      desc: '释放全部研发储备',
+      desc: '一次性推出所有研发好的爆款新品，直接碾压对手',
     },
     DEFENSIVE_LOCK: {
       title: '会员锁客',
-      desc: '对手促销对你的冲击减半',
+      desc: '推出储值会员卡，锁住老客户不被对手抢走',
     },
     BRAND_MONETIZE: {
-      title: '口碑溢价',
-      desc: '品牌热度变现，营业额+3%',
+      title: '签约代言人',
+      desc: '品牌热度够高时，签约明星代言收割流量',
     },
   },
 

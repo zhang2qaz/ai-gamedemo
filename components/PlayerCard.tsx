@@ -247,8 +247,8 @@ export default function PlayerCard({
                     </div>
                     <div className="px-2 pb-1.5 text-stone-500 text-xs leading-snug">
                       {hasCharge
-                        ? `花¥${CONFIG.qualityInvestCost / 10000}万 · 释放${player.qualityCharge}款储备 → 竞争力+${burstPwr}`
-                        : `花¥${CONFIG.qualityInvestCost / 10000}万 · 无储备时获竞争力+${Math.round(CONFIG.qualityBurstBase)}`
+                        ? `花¥${CONFIG.qualityInvestCost / 10000}万 · 一次推出${player.qualityCharge}款储备新品，实力大增`
+                        : `花¥${CONFIG.qualityInvestCost / 10000}万 · 没有储备，效果有限`
                       }
                     </div>
                   </button>
@@ -316,42 +316,43 @@ function FinalShiftSection({ player, selectedAction, selectedFinalShift, onSelec
   const theme = useGameStore(s => s.theme)
   const fsn = theme?.finalShiftNarrative
 
+  const brandLabel = theme?.terms?.brandHeat ?? '品牌热度'
   const opts: Array<{ value: FinalShift; emoji: string; label: string; available: boolean; hint: string; desc: string; speakText: string }> = [
     {
       value: 'NONE', emoji: '—', label: fsn?.NONE.title ?? '不附加', available: true, hint: '',
-      desc: fsn?.NONE.desc ?? '按正常流程结算，不做任何额外操作。',
-      speakText: `不附加：${fsn?.NONE.desc ?? '按正常流程结算'}`,
+      desc: fsn?.NONE.desc ?? '最后一轮正常比赛，不做额外操作',
+      speakText: `不附加：${fsn?.NONE.desc ?? '最后一轮正常比赛，不做额外操作'}`,
     },
     {
       value: 'FINAL_PUSH', emoji: '🚀', label: fsn?.FINAL_PUSH.title ?? '全力冲刺', available: true,
-      hint: `竞争力+${CONFIG.finalPushBonus}，但利润只拿${Math.round(CONFIG.finalPushProfitMultiplier * 100)}%`,
-      desc: fsn?.FINAL_PUSH.desc ?? '竞争力+4，但利润只拿80%',
-      speakText: `${fsn?.FINAL_PUSH.title ?? '全力冲刺'}：${fsn?.FINAL_PUSH.desc ?? ''}`,
+      hint: '全力出击，利润打八折',
+      desc: fsn?.FINAL_PUSH.desc ?? '不惜代价抢客流（利润打八折）',
+      speakText: `${fsn?.FINAL_PUSH.title ?? '全力冲刺'}：${fsn?.FINAL_PUSH.desc ?? '不惜代价抢客流，利润打八折'}`,
     },
     {
       value: 'QUALITY_CONVERT', emoji: '💎', label: fsn?.QUALITY_CONVERT.title ?? '新品总爆发',
       available: canQualityConvert(player),
-      hint: player.qualityCharge > 0 ? `竞争力+${CONFIG.qualityBurstBase + CONFIG.qualityBurstPerCharge * player.qualityCharge}` : '需有储备才可用',
-      desc: fsn?.QUALITY_CONVERT.desc ?? '释放全部研发储备',
+      hint: player.qualityCharge > 0 ? `${player.qualityCharge}款储备齐发，实力大增` : '需先积累储备才可用',
+      desc: fsn?.QUALITY_CONVERT.desc ?? '一次性推出所有储备，碾压对手',
       speakText: canQualityConvert(player)
-        ? `${fsn?.QUALITY_CONVERT.title ?? '新品总爆发'}：你有${player.qualityCharge}点储备，竞争力+${CONFIG.qualityBurstBase + CONFIG.qualityBurstPerCharge * player.qualityCharge}。`
+        ? `${fsn?.QUALITY_CONVERT.title ?? '新品总爆发'}：你有${player.qualityCharge}款储备，一次性全部推出，实力大增。`
         : `${fsn?.QUALITY_CONVERT.title ?? '新品总爆发'}：你目前没有储备，无法使用。`,
     },
     {
       value: 'DEFENSIVE_LOCK', emoji: '🔒', label: fsn?.DEFENSIVE_LOCK.title ?? '会员锁客',
       available: selectedAction === 'HOLD',
-      hint: selectedAction === 'HOLD' ? '对手进攻对你冲击减半' : '需本季选守势才能使用',
-      desc: fsn?.DEFENSIVE_LOCK.desc ?? '对手促销对你的冲击减半',
-      speakText: `${fsn?.DEFENSIVE_LOCK.title ?? '会员锁客'}：${fsn?.DEFENSIVE_LOCK.desc ?? ''}`,
+      hint: selectedAction === 'HOLD' ? '锁住老客户不被抢走' : '需本季选守势才能使用',
+      desc: fsn?.DEFENSIVE_LOCK.desc ?? '锁住老客户不被对手抢走',
+      speakText: `${fsn?.DEFENSIVE_LOCK.title ?? '会员锁客'}：${fsn?.DEFENSIVE_LOCK.desc ?? '锁住老客户不被对手抢走'}`,
     },
     {
-      value: 'BRAND_MONETIZE', emoji: '💰', label: fsn?.BRAND_MONETIZE.title ?? '口碑溢价',
+      value: 'BRAND_MONETIZE', emoji: '💰', label: fsn?.BRAND_MONETIZE.title ?? '签约代言人',
       available: canBrandMonetize(player),
-      hint: player.brandHeat >= 70 ? `热度${player.brandHeat} → 营业额+${Math.round(CONFIG.brandMonetizeRevenueBonus * 100)}%` : `热度${player.brandHeat}/${CONFIG.brandHeatThresholdForMonetize}，未达标`,
-      desc: fsn?.BRAND_MONETIZE.desc ?? '品牌热度变现，营业额+3%',
+      hint: player.brandHeat >= 70 ? `${brandLabel}${player.brandHeat}分，已达标可变现` : `${brandLabel}${player.brandHeat}/70，还差${70 - player.brandHeat}分`,
+      desc: fsn?.BRAND_MONETIZE.desc ?? '品牌热度够高时变现影响力',
       speakText: canBrandMonetize(player)
-        ? `${fsn?.BRAND_MONETIZE.title ?? '口碑溢价'}：热度${player.brandHeat}，满足条件，营业额额外+${Math.round(CONFIG.brandMonetizeRevenueBonus * 100)}%。`
-        : `${fsn?.BRAND_MONETIZE.title ?? '口碑溢价'}：需热度${CONFIG.brandHeatThresholdForMonetize}，你现在${player.brandHeat}，还不够。`,
+        ? `${fsn?.BRAND_MONETIZE.title ?? '签约代言人'}：${brandLabel}${player.brandHeat}分，已达标，可以变现。`
+        : `${fsn?.BRAND_MONETIZE.title ?? '签约代言人'}：${brandLabel}${player.brandHeat}分，还差${70 - player.brandHeat}分才能使用。`,
     },
   ]
 

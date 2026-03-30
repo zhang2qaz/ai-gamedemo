@@ -38,51 +38,51 @@ export const STOCK_THEME: ThemeConfig = {
   actionNarrative: {
     ATK: {
       title: '激进做多',
-      desc: '以¥12/手大量买入，短期抢筹但利润率仅32%。独家做多时竞争力最强。',
-      risk: '多方同时做多时加成互相摊薄，且累积追高疲劳。',
+      desc: '以¥12/手低价大量买入抢筹码，短期内快速扩大持仓占比。',
+      risk: '多方同时做多效果互相摊薄，连续追高投资者信心会下降。',
     },
     QUA: {
       title: '深度研究',
-      desc: '投入¥8万做行业深度研究，即时+3竞争力，下季研究深度+10。',
-      risk: '本季成本高，收益延迟兑现。',
+      desc: '投入¥8万做行业深度研究，提升选股眼光，下季度研究成果落地后实力大增。',
+      risk: '本季花钱多、见效慢，需要等下一季研究成果出来才能看到全部回报。',
     },
     MKT: {
       title: '造势宣传',
-      desc: '花¥10万做市场造势，提升市场关注度+20。',
-      risk: '关注度需累积到门槛才能变现，短期ROI偏低。',
+      desc: '投入¥10万做财经媒体曝光、路演宣传，提升基金在市场上的关注度。',
+      risk: '多家同时造势效果互相摊薄；停止宣传后关注度会自然衰减。',
     },
     HOLD: {
       title: '稳健持仓',
-      desc: '维持现有仓位，¥15/手正常交易，利润率40%。',
-      risk: '连续持仓≥2季利润率降至36%，错失行情时机。',
+      desc: '不折腾、维持现有仓位，正价¥15/手交易，收益最稳。',
+      risk: '对手激进做多或造势时你会被压制，连续守仓太久收益率会下降。',
     },
   },
 
   actionCards: {
     ATK: {
       emoji: '🚀',
-      cost: `买入价¥${CONFIG.discountPrice}/手（正常¥${CONFIG.normalPrice}）· 利润率仅${Math.round(CONFIG.discountMargin * 100)}%`,
+      cost: '低价¥12/手大量抢筹，薄利多销扩大持仓',
     },
     QUA: {
       emoji: '🔍',
-      cost: `投入¥${(CONFIG.qualityInvestCost / 10000).toFixed(0)}万研究 · 即时+${CONFIG.qualitySignalBonus}竞争力 · 下季深度+10`,
+      cost: '投入¥8万深度研究，下季度出研究成果',
     },
     MKT: {
       emoji: '📢',
-      cost: `投入¥${(CONFIG.marketingCost / 10000).toFixed(0)}万造势 · 市场关注+${CONFIG.brandHeatGainFromMkt}`,
+      cost: '投入¥10万路演造势，提升基金知名度',
     },
     HOLD: {
       emoji: '🛡',
-      cost: `交易价¥${CONFIG.normalPrice}/手 · 利润率${Math.round(CONFIG.normalMargin * 100)}%（连续≥2季降至${Math.round(CONFIG.holdReducedMargin * 100)}%）`,
+      cost: '正价¥15/手交易，收益最稳但不主动抢筹',
     },
   },
 
   finalShiftNarrative: {
-    NONE: { title: '不附加', desc: '按正常流程结算' },
-    FINAL_PUSH: { title: '全仓冲刺', desc: '竞争力+4，但收益只拿80%' },
-    QUALITY_CONVERT: { title: '研究总爆发', desc: '释放全部研究储备，一次性兑现' },
-    DEFENSIVE_LOCK: { title: '锁仓护盘', desc: '对手做多对你的冲击减半' },
-    BRAND_MONETIZE: { title: '关注度套利', desc: '市场关注变现，营业额+3%' },
+    NONE: { title: '不附加', desc: '最后一季正常比赛，不做额外操作' },
+    FINAL_PUSH: { title: '全仓冲刺', desc: '加杠杆满仓押注，不惜代价抢筹码（收益打八折）' },
+    QUALITY_CONVERT: { title: '研究总爆发', desc: '一次性发布所有研究成果，用深度报告碾压对手' },
+    DEFENSIVE_LOCK: { title: '锁仓护盘', desc: '锁定持仓不动，对手做多对你的冲击减半' },
+    BRAND_MONETIZE: { title: '接受财经专访', desc: '关注度够高时，上财经节目接受专访变现影响力' },
   },
 
   terms: {

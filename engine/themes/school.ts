@@ -288,51 +288,51 @@ export const SCHOOL_THEME: ThemeConfig = {
   actionNarrative: {
     ATK: {
       title: '奖学金抢生',
-      desc: '发放奖学金降至¥12/名，利润率仅32%但生源大增。独家发放时竞争力最强。',
-      risk: '多校同时抢生时加成互相摊薄，且家长会产生疲劳感。',
+      desc: '发放奖学金降低学费到¥12/名，薄利多招快速扩大生源。独家发放时效果最好。',
+      risk: '多校同时抢生效果互相摊薄，连续发奖学金家长会产生疲劳。',
     },
     QUA: {
       title: '教研投入',
-      desc: '投入¥8万做教研建设，即时+3竞争力，下学期教学质量+10。',
-      risk: '本学期成本高，收益延迟兑现。',
+      desc: '投入¥8万做师资培训和课程升级，下学期教研成果落地后教学质量大增。',
+      risk: '本学期花钱多、见效慢，需要等下一学期教研成果出来才能看到全部回报。',
     },
     MKT: {
       title: '口碑宣传',
-      desc: '花¥10万做口碑建设，提升学校声望+20。',
-      risk: '声望需累积到门槛才能变现，短期ROI偏低。',
+      desc: '投入¥10万做家长开放日、升学喜报宣传，提升学校在家长圈的声望。',
+      risk: '多校同时宣传效果互相摊薄；停止宣传后声望会自然衰减。',
     },
     HOLD: {
       title: '稳健办学',
-      desc: '维持正常办学，¥15/名正常收费，利润率40%。',
-      risk: '连续稳健≥2学期利润率降至36%，错失扩张机会。',
+      desc: '不折腾、正常收费¥15/名，积分最高。适合对手都不动的时候。',
+      risk: '对手抢生或宣传时你会被压制，连续稳健办学太久积分率会下降。',
     },
   },
 
   actionCards: {
     ATK: {
       emoji: '🎓',
-      cost: `学费降至¥${CONFIG.discountPrice}/名（正常¥${CONFIG.normalPrice}）· 利润率仅${Math.round(CONFIG.discountMargin * 100)}%`,
+      cost: '奖学金降至¥12/名，薄利多招抢优质生源',
     },
     QUA: {
       emoji: '📚',
-      cost: `投入¥${(CONFIG.qualityInvestCost / 10000).toFixed(0)}万教研 · 即时+${CONFIG.qualitySignalBonus}竞争力 · 下学期质量+10`,
+      cost: '投入¥8万师资培训，下学期推出更强的课程',
     },
     MKT: {
       emoji: '📣',
-      cost: `投入¥${(CONFIG.marketingCost / 10000).toFixed(0)}万宣传 · 学校声望+${CONFIG.brandHeatGainFromMkt}`,
+      cost: '投入¥10万家长开放日宣传，提升学校声望',
     },
     HOLD: {
       emoji: '🛡',
-      cost: `学费¥${CONFIG.normalPrice}/名 · 利润率${Math.round(CONFIG.normalMargin * 100)}%（连续≥2学期降至${Math.round(CONFIG.holdReducedMargin * 100)}%）`,
+      cost: '正常收费¥15/名，积分最高但不主动抢生',
     },
   },
 
   finalShiftNarrative: {
-    NONE: { title: '不附加', desc: '按正常流程结算' },
-    FINAL_PUSH: { title: '全力招生', desc: '竞争力+4，但积分只拿80%' },
-    QUALITY_CONVERT: { title: '教研总爆发', desc: '释放全部教研储备，一次性兑现' },
-    DEFENSIVE_LOCK: { title: '学区锁定', desc: '对手抢生对你的冲击减半' },
-    BRAND_MONETIZE: { title: '声望溢价', desc: '学校声望变现，营业额+3%' },
+    NONE: { title: '不附加', desc: '最后一学期正常比赛，不做额外操作' },
+    FINAL_PUSH: { title: '全力招生', desc: '全校动员、加开招生宣讲会，不惜代价抢生源（积分打八折）' },
+    QUALITY_CONVERT: { title: '教研总爆发', desc: '一次性推出所有教研成果，用教学质量碾压对手' },
+    DEFENSIVE_LOCK: { title: '学区锁定', desc: '和在校学生家长签续读承诺，锁住生源不被对手抢走' },
+    BRAND_MONETIZE: { title: '名校长站台', desc: '声望够高时，邀请名校长公开背书提升学校溢价' },
   },
 
   terms: {

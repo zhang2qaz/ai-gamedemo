@@ -379,51 +379,51 @@ export const FACTORY_THEME: ThemeConfig = {
   actionNarrative: {
     ATK: {
       title: '低价抢单',
-      desc: '以¥12/台报价抢单，利润率仅32%但订单量大增。独家低价时竞争力最强。',
-      risk: '多家同时低价时加成互相摊薄，且客户会产生低价疲劳。',
+      desc: '报价降到¥12/台薄利多销，短期内快速抢占订单。独家低价时效果最好。',
+      risk: '多家同时低价效果互相摊薄，连续低价客户会产生疲劳。',
     },
     QUA: {
       title: '技术升级',
-      desc: '投入¥8万做技术升级，即时+3竞争力，下季技术实力+10。',
-      risk: '本季成本高，收益延迟兑现。',
+      desc: '投入¥8万做技术研发，提升产品质量，下季度技术成果落地后实力大增。',
+      risk: '本季花钱多、见效慢，需要等下一季技术成果出来才能看到全部回报。',
     },
     MKT: {
       title: '品牌推广',
-      desc: '花¥10万做行业推广，提升口碑+20。',
-      risk: '口碑需累积到门槛才能变现，短期ROI偏低。',
+      desc: '投入¥10万参加行业展会、做品牌宣传，提升在行业里的口碑。',
+      risk: '多家同时推广效果互相摊薄；停止推广后口碑会自然衰减。',
     },
     HOLD: {
       title: '稳定生产',
-      desc: '维持正常生产，¥15/台正常报价，利润率40%。',
-      risk: '连续稳产≥2季利润率降至36%，错失扩张机会。',
+      desc: '不折腾、正价¥15/台出货，利润最高。适合对手都不动的时候。',
+      risk: '对手低价抢单或推广时你会被压制，连续稳产太久利润率会下降。',
     },
   },
 
   actionCards: {
     ATK: {
       emoji: '⚔',
-      cost: `报价降至¥${CONFIG.discountPrice}/台（正常¥${CONFIG.normalPrice}）· 利润率仅${Math.round(CONFIG.discountMargin * 100)}%`,
+      cost: '低价¥12/台报价抢单，薄利多销扩大订单量',
     },
     QUA: {
       emoji: '🔧',
-      cost: `投入¥${(CONFIG.qualityInvestCost / 10000).toFixed(0)}万升级 · 即时+${CONFIG.qualitySignalBonus}竞争力 · 下季技术+10`,
+      cost: '投入¥8万技术研发，下季推出更强的产品',
     },
     MKT: {
       emoji: '📣',
-      cost: `投入¥${(CONFIG.marketingCost / 10000).toFixed(0)}万推广 · 行业口碑+${CONFIG.brandHeatGainFromMkt}`,
+      cost: '投入¥10万行业展会推广，提升品牌口碑',
     },
     HOLD: {
       emoji: '🛡',
-      cost: `报价¥${CONFIG.normalPrice}/台 · 利润率${Math.round(CONFIG.normalMargin * 100)}%（连续≥2季降至${Math.round(CONFIG.holdReducedMargin * 100)}%）`,
+      cost: '正价¥15/台出货，利润最高但不主动抢单',
     },
   },
 
   finalShiftNarrative: {
-    NONE: { title: '不附加', desc: '按正常流程结算' },
-    FINAL_PUSH: { title: '全力冲产', desc: '竞争力+4，但产值只拿80%' },
-    QUALITY_CONVERT: { title: '技术总爆发', desc: '释放全部技术储备，一次性兑现' },
-    DEFENSIVE_LOCK: { title: '长约锁客', desc: '对手低价对你的冲击减半' },
-    BRAND_MONETIZE: { title: '口碑溢价', desc: '行业口碑变现，营业额+3%' },
+    NONE: { title: '不附加', desc: '最后一季正常比赛，不做额外操作' },
+    FINAL_PUSH: { title: '全力冲产', desc: '所有产线满负荷运转、加班加点，不惜代价抢订单（产值打八折）' },
+    QUALITY_CONVERT: { title: '技术总爆发', desc: '一次性投产所有研发成果，用技术优势碾压对手' },
+    DEFENSIVE_LOCK: { title: '长约锁客', desc: '和老客户签长期合约，锁住订单不被对手低价抢走' },
+    BRAND_MONETIZE: { title: '行业大奖', desc: '口碑够好时，获评行业大奖提升品牌溢价' },
   },
 
   terms: {
