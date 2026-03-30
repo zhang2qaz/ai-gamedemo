@@ -69,52 +69,52 @@ function generateIntel(): RoundIntel[] {
       action: 'ATK',
       trueCards: [
         { source: SRC.REPORT, text: '当前市场价格敏感度高达60%，低价报价能显著提升订单量，是开局抢占份额的最佳窗口。' },
-        { source: SRC.ANALYST, text: '行业分析师指出，首季订单分配主要看报价竞争力，¥12/台的低价策略可获得最大单量优势。' },
+        { source: SRC.ANALYST, text: '行业分析师指出，首季订单分配主要看报价竞争力，大幅降价可获得最大单量优势。' },
         { source: SRC.SURVEY, text: '客户采购调研显示，本季度各厂商产品差异不大，采购方最看重的就是价格，低价抢单效果最佳。' },
         { source: SRC.INSIDER, text: '供应链消息称原材料价格本季稳定，低价报价的利润虽薄但可控，适合激进抢单。' },
       ],
       falseCards: [
-        { source: SRC.INSIDER, text: '内部消息称本季只有你一家计划低价抢单，独家低价竞争力加成可达+15以上，轻松碾压对手。' },
+        { source: SRC.INSIDER, text: '内部消息称本季只有你一家计划低价抢单，独家低价可获得极大的竞争优势，轻松碾压对手。' },
         { source: SRC.ANALYST, text: '供应链数据显示低价抢单不会累积客户疲劳指数，可连续多季使用且效果不减。' },
       ],
     },
     {
       action: 'QUA',
       trueCards: [
-        { source: SRC.REPORT, text: '技术升级投入¥8万，虽然本季成本偏高，但能获得+3即时竞争力和下季+10技术实力的长线回报。' },
+        { source: SRC.REPORT, text: '技术升级投入¥8万，虽然本季成本偏高，但能小幅提升产品实力，下季技术成果落地后大幅提升的长线回报。' },
         { source: SRC.INSIDER, text: '内部评估显示，首季投入技术升级可在第二季形成明显技术壁垒，良品率提升带来的成本节约可观。' },
         { source: SRC.ANALYST, text: '分析师认为提前布局技术升级是稳健策略，后期行业标准提升时技术领先者将获得巨大优势。' },
         { source: SRC.SURVEY, text: '下游厂商反馈，愿意为通过ISO高级认证的供应商支付5%-8%溢价，技术投入中长期回报确定。' },
       ],
       falseCards: [
-        { source: SRC.ANALYST, text: '技术升级本季即时竞争力加成高达+10，远超其他策略，且本季有政策补贴成本仅¥3万。' },
-        { source: SRC.INSIDER, text: '内部评估显示首季技术升级后品质分直接+25，一次投入即可建立碾压级技术壁垒。' },
+        { source: SRC.ANALYST, text: '技术升级本季即时技术大幅提升，远超其他策略，且本季有政策补贴成本仅¥3万。' },
+        { source: SRC.INSIDER, text: '内部评估显示首季技术升级后技术实力大幅提升，一次投入即可建立碾压级技术壁垒。' },
       ],
     },
     {
       action: 'MKT',
       trueCards: [
-        { source: SRC.REPORT, text: '品牌推广投入¥10万可获得+20行业口碑，虽然短期ROI不高，但口碑累积到门槛后可实现溢价变现。' },
+        { source: SRC.REPORT, text: '品牌推广投入¥10万可大幅提升行业口碑，虽然短期ROI不高，但口碑累积到门槛后可实现溢价变现。' },
         { source: SRC.SURVEY, text: '客户调研表明，在产品同质化严重的制造业，品牌认知度对长期订单稳定性有决定性影响。' },
         { source: SRC.ANALYST, text: '行业展会季即将到来，首季投入品牌推广能在展会期间获得更多曝光，为后续季度订单打基础。' },
         { source: SRC.INSIDER, text: '内部市场部评估，本季参加3场行业展会+线上推广的组合方案性价比最高，建议加大品牌投入。' },
       ],
       falseCards: [
-        { source: SRC.ANALYST, text: '品牌推广每次可提升口碑+40，只需两季即可突破溢价变现门槛，回报速度极快。' },
+        { source: SRC.ANALYST, text: '品牌推广每次口碑大幅提升，只需两季即可突破溢价变现门槛，回报速度极快。' },
         { source: SRC.REPORT, text: '多家同时推广效果叠加而非摊薄，推广越多行业整体关注度越高，所有推广方都受益。' },
       ],
     },
     {
       action: 'HOLD',
       trueCards: [
-        { source: SRC.REPORT, text: '稳定生产以¥15/台正常报价，40%利润率在首季提供了健康的现金流，为后续操作保留资金弹性。' },
+        { source: SRC.REPORT, text: '稳定生产以正常报价出货，首季可提供健康的现金流，为后续操作保留资金弹性。' },
         { source: SRC.ANALYST, text: '分析师建议首季保持稳定生产观察市场动态，避免盲目投入，等信息更充分后再做决策。' },
         { source: SRC.INSIDER, text: '产能利用率评估显示，首季维持正常生产节奏可优化供应链效率，降低库存成本。' },
         { source: SRC.SURVEY, text: '客户满意度调查表明，稳定的交付周期和品质一致性是大客户选择供应商的首要标准。' },
       ],
       falseCards: [
-        { source: SRC.ANALYST, text: '稳定生产利润率高达50%，远超其他策略，且完全不受对手进攻行为的竞争力惩罚影响。' },
-        { source: SRC.INSIDER, text: '连续稳产可触发系统额外产能奖励，利润率逐季递增至45%，是最安全的长线策略。' },
+        { source: SRC.ANALYST, text: '稳定生产利润丰厚，远超其他策略，且完全不受对手进攻行为的竞争压制影响。' },
+        { source: SRC.INSIDER, text: '连续稳产可触发系统额外产能奖励，利润率逐季递增，是最安全的长线策略。' },
       ],
     },
   ]
@@ -143,8 +143,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '客户反馈显示，扩产阶段更重视供应商的质量管理体系，通过ISO认证的厂商订单优先级更高。' },
       ],
       falseCards: [
-        { source: SRC.ANALYST, text: '技术升级在需求扩张前投入效果翻倍，下季品质分加成可达+20，是布局的最佳时机。' },
-        { source: SRC.INSIDER, text: '技术升级成本本季有政策补贴仅需¥4万，且即时竞争力加成提升至+8。' },
+        { source: SRC.ANALYST, text: '技术升级在需求扩张前投入效果翻倍，下季技术实力大幅提升，是布局的最佳时机。' },
+        { source: SRC.INSIDER, text: '技术升级成本本季有政策补贴仅需¥4万，且即时获得极大的竞争优势。' },
       ],
     },
     {
@@ -156,7 +156,7 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.INSIDER, text: '市场部反馈，本季行业期刊广告位价格优惠，品牌推广的性价比是全年最高的。' },
       ],
       falseCards: [
-        { source: SRC.ANALYST, text: '需求扩张前品牌推广效果加倍，口碑每次+35，且衰减速度减半为每季仅-2。' },
+        { source: SRC.ANALYST, text: '需求扩张前品牌推广效果加倍，口碑大幅提升，且衰减速度减半，缓慢衰减。' },
         { source: SRC.REPORT, text: '行业数据显示品牌推广在需求爆发前的ROI是全年最高的，远超低价和技术路线。' },
       ],
     },
@@ -169,8 +169,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '老客户反馈，稳定供货的厂商在扩产期会优先获得订单，急于低价的反而被质疑产品质量。' },
       ],
       falseCards: [
-        { source: SRC.ANALYST, text: '稳产积累的资金在需求爆发时会自动转化为+5竞争力加成，是最聪明的等待策略。' },
-        { source: SRC.REPORT, text: '连续稳产的利润率不会下降，即使持续多季也始终保持40%的健康水平。' },
+        { source: SRC.ANALYST, text: '稳产积累的资金在需求爆发时会自动转化为获得额外竞争优势，是最聪明的等待策略。' },
+        { source: SRC.REPORT, text: '连续稳产的利润率不会下降，即使持续多季也始终保持丰厚的利润。' },
       ],
     },
   ]
@@ -182,11 +182,11 @@ function generateIntel(): RoundIntel[] {
       trueCards: [
         { source: SRC.REPORT, text: '订单池已扩大至13万台，低价抢单可在放大的市场中获取更多订单量，薄利多销效果显著。' },
         { source: SRC.ANALYST, text: '分析师指出13万台订单中有大量价格敏感型客户，低价策略在本季的收益上限大幅提高。' },
-        { source: SRC.SURVEY, text: '客户调研显示新增订单以中小客户为主，他们对价格极度敏感，¥12/台报价吸引力巨大。' },
+        { source: SRC.SURVEY, text: '客户调研显示新增订单以中小客户为主，他们对价格极度敏感，大幅降价吸引力巨大。' },
         { source: SRC.INSIDER, text: '销售部反馈，多个大客户正在比价阶段，低价报价可一举拿下几个关键长期合同。' },
       ],
       falseCards: [
-        { source: SRC.INSIDER, text: '订单池扩大后低价竞争力加成自动翻倍至+22，是抢夺增量市场的绝对最优策略。' },
+        { source: SRC.INSIDER, text: '订单池扩大后低价竞争力加成自动翻倍，是抢夺增量市场的绝对最优策略。' },
         { source: SRC.ANALYST, text: '客户数据显示13万台订单中90%是价格敏感型，低价效果在本季达到全局巅峰。' },
       ],
     },
@@ -199,7 +199,7 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '大客户反馈，订单量大时更看重供应商的生产稳定性和良品率，技术实力成为关键筛选标准。' },
       ],
       falseCards: [
-        { source: SRC.ANALYST, text: '技术投入在订单激增时效果加倍，即时竞争力+8，下季品质+20，是爆发期最强策略。' },
+        { source: SRC.ANALYST, text: '技术投入在订单激增时效果加倍，即时获得极大的竞争优势，下季技术实力大幅提升，是爆发期最强策略。' },
         { source: SRC.INSIDER, text: '前期技术储备在本季可自动释放额外加成，累积越多爆发力越强，无需等到终局。' },
       ],
     },
@@ -219,14 +219,14 @@ function generateIntel(): RoundIntel[] {
     {
       action: 'HOLD',
       trueCards: [
-        { source: SRC.REPORT, text: '订单涌入期稳定生产可确保交付质量，40%利润率在13万台大盘下也能获得可观利润。' },
+        { source: SRC.REPORT, text: '订单涌入期稳定生产可确保交付质量，正常报价利润率高，在大盘订单增长下也能获得可观利润。' },
         { source: SRC.ANALYST, text: '分析师建议在订单高峰期保持正常报价和产能，避免过度扩张带来的质量和交付风险。' },
         { source: SRC.INSIDER, text: '生产部门评估显示，稳定生产可确保100%准时交付，大客户对交付可靠性的重视度在上升。' },
         { source: SRC.SURVEY, text: '行业调查显示，订单爆发期盲目扩张的厂商70%会出现质量事故，稳产是风险最低的选择。' },
       ],
       falseCards: [
-        { source: SRC.INSIDER, text: '订单涌入期稳产厂商自动获得+5优先订单加成，系统奖励稳定供货的供应商。' },
-        { source: SRC.ANALYST, text: '13万台大市场中稳产的利润率自动提升至45%，市场越大稳产越赚钱。' },
+        { source: SRC.INSIDER, text: '订单涌入期稳产厂商自动获得额外竞争优势，系统奖励稳定供货的供应商。' },
+        { source: SRC.ANALYST, text: '13万台大市场中稳产的利润率自动提升，市场越大稳产越赚钱。' },
       ],
     },
   ]
@@ -255,7 +255,7 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '大客户明确表示新标准后将优先选择技术实力排名前两名的供应商，技术投入直接影响订单获取。' },
       ],
       falseCards: [
-        { source: SRC.ANALYST, text: '新标准下技术投入的加成翻倍，即时竞争力达+6，下季品质+20，技术路线碾压一切。' },
+        { source: SRC.ANALYST, text: '新标准下技术投入的加成翻倍，即时小幅提升竞争力，下季技术实力大幅提升，技术路线碾压一切。' },
         { source: SRC.INSIDER, text: '技术实力权重实际已升至70%，远超官方公布的55%，技术领先即绝对领先。' },
       ],
     },
@@ -268,7 +268,7 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.INSIDER, text: '市场部反馈，本季推出"通过新标准认证"的品牌宣传可获得行业媒体免费报道，推广效果加倍。' },
       ],
       falseCards: [
-        { source: SRC.ANALYST, text: '新标准期间推广效果加倍，口碑每次+40，且"通过新标准认证"的宣传可额外+20声望。' },
+        { source: SRC.ANALYST, text: '新标准期间推广效果加倍，口碑大幅提升，且"通过新标准认证"的宣传可额外大幅提升声望。' },
         { source: SRC.INSIDER, text: '口碑在新标准期间的变现门槛降低至50，此前积累的声望即刻可以套利变现。' },
       ],
     },
@@ -281,7 +281,7 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '客户反馈新标准期间更看重供应稳定性，频繁调整策略的厂商会被贴上"不稳定"标签。' },
       ],
       falseCards: [
-        { source: SRC.INSIDER, text: '新标准对稳产厂商有额外政策补贴，利润率提升至48%，是全场最高回报率策略。' },
+        { source: SRC.INSIDER, text: '新标准对稳产厂商有额外政策补贴，利润率大幅提升，是全场最高回报率策略。' },
         { source: SRC.ANALYST, text: '稳产在标准升级期不受任何进攻压力惩罚，系统保护合规生产的厂商不被抢单。' },
       ],
     },
@@ -298,7 +298,7 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '年度采购调研显示，客户年底清预算时更倾向于选择报价最低的供应商，低价效果最佳。' },
       ],
       falseCards: [
-        { source: SRC.INSIDER, text: '终局低价竞争力加成不受人数摊薄影响，无论几家同时出手都能获得满额+11加成。' },
+        { source: SRC.INSIDER, text: '终局低价竞争力加成不受人数摊薄影响，无论几家同时出手都能获得完整的竞争优势。' },
         { source: SRC.ANALYST, text: '最后一季低价抢单的份额增长效果是平时的3倍，终局爆发是逆转排名的最佳机会。' },
       ],
     },
@@ -311,8 +311,8 @@ function generateIntel(): RoundIntel[] {
         { source: SRC.SURVEY, text: '客户反馈最后一季更看重供应商的综合技术实力，技术领先者将获得更高价值订单。' },
       ],
       falseCards: [
-        { source: SRC.ANALYST, text: '技术储备在终局释放时每点储备可获+5竞争力，3点储备即可获得+15碾压级加成。' },
-        { source: SRC.INSIDER, text: '最后一季技术投入的品质+10同样会在终局结算中生效，相当于获得双倍回报。' },
+        { source: SRC.ANALYST, text: '技术储备在终局释放时可转化为碾压级优势，积累越多爆发力越强。' },
+        { source: SRC.INSIDER, text: '最后一季技术投入的技术大幅提升同样会在终局结算中生效，相当于获得双倍回报。' },
       ],
     },
     {
@@ -379,7 +379,7 @@ export const FACTORY_THEME: ThemeConfig = {
   actionNarrative: {
     ATK: {
       title: '低价抢单',
-      desc: '报价降到¥12/台薄利多销，短期内快速抢占订单。独家低价时效果最好。',
+      desc: '大幅降价薄利多销，短期内快速抢占订单。独家低价时效果最好。',
       risk: '多家同时低价效果互相摊薄，连续低价客户会产生疲劳。',
     },
     QUA: {
@@ -394,7 +394,7 @@ export const FACTORY_THEME: ThemeConfig = {
     },
     HOLD: {
       title: '稳定生产',
-      desc: '不折腾、正价¥15/台出货，利润最高。适合对手都不动的时候。',
+      desc: '不折腾、正常报价出货，利润最高。适合对手都不动的时候。',
       risk: '对手低价抢单或推广时你会被压制，连续稳产太久利润率会下降。',
     },
   },
@@ -402,7 +402,7 @@ export const FACTORY_THEME: ThemeConfig = {
   actionCards: {
     ATK: {
       emoji: '⚔',
-      cost: '低价¥12/台报价抢单，薄利多销扩大订单量',
+      cost: '大幅降价抢单，薄利多销扩大订单量',
     },
     QUA: {
       emoji: '🔧',
@@ -414,7 +414,7 @@ export const FACTORY_THEME: ThemeConfig = {
     },
     HOLD: {
       emoji: '🛡',
-      cost: '正价¥15/台出货，利润最高但不主动抢单',
+      cost: '正常报价出货，利润最高但不主动抢单',
     },
   },
 
