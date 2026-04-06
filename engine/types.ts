@@ -2,7 +2,9 @@
 // 弈战 v2.4 - 类型定义
 // =====================
 
-export type PlayerId = 'A' | 'B' | 'C' | 'D'
+export type PlayerId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H'
+
+export const ALL_PLAYER_IDS: PlayerId[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
 
 export type BaseAction = 'ATK' | 'QUA' | 'MKT' | 'HOLD'
 

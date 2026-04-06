@@ -9,12 +9,10 @@ type Props = {
   onClose: () => void
 }
 
-const PLAYER_COLORS: Record<string, string> = {
-  A: 'text-amber-400',
-  B: 'text-sky-400',
-  C: 'text-emerald-400',
-  D: 'text-purple-400',
-}
+import { PLAYER_COLORS as PC } from '@/lib/playerColors'
+const PLAYER_COLORS: Record<string, string> = Object.fromEntries(
+  Object.entries(PC).map(([id, c]) => [id, c.text])
+)
 
 export default function AuditLogPanel({ logs, onClose }: Props) {
   const [expandedRound, setExpandedRound] = useState<number | null>(null)

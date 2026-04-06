@@ -4,7 +4,8 @@
 
 import { create } from 'zustand'
 import type { PlayerId, BaseAction, FinalShift, PlayerState, GlobalState, RoundAuditLog, RoundInput } from '@/engine/types'
-import { INITIAL_PLAYER_STATES, INITIAL_GLOBAL_STATE } from '@/engine/constants'
+import { INITIAL_PLAYER_STATES, INITIAL_GLOBAL_STATE, createInitialPlayerStates } from '@/engine/constants'
+import { ALL_PLAYER_IDS } from '@/engine/types'
 import { resolveRound } from '@/engine/resolveRound'
 import { generateRoundNarration, generateGameNarration } from '@/engine/resolveGame'
 import { getTheme } from '@/engine/themes'
@@ -21,6 +22,7 @@ type GameStore = {
   phase: GamePhase
   themeId: string | null
   theme: ThemeConfig | null
+  playerCount: number
   global: GlobalState
   players: PlayerState[]
   pendingInputs: Record<PlayerId, PendingInput>
@@ -33,7 +35,7 @@ type GameStore = {
   intelTruth: Record<number, boolean[]>
 
   // Actions
-  selectTheme: (themeId: string) => void
+  selectTheme: (themeId: string, playerCount?: number) => void
   ensureIntel: () => void
   setAction: (playerId: PlayerId, action: BaseAction) => void
   clearAction: (playerId: PlayerId) => void
@@ -54,29 +56,31 @@ function buildIntelTruth(intel: RoundIntel[]): Record<number, boolean[]> {
   return result
 }
 
-function createInitialPendingInputs(): Record<PlayerId, PendingInput> {
-  return {
-    A: { action: null, finalShift: 'NONE' },
-    B: { action: null, finalShift: 'NONE' },
-    C: { action: null, finalShift: 'NONE' },
-    D: { action: null, finalShift: 'NONE' },
+function createInitialPendingInputs(playerCount = 4): Record<PlayerId, PendingInput> {
+  const ids = ALL_PLAYER_IDS.slice(0, playerCount)
+  const result: Partial<Record<PlayerId, PendingInput>> = {}
+  for (const id of ids) {
+    result[id] = { action: null, finalShift: 'NONE' }
   }
+  return result as Record<PlayerId, PendingInput>
 }
 
-function createGameState(theme: ThemeConfig) {
+function createGameState(theme: ThemeConfig, playerCount = 4) {
+  const basePlayers = createInitialPlayerStates(playerCount)
   return {
     phase: 'SUBMITTING' as GamePhase,
     themeId: theme.id,
     theme,
+    playerCount,
     global: {
       ...INITIAL_GLOBAL_STATE,
       eventQueue: theme.events,
     },
-    players: INITIAL_PLAYER_STATES.map(p => ({
+    players: basePlayers.map(p => ({
       ...p,
       name: theme.playerNames[p.id] ?? p.name,
     })),
-    pendingInputs: createInitialPendingInputs(),
+    pendingInputs: createInitialPendingInputs(playerCount),
     auditLogs: [] as RoundAuditLog[],
     roundNarrations: [] as string[],
     gameNarration: '',
@@ -93,6 +97,7 @@ function createInitialState() {
     phase: 'THEME_SELECT' as GamePhase,
     themeId: null as string | null,
     theme: null as ThemeConfig | null,
+    playerCount: 4,
     global: { ...INITIAL_GLOBAL_STATE, eventQueue: [] } as GlobalState,
     players: INITIAL_PLAYER_STATES.map(p => ({ ...p })) as PlayerState[],
     pendingInputs: createInitialPendingInputs(),
@@ -109,12 +114,12 @@ function createInitialState() {
 export const useGameStore = create<GameStore>((set, get) => ({
   ...createInitialState(),
 
-  selectTheme: (themeId: string) => {
+  selectTheme: (themeId: string, playerCount = 4) => {
     try {
       const theme = getTheme(themeId)
       const generatedIntel = theme.generateIntel()
       set({
-        ...createGameState(theme),
+        ...createGameState(theme, playerCount),
         generatedIntel,
         intelTruth: buildIntelTruth(generatedIntel),
       })
@@ -163,12 +168,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const { global, players, pendingInputs, theme } = state
       if (!theme) return
 
-      const allSubmitted = (['A', 'B', 'C', 'D'] as PlayerId[]).every(
+      const playerIds = players.map(p => p.id)
+      const allSubmitted = playerIds.every(
         id => pendingInputs[id]?.action !== null
       )
       if (!allSubmitted) return
 
-      const inputs: RoundInput[] = (['A', 'B', 'C', 'D'] as PlayerId[]).map(id => ({
+      const inputs: RoundInput[] = playerIds.map(id => ({
         playerId: id,
         action: pendingInputs[id].action!,
         finalShift: pendingInputs[id].finalShift ?? 'NONE',
@@ -208,9 +214,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   nextRound: () => {
+    const state = get()
     set({
       phase: 'SUBMITTING',
-      pendingInputs: createInitialPendingInputs(),
+      pendingInputs: createInitialPendingInputs(state.playerCount),
       currentRoundResult: null,
     })
   },
@@ -221,7 +228,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       if (state.theme) {
         const generatedIntel = state.theme.generateIntel()
         set({
-          ...createGameState(state.theme),
+          ...createGameState(state.theme, state.playerCount),
           generatedIntel,
           intelTruth: buildIntelTruth(generatedIntel),
         })

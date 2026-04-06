@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "yizhan-demo",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "--port", "3001"],
-      "port": 3001
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": ["/Users/kevinzhang/yizhan-demo/node_modules/.bin/next", "dev", "--hostname", "0.0.0.0"],
+      "port": 3000
     }
   ]
 }

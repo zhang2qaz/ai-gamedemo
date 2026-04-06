@@ -10,6 +10,10 @@ const companies: CompanyProfile[] = [
   { id: 'B', name: '锐锋投资', slogan: '速度就是利润', style: '短线进攻派', colorClass: 'sky' },
   { id: 'C', name: '星辰基金', slogan: '顺势而为，乘风破浪', style: '趋势投资派', colorClass: 'emerald' },
   { id: 'D', name: '恒盈私募', slogan: '稳中求胜，时间的朋友', style: '防御稳健派', colorClass: 'purple' },
+  { id: 'E', name: '赤焰证券', slogan: '逆势而行，火中取栗', style: '逆向投资派', colorClass: 'rose' },
+  { id: 'F', name: '碧波量化', slogan: '数据驱动，精准制胜', style: '量化交易派', colorClass: 'cyan' },
+  { id: 'G', name: '青竹资管', slogan: '深耕细作，厚积薄发', style: '长期价值派', colorClass: 'lime' },
+  { id: 'H', name: '旭日投资', slogan: '朝气蓬勃，敢为人先', style: '成长投资派', colorClass: 'orange' },
 ]
 
 export const STOCK_THEME: ThemeConfig = {
@@ -146,6 +150,10 @@ export const STOCK_THEME: ThemeConfig = {
     B: '锐锋投资',
     C: '星辰基金',
     D: '恒盈私募',
+    E: '赤焰证券',
+    F: '碧波量化',
+    G: '青竹资管',
+    H: '旭日投资',
   },
 
   generateIntel: (): RoundIntel[] => {

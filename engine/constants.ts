@@ -60,13 +60,36 @@ export const CONFIG = {
   minCompetitiveness: 6.0,
 }
 
-// 初始玩家状态（名称与叙事层的 COMPANIES 对齐）
-export const INITIAL_PLAYER_STATES = [
-  { id: 'A' as const, name: '晨露茶饮', cash: 1000000, marketShare: 0.25, qualityScore: 70, brandHeat: 30, cumulativeProfit: 0, marketMomentum: 0, fatigueIndex: 0, qualityCharge: 0, lastAction: null, consecutiveHoldCount: 0 },
-  { id: 'B' as const, name: '闪点咖啡', cash: 1000000, marketShare: 0.25, qualityScore: 70, brandHeat: 30, cumulativeProfit: 0, marketMomentum: 0, fatigueIndex: 0, qualityCharge: 0, lastAction: null, consecutiveHoldCount: 0 },
-  { id: 'C' as const, name: '星野饮品', cash: 1000000, marketShare: 0.25, qualityScore: 70, brandHeat: 30, cumulativeProfit: 0, marketMomentum: 0, fatigueIndex: 0, qualityCharge: 0, lastAction: null, consecutiveHoldCount: 0 },
-  { id: 'D' as const, name: '稳杯茶饮', cash: 1000000, marketShare: 0.25, qualityScore: 70, brandHeat: 30, cumulativeProfit: 0, marketMomentum: 0, fatigueIndex: 0, qualityCharge: 0, lastAction: null, consecutiveHoldCount: 0 },
-]
+// 默认名称池（最多 8 人）
+const DEFAULT_NAMES: Record<string, string> = {
+  A: '晨露茶饮', B: '闪点咖啡', C: '星野饮品', D: '稳杯茶饮',
+  E: '青桐饮品', F: '海棠工坊', G: '云岭茗茶', H: '朝阳果饮',
+}
+
+/**
+ * 生成 N 人初始状态（2-8人）
+ */
+export function createInitialPlayerStates(playerCount: number, names?: Record<string, string>) {
+  const ids = (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] as const).slice(0, playerCount)
+  const share = 1 / playerCount
+  return ids.map(id => ({
+    id,
+    name: names?.[id] ?? DEFAULT_NAMES[id] ?? `玩家${id}`,
+    cash: 1000000,
+    marketShare: share,
+    qualityScore: 70,
+    brandHeat: 30,
+    cumulativeProfit: 0,
+    marketMomentum: 0,
+    fatigueIndex: 0,
+    qualityCharge: 0,
+    lastAction: null as null,
+    consecutiveHoldCount: 0,
+  }))
+}
+
+// 兼容旧代码：默认4人
+export const INITIAL_PLAYER_STATES = createInitialPlayerStates(4)
 
 export const INITIAL_GLOBAL_STATE: {
   roundNumber: number

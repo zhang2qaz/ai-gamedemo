@@ -120,5 +120,5 @@ export interface ThemeConfig {
   generateIntel: () => RoundIntel[]
 
   // 初始玩家名称（覆盖 constants.ts 的默认名称）
-  playerNames: Record<PlayerId, string>
+  playerNames: Partial<Record<PlayerId, string>>
 }

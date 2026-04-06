@@ -22,12 +22,10 @@ type Props = {
   onClearAction: () => void
 }
 
-const PLAYER_ACCENT: Record<string, { border: string; bg: string; title: string; fill: string }> = {
-  A: { border: 'border-amber-500', bg: 'bg-amber-950/20', title: 'text-amber-400', fill: 'bg-amber-500' },
-  B: { border: 'border-sky-500',   bg: 'bg-sky-950/20',   title: 'text-sky-400',   fill: 'bg-sky-500' },
-  C: { border: 'border-emerald-500', bg: 'bg-emerald-950/20', title: 'text-emerald-400', fill: 'bg-emerald-500' },
-  D: { border: 'border-purple-500', bg: 'bg-purple-950/20', title: 'text-purple-400', fill: 'bg-purple-500' },
-}
+import { PLAYER_COLORS as PC_ALL } from '@/lib/playerColors'
+const PLAYER_ACCENT: Record<string, { border: string; bg: string; title: string; fill: string }> = Object.fromEntries(
+  Object.entries(PC_ALL).map(([id, c]) => [id, { border: c.border, bg: c.bg, title: c.text, fill: c.fill }])
+)
 
 type ActionDef = {
   id: BaseAction

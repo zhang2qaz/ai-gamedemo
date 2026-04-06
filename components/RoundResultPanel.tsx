@@ -15,11 +15,16 @@ type Props = {
   isGameOver: boolean
 }
 
-const PLAYER_COLORS: Record<string, { title: string; border: string; bg: string }> = {
-  A: { title: 'text-amber-400',  border: 'border-amber-700/60',  bg: 'bg-amber-950/20' },
-  B: { title: 'text-sky-400',    border: 'border-sky-700/60',    bg: 'bg-sky-950/20' },
-  C: { title: 'text-emerald-400', border: 'border-emerald-700/60', bg: 'bg-emerald-950/20' },
-  D: { title: 'text-purple-400', border: 'border-purple-700/60', bg: 'bg-purple-950/20' },
+import { PLAYER_COLORS as PC } from '@/lib/playerColors'
+
+// 衍生色 for RoundResult
+const getPlayerColor = (id: string) => {
+  const c = PC[id as keyof typeof PC]
+  return {
+    title: c?.text ?? 'text-stone-400',
+    border: c?.border ? c.border.replace('500', '700/60') : 'border-stone-700/60',
+    bg: c?.bg ?? 'bg-stone-950/20',
+  }
 }
 
 const ACTION_BADGE: Record<string, string> = {
@@ -79,9 +84,9 @@ export default function RoundResultPanel({ log, players, narration, onNext, isGa
         </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className={`grid gap-3 ${log.players.length <= 4 ? 'grid-cols-4' : log.players.length <= 6 ? 'grid-cols-3' : 'grid-cols-4'}`}>
         {log.players.map((p) => {
-          const col = PLAYER_COLORS[p.id]
+          const col = getPlayerColor(p.id)
           const isTopProfit = p.id === winner.id
           const shareDelta = p.newShare - p.oldShare
           const playerState = players.find(pl => pl.id === p.id)!
@@ -185,8 +190,8 @@ export default function RoundResultPanel({ log, players, narration, onNext, isGa
         <span className="text-stone-500 text-xs uppercase tracking-wider font-bold shrink-0">本轮{t?.profit ?? '利润'}</span>
         <div className="flex gap-4 flex-1">
           {sorted.map((p, i) => {
-            const col = PLAYER_COLORS[p.id]
-            const medals = ['🥇', '🥈', '🥉', '　']
+            const col = getPlayerColor(p.id)
+            const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣']
             const playerState = players.find(pl => pl.id === p.id)!
             return (
               <div key={p.id} className="flex items-center gap-1.5">

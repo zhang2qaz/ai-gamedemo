@@ -197,7 +197,7 @@ export function generateInsights(
   // ── 7. 跨轮趋势（如有多轮数据） ──
   if (logs.length >= 2) {
     const prev = logs[logs.length - 2]
-    const playerIds = ['A', 'B', 'C', 'D'] as PlayerId[]
+    const playerIds = latest.players.map(p => p.id)
     const trends = playerIds.map(id => {
       const prevP = prev.players.find(p => p.id === id)!
       const currP = latest.players.find(p => p.id === id)!

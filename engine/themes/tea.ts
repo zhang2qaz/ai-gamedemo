@@ -52,6 +52,34 @@ export const TEA_THEME: ThemeConfig = {
       style: '守盘派，现金流优先，靠老顾客口碑维持高毛利，精准出击',
       colorClass: 'purple',
     },
+    {
+      id: 'E',
+      name: '青桐饮品',
+      slogan: '一杯清茶，百味人生',
+      style: '文艺派，主打中式茶文化体验，靠差异化定位吸引文青客群',
+      colorClass: 'rose',
+    },
+    {
+      id: 'F',
+      name: '海棠工坊',
+      slogan: '鲜果现萃，自然本味',
+      style: '鲜果派，坚持鲜果现做，高成本高品质路线',
+      colorClass: 'cyan',
+    },
+    {
+      id: 'G',
+      name: '云岭茗茶',
+      slogan: '高山好茶，杯杯讲究',
+      style: '原叶派，主打高山茶叶原料，强调产地与工艺',
+      colorClass: 'lime',
+    },
+    {
+      id: 'H',
+      name: '朝阳果饮',
+      slogan: '阳光果汁，活力满满',
+      style: '健康派，主打NFC鲜榨果汁，瞄准健身与养生人群',
+      colorClass: 'orange',
+    },
   ],
 
   actionNarrative: {
@@ -181,6 +209,10 @@ export const TEA_THEME: ThemeConfig = {
     B: '闪点咖啡',
     C: '星野饮品',
     D: '稳杯茶饮',
+    E: '青桐饮品',
+    F: '海棠工坊',
+    G: '云岭茗茶',
+    H: '朝阳果饮',
   },
 
   generateIntel(): RoundIntel[] {

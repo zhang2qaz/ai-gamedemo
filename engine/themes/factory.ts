@@ -374,6 +374,10 @@ export const FACTORY_THEME: ThemeConfig = {
     { id: 'B', name: '迅达工业', slogan: '速度制胜，效率至上', style: '成本进攻派', colorClass: 'sky' },
     { id: 'C', name: '恒力科技', slogan: '科技驱动，创新引领', style: '技术创新派', colorClass: 'emerald' },
     { id: 'D', name: '稳固重工', slogan: '厚积薄发，稳如泰山', style: '稳健生产派', colorClass: 'purple' },
+    { id: 'E', name: '赤铁锻造', slogan: '百炼成钢，锻造未来', style: '重工锻造派', colorClass: 'rose' },
+    { id: 'F', name: '碧海船工', slogan: '乘风破浪，制造远航', style: '海工装备派', colorClass: 'cyan' },
+    { id: 'G', name: '青松电气', slogan: '绿色电力，智慧制造', style: '新能源制造派', colorClass: 'lime' },
+    { id: 'H', name: '旭辉机械', slogan: '日新月异，精密制造', style: '精密机械派', colorClass: 'orange' },
   ],
 
   actionNarrative: {
@@ -488,6 +492,10 @@ export const FACTORY_THEME: ThemeConfig = {
     B: '迅达工业',
     C: '恒力科技',
     D: '稳固重工',
+    E: '赤铁锻造',
+    F: '碧海船工',
+    G: '青松电气',
+    H: '旭辉机械',
   },
 
   generateIntel,

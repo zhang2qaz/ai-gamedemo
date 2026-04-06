@@ -1,9 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import { ALL_THEMES } from '@/engine/themes'
 
 type Props = {
-  onSelect: (themeId: string) => void
+  onSelect: (themeId: string, playerCount: number) => void
 }
 
 const ACCENT_STYLES: Record<string, {
@@ -16,13 +17,36 @@ const ACCENT_STYLES: Record<string, {
 }
 
 export default function ThemeSelect({ onSelect }: Props) {
+  const [playerCount, setPlayerCount] = useState(4)
+
   return (
     <div className="min-h-screen bg-stone-950 text-white flex flex-col items-center justify-center px-4 py-12">
       {/* 标题 */}
       <div className="text-center mb-10 space-y-3">
         <h1 className="text-amber-400 font-black text-4xl tracking-wider">弈 战</h1>
-        <p className="text-stone-500 text-sm">四人决策训练 · 选择你的战场</p>
+        <p className="text-stone-500 text-sm">多人决策训练 · 选择你的战场</p>
         <div className="w-16 h-px bg-stone-700 mx-auto" />
+      </div>
+
+      {/* 人数选择器 */}
+      <div className="mb-8 flex flex-col items-center gap-3">
+        <div className="text-stone-400 text-sm font-medium">选择参与人数</div>
+        <div className="flex gap-2">
+          {[2, 3, 4, 5, 6, 7, 8].map(n => (
+            <button
+              key={n}
+              onClick={() => setPlayerCount(n)}
+              className={`w-10 h-10 rounded-lg font-bold text-sm transition-all cursor-pointer
+                ${playerCount === n
+                  ? 'bg-amber-500 text-stone-950 ring-2 ring-amber-400/50 scale-110'
+                  : 'bg-stone-800 text-stone-400 hover:bg-stone-700 border border-stone-700'
+                }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+        <div className="text-stone-600 text-xs">{playerCount} 位玩家参与对决</div>
       </div>
 
       {/* 主题卡片网格 */}
@@ -32,7 +56,7 @@ export default function ThemeSelect({ onSelect }: Props) {
           return (
             <button
               key={theme.id}
-              onClick={() => onSelect(theme.id)}
+              onClick={() => onSelect(theme.id, playerCount)}
               className={`border-2 rounded-xl p-5 text-left transition-all cursor-pointer
                 ${s.border} ${s.bg} ${s.hoverBg}
                 hover:ring-2 ${s.ring} hover:scale-[1.02] active:scale-[0.98]`}
@@ -53,9 +77,9 @@ export default function ThemeSelect({ onSelect }: Props) {
                 {theme.description}
               </p>
 
-              {/* 四家公司 */}
+              {/* 公司阵容 */}
               <div className="flex gap-2 flex-wrap">
-                {theme.companies.map(c => (
+                {theme.companies.slice(0, playerCount).map(c => (
                   <span key={c.id} className="text-xs px-2 py-0.5 rounded-full bg-stone-800/80 text-stone-400 border border-stone-700/50">
                     {c.name}
                   </span>
@@ -74,7 +98,7 @@ export default function ThemeSelect({ onSelect }: Props) {
       {/* 底部说明 */}
       <div className="mt-8 text-center text-stone-700 text-xs space-y-1">
         <p>所有主题共享同一套平衡引擎 · 10000局蒙特卡洛验证</p>
-        <p>4位玩家轮流选牌 · 5回合 · 情报真假混杂 · 最高累计利润者胜</p>
+        <p>{playerCount}位玩家轮流选牌 · 5回合 · 情报真假混杂 · 最高累计利润者胜</p>
       </div>
     </div>
   )

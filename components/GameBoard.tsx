@@ -15,14 +15,16 @@ import { getSignalForRound } from '@/engine/events'
 import SpeakBtn from './SpeakBtn'
 import CoachPanel from './CoachPanel'
 
-const PLAYER_COLORS: Record<string, {
-  text: string; border: string; bg: string; ring: string; dot: string
-}> = {
-  A: { text: 'text-amber-400',   border: 'border-amber-700',   bg: 'bg-amber-950/30',   ring: 'ring-amber-500/40',   dot: 'bg-amber-400' },
-  B: { text: 'text-sky-400',     border: 'border-sky-700',     bg: 'bg-sky-950/30',     ring: 'ring-sky-500/40',     dot: 'bg-sky-400' },
-  C: { text: 'text-emerald-400', border: 'border-emerald-700', bg: 'bg-emerald-950/30', ring: 'ring-emerald-500/40', dot: 'bg-emerald-400' },
-  D: { text: 'text-purple-400',  border: 'border-purple-700',  bg: 'bg-purple-950/30',  ring: 'ring-purple-500/40',  dot: 'bg-purple-400' },
-}
+import { PLAYER_COLORS as PC_ALL } from '@/lib/playerColors'
+const PLAYER_COLORS: Record<string, { text: string; border: string; bg: string; ring: string; dot: string }> = Object.fromEntries(
+  Object.entries(PC_ALL).map(([id, c]) => [id, {
+    text: c.text,
+    border: c.border,
+    bg: c.bg,
+    ring: c.border.replace('border-', 'ring-').replace('500', '500/40'),
+    dot: c.dot,
+  }])
+)
 
 export default function GameBoard() {
   // 使用独立 selector 避免全量订阅导致的无限重渲染
@@ -66,8 +68,9 @@ export default function GameBoard() {
   const isRoundResult = phase === 'ROUND_RESULT'
   const isGameOver = phase === 'GAME_OVER'
 
-  const allSubmitted = (['A', 'B', 'C', 'D'] as PlayerId[]).every(id => pendingInputs[id].action !== null)
-  const submittedCount = (['A', 'B', 'C', 'D'] as PlayerId[]).filter(id => pendingInputs[id].action !== null).length
+  const playerIds = players.map(p => p.id)
+  const allSubmitted = playerIds.every(id => pendingInputs[id]?.action !== null)
+  const submittedCount = playerIds.filter(id => pendingInputs[id]?.action !== null).length
 
   const currentNarration = roundNarrations[roundNarrations.length - 1] ?? ''
   const rankingOrder = getFinalRanking(players)
@@ -227,9 +230,9 @@ export default function GameBoard() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-3">
+              <div className={`grid gap-3 ${players.length <= 4 ? 'grid-cols-4' : players.length <= 6 ? 'grid-cols-3' : 'grid-cols-4'}`}>
                 {players.map(player => {
-                  const isLocked = pendingInputs[player.id].action !== null
+                  const isLocked = pendingInputs[player.id]?.action !== null
                   const c = PLAYER_COLORS[player.id]
                   return (
                     <button

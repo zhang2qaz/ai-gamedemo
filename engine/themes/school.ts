@@ -51,6 +51,10 @@ const COMPANIES: CompanyProfile[] = [
   { id: 'B', name: '启航实验', slogan: '大胆创新，敢为人先', style: '创新进取派', colorClass: 'sky' },
   { id: 'C', name: '博雅学府', slogan: '博学雅正，知行合一', style: '学术深耕派', colorClass: 'emerald' },
   { id: 'D', name: '明德书院', slogan: '厚德载物，宁静致远', style: '传统稳健派', colorClass: 'purple' },
+  { id: 'E', name: '红枫附中', slogan: '激情教育，点燃梦想', style: '素质教育派', colorClass: 'rose' },
+  { id: 'F', name: '蓝湾国际', slogan: '国际视野，本土根基', style: '国际教育派', colorClass: 'cyan' },
+  { id: 'G', name: '翠园实验', slogan: '科学育人，自然成长', style: '科学教育派', colorClass: 'lime' },
+  { id: 'H', name: '朝晖学堂', slogan: '晨光熹微，学无止境', style: '勤学苦练派', colorClass: 'orange' },
 ]
 
 // ── 情报生成器 ──
@@ -399,5 +403,9 @@ export const SCHOOL_THEME: ThemeConfig = {
     B: '启航实验',
     C: '博雅学府',
     D: '明德书院',
+    E: '红枫附中',
+    F: '蓝湾国际',
+    G: '翠园实验',
+    H: '朝晖学堂',
   },
 }
