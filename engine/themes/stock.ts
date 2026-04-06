@@ -156,6 +156,20 @@ export const STOCK_THEME: ThemeConfig = {
     H: '旭日投资',
   },
 
+  // 股市：高波动 · 动量至上 · ATK更猛但疲劳更重 · 份额变动剧烈
+  mechanicsDescription: '📈 高波动模式 · 动量效应翻倍，激进策略回报更高但疲劳更重',
+  configOverrides: {
+    atkBaseBonus: 14.0,            // 做空/砸盘威力极大
+    atkFatiguePenaltyFactor: 2.5,  // 但连续做空惩罚翻倍
+    momentumGainFromMkt: 2.0,      // 造势=制造泡沫，动量暴增
+    momentumCap: 5.0,              // 泡沫天花板更高
+    momentumDecayOnHold: 3.0,      // 观望=撤资，动量崩盘
+    inertiaOldWeight: 0.40,        // 惯性低→份额波动大
+    inertiaInstantWeight: 0.45,    // 即时竞争力权重高
+    inertiaMomentumWeight: 0.15,   // 动量影响翻倍
+    roundStakesMultiplier: [1.0, 0.4, 0.7, 1.4, 2.0, 3.0] as readonly number[],
+  },
+
   generateIntel: (): RoundIntel[] => {
     function pick<T>(arr: T[]): T {
       return arr[Math.floor(Math.random() * arr.length)]

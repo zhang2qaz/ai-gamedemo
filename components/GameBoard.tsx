@@ -14,6 +14,9 @@ import { getFinalRanking } from '@/engine/resolveGame'
 import { getSignalForRound } from '@/engine/events'
 import SpeakBtn from './SpeakBtn'
 import CoachPanel from './CoachPanel'
+import IntelTradePhase from './IntelTradePhase'
+import { sfxSelect, sfxLock, sfxReveal, sfxWildCard, sfxTick, sfxTimeout, sfxVictory, toggleMute, isMuted } from '@/lib/sounds'
+import WhatIfAnalysis from './WhatIfAnalysis'
 
 import { PLAYER_COLORS as PC_ALL } from '@/lib/playerColors'
 const PLAYER_COLORS: Record<string, { text: string; border: string; bg: string; ring: string; dot: string }> = Object.fromEntries(
@@ -40,6 +43,9 @@ export default function GameBoard() {
   const showAuditLog = useGameStore(s => s.showAuditLog)
   const generatedIntel = useGameStore(s => s.generatedIntel)
   const intelTruth = useGameStore(s => s.intelTruth)
+  const prevRoundPlayers = useGameStore(s => s.prevRoundPlayers)
+  const prevRoundGlobal = useGameStore(s => s.prevRoundGlobal)
+  const wildCards = useGameStore(s => s.wildCards)
   const selectTheme = useGameStore(s => s.selectTheme)
   const setAction = useGameStore(s => s.setAction)
   const clearAction = useGameStore(s => s.clearAction)
@@ -49,14 +55,21 @@ export default function GameBoard() {
   const resetGame = useGameStore(s => s.resetGame)
   const backToThemeSelect = useGameStore(s => s.backToThemeSelect)
   const toggleAuditLog = useGameStore(s => s.toggleAuditLog)
+  const toggleWildCard = useGameStore(s => s.toggleWildCard)
   const ensureIntel = useGameStore(s => s.ensureIntel)
 
   // 客户端首次渲染时生成情报（空依赖，只执行一次）
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { ensureIntel() }, [])
 
-  // 当前正在输入的玩家（全屏遮罩）
+  // 当前��在输入的玩��（全屏遮罩）
   const [activeInput, setActiveInput] = useState<PlayerId | null>(null)
+  const [soundMuted, setSoundMuted] = useState(false)
+
+  // Play victory sound on game over
+  useEffect(() => {
+    if (phase === 'GAME_OVER') sfxVictory()
+  }, [phase])
 
   // ── 主题选择页 ──
   if (phase === 'THEME_SELECT') {
@@ -64,6 +77,7 @@ export default function GameBoard() {
   }
 
   const isFinalRound = global.roundNumber === global.maxRounds
+  const isIntelPhase = phase === 'INTEL_PHASE'
   const isSubmitting = phase === 'SUBMITTING'
   const isRoundResult = phase === 'ROUND_RESULT'
   const isGameOver = phase === 'GAME_OVER'
@@ -117,16 +131,30 @@ export default function GameBoard() {
             })}
           </div>
 
-          {/* 状态文字 */}
-          <div className="text-sm whitespace-nowrap shrink-0">
-            {isSubmitting && <span className="text-amber-400 font-bold">R{global.roundNumber} · 选牌</span>}
-            {isRoundResult && <span className="text-green-400 font-bold">R{global.roundNumber - 1} · 结算完毕</span>}
-            {isGameOver && <span className="text-yellow-400 font-bold">⚑ 终局</span>}
-            {isFinalRound && isSubmitting && <span className="ml-1 text-purple-400 font-bold">⚡终盘</span>}
+          {/* 状态文字 + 赌注倍数 */}
+          <div className="text-sm whitespace-nowrap shrink-0 flex items-center gap-2">
+            <span>
+              {isIntelPhase && <span className="text-cyan-400 font-bold">R{global.roundNumber} · 情报交易</span>}
+              {isSubmitting && <span className="text-amber-400 font-bold">R{global.roundNumber} · 选牌</span>}
+              {isRoundResult && <span className="text-green-400 font-bold">R{global.roundNumber - 1} · 结算完毕</span>}
+              {isGameOver && <span className="text-yellow-400 font-bold">⚑ 终局</span>}
+              {isFinalRound && (isSubmitting || isIntelPhase) && <span className="ml-1 text-purple-400 font-bold">⚡终盘</span>}
+            </span>
+            {(isSubmitting || isIntelPhase) && (() => {
+              const multipliers = [1, 0.6, 0.8, 1.2, 1.6, 2.5]
+              const m = multipliers[global.roundNumber] ?? 1
+              const color = m >= 2 ? 'text-red-400' : m >= 1.5 ? 'text-orange-400' : m >= 1 ? 'text-amber-400' : 'text-stone-500'
+              const label = m >= 2 ? '🔥' : m >= 1.5 ? '⬆' : m < 1 ? '⬇' : ''
+              return (
+                <span className={`text-xs font-mono font-bold ${color} bg-stone-800/80 px-1.5 py-0.5 rounded`}>
+                  {label}×{m}
+                </span>
+              )
+            })()}
           </div>
 
           {/* 市场参数 */}
-          {isSubmitting && (() => {
+          {(isSubmitting || isIntelPhase) && (() => {
             const ps = global.priceSensitivity
             const qw = global.qualityWeight
             const promoStars = ps >= 0.7 ? '★★★' : ps >= 0.5 ? '★★☆' : '★☆☆'
@@ -146,6 +174,13 @@ export default function GameBoard() {
 
           {/* 工具按钮 */}
           <div className="ml-auto flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => { const m = toggleMute(); setSoundMuted(m) }}
+              className="px-2 py-1.5 text-xs bg-stone-900 hover:bg-stone-800 text-stone-500 hover:text-stone-300 rounded-lg border border-stone-800 transition-all"
+              title={soundMuted ? '开启音效' : '静音'}
+            >
+              {soundMuted ? '🔇' : '����'}
+            </button>
             {auditLogs.length > 0 && (
               <button onClick={toggleAuditLog} className="px-3 py-1.5 text-xs bg-stone-900 hover:bg-stone-800 text-stone-500 hover:text-stone-300 rounded-lg border border-stone-800 transition-all">
                 📋 审计
@@ -184,9 +219,20 @@ export default function GameBoard() {
               />
             )}
             <RoundResultPanel log={currentRoundResult} players={players} narration={currentNarration} onNext={nextRound} isGameOver={false} />
+            {prevRoundPlayers.length > 0 && prevRoundGlobal && (
+              <WhatIfAnalysis log={currentRoundResult} prevPlayers={prevRoundPlayers} prevGlobal={prevRoundGlobal} />
+            )}
           </>
           )
         })()}
+
+        {/* 情报交易阶段 */}
+        {isIntelPhase && (
+          <>
+            <ShareBar players={players} />
+            <IntelTradePhase />
+          </>
+        )}
 
         {/* 提交阶段 */}
         {isSubmitting && (() => {
@@ -261,14 +307,14 @@ export default function GameBoard() {
 
               {allSubmitted ? (
                 <button
-                  onClick={submitRound}
+                  onClick={() => { sfxReveal(); submitRound() }}
                   className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-xl text-base uppercase tracking-wider transition-all"
                 >
                   ⚔ 同步亮牌
                 </button>
               ) : (
                 <div className="text-center text-stone-600 text-xs">
-                  {submittedCount}/4 已锁定 · 等待所有玩家完成选择
+                  {submittedCount}/{players.length} 已锁定 · 等待所有玩家完成选择
                 </div>
               )}
             </div>
@@ -286,7 +332,12 @@ export default function GameBoard() {
             <div className={`text-center px-6 py-3 rounded-xl border ${c.bg} ${c.border} w-full max-w-sm`}>
               <div className={`font-black text-xl ${c.text}`}>{player.name}</div>
               <div className="text-stone-400 text-sm mt-1">请选择本回合动作</div>
-              <div className="text-stone-600 text-xs mt-0.5">其他玩家请背对屏幕</div>
+              <SelectionTimer
+                isActive={pendingInputs[activeInput].action === null}
+                onTimeout={() => {
+                  setAction(activeInput, 'HOLD')
+                }}
+              />
             </div>
 
             <div className="w-full max-w-sm">
@@ -299,11 +350,40 @@ export default function GameBoard() {
                 isSubmitting={isSubmitting}
                 qualityWeight={global.qualityWeight}
                 priceSensitivity={global.priceSensitivity}
-                onSelectAction={(action: BaseAction) => setAction(activeInput, action)}
-                onSelectFinalShift={(shift: FinalShift) => setFinalShift(activeInput, shift)}
+                onSelectAction={(action: BaseAction) => { sfxSelect(); setAction(activeInput, action) }}
+                onSelectFinalShift={(shift: FinalShift) => { sfxSelect(); setFinalShift(activeInput, shift) }}
                 onClearAction={() => clearAction(activeInput)}
               />
             </div>
+
+            {/* 暗牌 */}
+            {wildCards[activeInput] && !wildCards[activeInput].used && (
+              <div className="w-full max-w-sm">
+                <button
+                  onClick={() => { sfxWildCard(); toggleWildCard(activeInput) }}
+                  className={`w-full rounded-xl border p-3 text-center transition-all cursor-pointer ${
+                    pendingInputs[activeInput].useWildCard
+                      ? 'bg-purple-950/50 border-purple-500 ring-2 ring-purple-400/30'
+                      : 'bg-stone-900/60 border-stone-700/50 hover:border-purple-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-xl">{wildCards[activeInput].emoji}</span>
+                    <span className={`font-bold text-sm ${pendingInputs[activeInput].useWildCard ? 'text-purple-300' : 'text-stone-400'}`}>
+                      暗牌：{wildCards[activeInput].name}
+                    </span>
+                    {pendingInputs[activeInput].useWildCard && <span className="text-purple-400 text-xs">✓ 已激活</span>}
+                  </div>
+                  <div className="text-xs text-stone-500 mt-1">{wildCards[activeInput].description}</div>
+                  <div className="text-xs text-stone-700 mt-0.5">
+                    {pendingInputs[activeInput].useWildCard ? '再次点击取消' : '点击本回合使用（一局仅一次）'}
+                  </div>
+                </button>
+              </div>
+            )}
+            {wildCards[activeInput]?.used && (
+              <div className="text-stone-700 text-xs">🃏 暗牌已使用</div>
+            )}
 
             {pendingInputs[activeInput].action === null && (
               <button
@@ -339,6 +419,7 @@ function ActiveInputHandler({
 }) {
   useEffect(() => {
     if (activeInput && pendingInputs[activeInput].action !== null) {
+      sfxLock()
       const t = setTimeout(() => setActiveInput(null), 800)
       return () => clearTimeout(t)
     }
@@ -349,4 +430,53 @@ function ActiveInputHandler({
   }, [roundNumber, setActiveInput])
 
   return null
+}
+
+const SELECTION_TIME_LIMIT = 15
+
+function SelectionTimer({
+  isActive,
+  onTimeout,
+}: {
+  isActive: boolean
+  onTimeout: () => void
+}) {
+  const [timeLeft, setTimeLeft] = useState(SELECTION_TIME_LIMIT)
+
+  useEffect(() => {
+    if (!isActive) return
+    setTimeLeft(SELECTION_TIME_LIMIT)
+  }, [isActive])
+
+  useEffect(() => {
+    if (!isActive) return
+    if (timeLeft <= 0) {
+      sfxTimeout()
+      onTimeout()
+      return
+    }
+    if (timeLeft <= 5) sfxTick()
+    const timer = setInterval(() => setTimeLeft(t => t - 1), 1000)
+    return () => clearInterval(timer)
+  }, [isActive, timeLeft, onTimeout])
+
+  if (!isActive) return null
+
+  const pct = (timeLeft / SELECTION_TIME_LIMIT) * 100
+  const color = timeLeft <= 5 ? 'bg-red-500' : timeLeft <= 10 ? 'bg-amber-500' : 'bg-green-500'
+  const textColor = timeLeft <= 5 ? 'text-red-400' : timeLeft <= 10 ? 'text-amber-400' : 'text-stone-500'
+
+  return (
+    <div className="mt-2 space-y-1">
+      <div className="w-full h-1.5 bg-stone-800 rounded-full overflow-hidden">
+        <div
+          className={`h-full ${color} rounded-full transition-all duration-1000 ease-linear`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className={`text-xs font-mono ${textColor}`}>
+        {timeLeft <= 5 ? `⚠ ${timeLeft}秒后自动选择精细运营` : `${timeLeft}秒内完成选择`}
+      </div>
+    </div>
+  )
 }

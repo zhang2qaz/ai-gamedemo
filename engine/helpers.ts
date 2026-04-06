@@ -5,6 +5,8 @@
 import type { PlayerState, BaseAction, FinalShift } from './types'
 import { CONFIG } from './constants'
 
+type CfgLike = typeof CONFIG
+
 /**
  * 归一化：保证所有玩家 marketShare 之和严格为 1
  */
@@ -23,17 +25,17 @@ export function normalizeShares(shares: Record<string, number>): Record<string, 
  * holdPenalty = holdPressurePenalty * aggressionPressure
  * 若使用 DEFENSIVE_LOCK，惩罚减半
  */
-export function calcHoldPenalty(aggressionPressure: number, defensiveLock: boolean): number {
-  const raw = CONFIG.holdPressurePenalty * aggressionPressure
+export function calcHoldPenalty(aggressionPressure: number, defensiveLock: boolean, cfg: CfgLike = CONFIG): number {
+  const raw = cfg.holdPressurePenalty * aggressionPressure
   return defensiveLock ? raw * 0.5 : raw
 }
 
 /**
  * 计算品质基础加成
- * qualityBonus = (qualityScore - 70) * qualityWeight * 0.5
+ * qualityBonus = (qualityScore - 70) * qualityWeight * 0.8
  */
 export function calcQualityBonus(qualityScore: number, qualityWeight: number): number {
-  return (qualityScore - 70) * qualityWeight * 0.8  // 原 0.5 → 品质竞争力加成增强
+  return (qualityScore - 70) * qualityWeight * 0.8
 }
 
 /**
@@ -43,18 +45,19 @@ export function calcAtkBonus(
   priceSensitivity: number,
   atkCount: number,
   fatigueIndex: number,
-  lastAction: BaseAction | null
+  lastAction: BaseAction | null,
+  cfg: CfgLike = CONFIG
 ): number {
-  const raw = CONFIG.atkBaseBonus * (priceSensitivity / 0.6) / Math.max(1, atkCount)
-  const fatiguePenalty = lastAction === 'ATK' ? CONFIG.atkFatiguePenaltyFactor * fatigueIndex : 0
+  const raw = cfg.atkBaseBonus * (priceSensitivity / 0.6) / Math.max(1, atkCount)
+  const fatiguePenalty = lastAction === 'ATK' ? cfg.atkFatiguePenaltyFactor * fatigueIndex : 0
   return raw - fatiguePenalty
 }
 
 /**
  * 计算 MKT 动作加成
  */
-export function calcMktBonus(mktCount: number, brandHeat: number): number {
-  const mktActionBonus = CONFIG.mktBaseBonus / Math.max(1, mktCount)
+export function calcMktBonus(mktCount: number, brandHeat: number, cfg: CfgLike = CONFIG): number {
+  const mktActionBonus = cfg.mktBaseBonus / Math.max(1, mktCount)
   const brandBonus = Math.max(0, brandHeat - 50) * 0.1
   return mktActionBonus + brandBonus
 }
@@ -76,8 +79,8 @@ export function canDefensiveLock(action: BaseAction): boolean {
 /**
  * 检查 BRAND_MONETIZE 是否满足条件
  */
-export function canBrandMonetize(player: PlayerState): boolean {
-  return player.brandHeat >= CONFIG.brandHeatThresholdForMonetize
+export function canBrandMonetize(player: PlayerState, cfg: CfgLike = CONFIG): boolean {
+  return player.brandHeat >= cfg.brandHeatThresholdForMonetize
 }
 
 /**
@@ -86,30 +89,31 @@ export function canBrandMonetize(player: PlayerState): boolean {
 export function getMargin(
   action: BaseAction,
   finalShift: FinalShift,
-  consecutiveHoldCount: number
+  consecutiveHoldCount: number,
+  cfg: CfgLike = CONFIG
 ): number {
   if (action === 'ATK') {
-    return CONFIG.discountMargin
+    return cfg.discountMargin
   }
   // 连续 HOLD >= 2 且未使用 DEFENSIVE_LOCK
   if (action === 'HOLD' && consecutiveHoldCount >= 2 && finalShift !== 'DEFENSIVE_LOCK') {
-    return CONFIG.holdReducedMargin
+    return cfg.holdReducedMargin
   }
-  return CONFIG.normalMargin
+  return cfg.normalMargin
 }
 
 /**
  * 获取单价
  */
-export function getUnitPrice(action: BaseAction): number {
-  return action === 'ATK' ? CONFIG.discountPrice : CONFIG.normalPrice
+export function getUnitPrice(action: BaseAction, cfg: CfgLike = CONFIG): number {
+  return action === 'ATK' ? cfg.discountPrice : cfg.normalPrice
 }
 
 /**
  * 获取行动成本
  */
-export function getActionCost(action: BaseAction): number {
-  if (action === 'QUA') return CONFIG.qualityInvestCost
-  if (action === 'MKT') return CONFIG.marketingCost
+export function getActionCost(action: BaseAction, cfg: CfgLike = CONFIG): number {
+  if (action === 'QUA') return cfg.qualityInvestCost
+  if (action === 'MKT') return cfg.marketingCost
   return 0
 }

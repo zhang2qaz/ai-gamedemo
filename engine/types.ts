@@ -54,10 +54,37 @@ export type PlayerState = {
   consecutiveHoldCount: number
 }
 
+// ── 暗牌（Wild Card）系统 ──
+export type WildCardType =
+  | 'INSIDER'       // 市场内幕：+5 竞争力
+  | 'SHADOW_PRICE'  // 价格暗战：ATK 无视疲劳
+  | 'VIRAL_BUZZ'    // 口碑爆发：MKT 品牌热度 ×2
+  | 'TECH_LEAP'     // 技术飞跃：QUA 立即+5品质（不延迟）
+  | 'IRON_WALL'     // 铁壁防御：HOLD 无惩罚
+  | 'STEAL_SHARE'   // 偷天换日：偷取领先者 5% 份额
+
+export type WildCard = {
+  type: WildCardType
+  name: string
+  description: string
+  emoji: string
+  used: boolean
+}
+
+export const WILD_CARD_POOL: Omit<WildCard, 'used'>[] = [
+  { type: 'INSIDER', name: '市场内幕', description: '本回合竞争力 +5', emoji: '🕵️' },
+  { type: 'SHADOW_PRICE', name: '价格暗战', description: 'ATK 无视疲劳惩罚', emoji: '🗡️' },
+  { type: 'VIRAL_BUZZ', name: '口碑爆发', description: 'MKT 品牌热度增长翻倍', emoji: '📣' },
+  { type: 'TECH_LEAP', name: '技术飞跃', description: 'QUA 本回合立即生效+5品质', emoji: '🔬' },
+  { type: 'IRON_WALL', name: '铁壁防御', description: 'HOLD 无任何惩罚', emoji: '🛡️' },
+  { type: 'STEAL_SHARE', name: '偷天换日', description: '偷取领先者 5% 份额', emoji: '🃏' },
+]
+
 export type RoundInput = {
   playerId: PlayerId
   action: BaseAction
   finalShift: FinalShift
+  wildCard?: WildCardType | null
 }
 
 // 每回合每玩家中间计算量
@@ -118,6 +145,7 @@ export type RoundAuditLog = {
     priceSensitivity: number
     qualityWeight: number
     eventApplied: string | null
+    stakesMultiplier: number
   }
   players: PlayerRoundCalc[]
 }

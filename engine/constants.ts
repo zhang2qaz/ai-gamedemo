@@ -44,20 +44,24 @@ export const CONFIG = {
   qualityBurstPerCharge: 2.0,
 
   // 终盘转向
-  finalPushBonus: 4.0,
-  finalPushProfitMultiplier: 0.8,
+  finalPushBonus: 5.0,
+  finalPushProfitMultiplier: 0.92,
 
-  // Brand Monetize（故意设弱）
-  brandMonetizeRevenueBonus: 0.03,
+  // Brand Monetize
+  brandMonetizeRevenueBonus: 0.10,
 
   // Brand Heat
   brandHeatGainFromMkt: 20,
   brandHeatDecayOther: 5,
   brandHeatCap: 80,          // 新增 → 防止品牌热度无限滚雪球
-  brandHeatThresholdForMonetize: 70,
+  brandHeatThresholdForMonetize: 50,
 
   // 最低竞争力下限
   minCompetitiveness: 6.0,
+
+  // 动态赌注：每轮利润倍数（前期试水，后期高赌注）
+  roundStakesMultiplier: [1.0, 0.6, 0.8, 1.2, 1.6, 2.5] as readonly number[],
+  // index 0 = unused, 1-5 = 各轮倍数
 }
 
 // 默认名称池（最多 8 人）

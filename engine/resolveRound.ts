@@ -20,6 +20,7 @@ import type {
   PlayerRoundCalc,
   PlayerId,
   BaseAction,
+  WildCardType,
 } from './types'
 import { CONFIG } from './constants'
 import { applyEvent } from './events'
@@ -51,8 +52,11 @@ export function resolveRound(
   global: GlobalState,
   players: PlayerState[],
   inputs: RoundInput[],
-  roundIntelCards?: Array<{ impliedAction: BaseAction; isTrue: boolean }>
+  roundIntelCards?: Array<{ impliedAction: BaseAction; isTrue: boolean }>,
+  configOverrides?: Partial<typeof CONFIG>
 ): ResolveRoundResult {
+  // Merge base CONFIG with theme-specific overrides
+  const C = configOverrides ? { ...CONFIG, ...configOverrides } : CONFIG
   const roundNumber = global.roundNumber
   const isFinalRound = roundNumber === global.maxRounds
 
@@ -93,6 +97,7 @@ export function resolveRound(
   const calcList: PlayerRoundCalc[] = playersAfterDelay.map(player => {
     const input = inputMap.get(player.id)!
     const { action, finalShift } = input
+    const wildCard = input.wildCard ?? null
 
     // 快照
     const qualityScoreBefore = player.qualityScore
@@ -116,19 +121,24 @@ export function resolveRound(
 
     switch (action) {
       case 'ATK':
-        actionBonus = calcAtkBonus(g.priceSensitivity, atkCount, player.fatigueIndex, player.lastAction)
+        // SHADOW_PRICE 暗牌：忽略疲劳
+        if (wildCard === 'SHADOW_PRICE') {
+          actionBonus = calcAtkBonus(g.priceSensitivity, atkCount, 0, null, C)
+        } else {
+          actionBonus = calcAtkBonus(g.priceSensitivity, atkCount, player.fatigueIndex, player.lastAction, C)
+        }
         break
       case 'MKT':
-        actionBonus = calcMktBonus(mktCount, player.brandHeat)
+        actionBonus = calcMktBonus(mktCount, player.brandHeat, C)
         break
       case 'QUA':
         if (isFinalRound) {
           // 终盘新品爆发：立即释放所有积累的新品储备
-          actionBonus = CONFIG.qualityBurstBase + CONFIG.qualityBurstPerCharge * player.qualityCharge
+          actionBonus = C.qualityBurstBase + C.qualityBurstPerCharge * player.qualityCharge
           tempQualityCharge = 0
         } else {
           // 普通回合：品质信号立即给+3竞争力（研发动态对外可见）
-          actionBonus = CONFIG.qualitySignalBonus
+          actionBonus = C.qualitySignalBonus
         }
         break
       case 'HOLD':
@@ -140,11 +150,11 @@ export function resolveRound(
     if (isFinalRound) {
       switch (finalShift) {
         case 'FINAL_PUSH':
-          finalShiftBonus = CONFIG.finalPushBonus
+          finalShiftBonus = C.finalPushBonus
           break
         case 'QUALITY_CONVERT':
           if (canQualityConvert(player)) {
-            finalShiftBonus = CONFIG.qualityBurstBase + CONFIG.qualityBurstPerCharge * player.qualityCharge
+            finalShiftBonus = C.qualityBurstBase + C.qualityBurstPerCharge * player.qualityCharge
             tempMarketMomentum += player.qualityCharge
             tempQualityCharge = 0
           }
@@ -161,10 +171,10 @@ export function resolveRound(
       }
     }
 
-    // HOLD 惩罚
-    if (action === 'HOLD') {
+    // HOLD 惩罚（IRON_WALL 暗牌免疫）
+    if (action === 'HOLD' && wildCard !== 'IRON_WALL') {
       const defensiveLock = isFinalRound && finalShift === 'DEFENSIVE_LOCK'
-      holdPenalty = calcHoldPenalty(aggressionPressure, defensiveLock)
+      holdPenalty = calcHoldPenalty(aggressionPressure, defensiveLock, C)
     }
 
     // 情报加成
@@ -177,10 +187,14 @@ export function resolveRound(
       }
     }
 
+    // 暗牌竞争力加成
+    let wildCardBonus = 0
+    if (wildCard === 'INSIDER') wildCardBonus = 5
+
     // 最终竞争力
     const competitiveness = Math.max(
-      CONFIG.minCompetitiveness,
-      CONFIG.baseCompetitiveness + actionBonus + qualityBonus + finalShiftBonus + intelBonus - holdPenalty
+      C.minCompetitiveness,
+      C.baseCompetitiveness + actionBonus + qualityBonus + finalShiftBonus + intelBonus + wildCardBonus - holdPenalty
     )
 
     return {
@@ -248,9 +262,9 @@ export function resolveRound(
       : 0
 
     c.momentumShare = momentumShare
-    const raw = CONFIG.inertiaOldWeight * c.oldShare
-      + CONFIG.inertiaInstantWeight * c.instantShare
-      + CONFIG.inertiaMomentumWeight * momentumShare
+    const raw = C.inertiaOldWeight * c.oldShare
+      + C.inertiaInstantWeight * c.instantShare
+      + C.inertiaMomentumWeight * momentumShare
     c.newShare = raw
   })
 
@@ -262,29 +276,31 @@ export function resolveRound(
   })
 
   // ─────────────────────────────────────────────
-  // STEP 7: 计算利润
+  // STEP 7: 计算利润（含动态赌注倍数）
   // ─────────────────────────────────────────────
+  const stakesMultiplier = C.roundStakesMultiplier[roundNumber] ?? 1.0
+
   calcList.forEach((c, idx) => {
     const player = playersAfterDelay[idx]
     const { action, finalShift } = c
 
-    const unitPrice = getUnitPrice(action)
-    const margin = getMargin(action, isFinalRound ? finalShift : 'NONE', player.consecutiveHoldCount)
-    const revenue = g.totalCustomers * c.newShare * unitPrice
+    const unitPrice = getUnitPrice(action, C)
+    const margin = getMargin(action, isFinalRound ? finalShift : 'NONE', player.consecutiveHoldCount, C)
+    const revenue = g.totalCustomers * c.newShare * unitPrice * stakesMultiplier
     let grossProfit = revenue * margin
 
     // FINAL_PUSH 利润惩罚
     if (isFinalRound && finalShift === 'FINAL_PUSH') {
-      grossProfit *= CONFIG.finalPushProfitMultiplier
+      grossProfit *= C.finalPushProfitMultiplier
     }
 
     // BRAND_MONETIZE 加成（需满足 brandHeat 条件）
     let revenueBonus = 0
-    if (isFinalRound && finalShift === 'BRAND_MONETIZE' && canBrandMonetize(player)) {
-      revenueBonus = revenue * CONFIG.brandMonetizeRevenueBonus
+    if (isFinalRound && finalShift === 'BRAND_MONETIZE' && canBrandMonetize(player, C)) {
+      revenueBonus = revenue * C.brandMonetizeRevenueBonus
     }
 
-    const actionCost = getActionCost(action)
+    const actionCost = getActionCost(action, C)
     const netProfit = grossProfit + revenueBonus - actionCost
 
     c.unitPrice = unitPrice
@@ -304,32 +320,34 @@ export function resolveRound(
   const newPlayers: PlayerState[] = playersAfterDelay.map((player, idx) => {
     const c = calcList[idx]
     const { action, finalShift } = c
+    const wildCard = inputMap.get(player.id)?.wildCard ?? null
 
     // brandHeat（设上限防止无限累积）
+    const brandHeatGain = wildCard === 'VIRAL_BUZZ' ? C.brandHeatGainFromMkt * 2 : C.brandHeatGainFromMkt
     let brandHeat = action === 'MKT'
-      ? Math.min(CONFIG.brandHeatCap, player.brandHeat + CONFIG.brandHeatGainFromMkt)
-      : Math.max(0, player.brandHeat - CONFIG.brandHeatDecayOther)
+      ? Math.min(C.brandHeatCap, player.brandHeat + brandHeatGain)
+      : Math.max(0, player.brandHeat - C.brandHeatDecayOther)
 
     // marketMomentum
     let marketMomentum = player.marketMomentum
     if (action === 'MKT') {
-      marketMomentum = Math.min(CONFIG.momentumCap, marketMomentum + CONFIG.momentumGainFromMkt)
+      marketMomentum = Math.min(C.momentumCap, marketMomentum + C.momentumGainFromMkt)
     }
     if (action === 'HOLD') {
-      marketMomentum = Math.max(0, marketMomentum - CONFIG.momentumDecayOnHold)
+      marketMomentum = Math.max(0, marketMomentum - C.momentumDecayOnHold)
     }
     // 自然衰减
-    marketMomentum = Math.max(0, marketMomentum - CONFIG.momentumDecayEachRound)
+    marketMomentum = Math.max(0, marketMomentum - C.momentumDecayEachRound)
 
     // QUALITY_CONVERT：已在 STEP 4 处理 tempMarketMomentum，需同步
     if (isFinalRound && finalShift === 'QUALITY_CONVERT' && canQualityConvert(player)) {
-      marketMomentum = Math.max(0, marketMomentum - CONFIG.momentumDecayEachRound) // 已衰减一次，再加 qualityCharge
+      marketMomentum = Math.max(0, marketMomentum - C.momentumDecayEachRound) // 已衰减一次，再加 qualityCharge
       // 实际已在 calcList 中的 marketMomentumAfter 计算，这里重新算以保持一致
       // 注：STEP 4 中 tempMarketMomentum 加了 qualityCharge，但那只是竞争力计算用的临时值
       // 写回时也加上
-      marketMomentum = Math.max(0, player.marketMomentum + player.qualityCharge - CONFIG.momentumDecayEachRound)
+      marketMomentum = Math.max(0, player.marketMomentum + player.qualityCharge - C.momentumDecayEachRound)
       if (action === 'HOLD') {
-        marketMomentum = Math.max(0, marketMomentum - CONFIG.momentumDecayOnHold)
+        marketMomentum = Math.max(0, marketMomentum - C.momentumDecayOnHold)
       }
     }
 
@@ -357,10 +375,14 @@ export function resolveRound(
     c.consecutiveHoldAfter = consecutiveHoldCount
     c.qualityChargeAfter = qualityCharge
 
+    // TECH_LEAP 暗牌：QUA 本回合立即 +5 品质（而非等下回合）
+    const qualityScoreBonus = (wildCard === 'TECH_LEAP' && action === 'QUA') ? 5 : 0
+
     return {
       ...player,
       cash: c.cashAfter,
       marketShare: c.newShare,
+      qualityScore: player.qualityScore + qualityScoreBonus,
       cumulativeProfit: c.cumulativeProfitAfter,
       brandHeat,
       marketMomentum,
@@ -370,6 +392,22 @@ export function resolveRound(
       lastAction: action,
     }
   })
+
+  // STEAL_SHARE 暗牌：偷取领先者 5% 份额
+  for (const input of inputs) {
+    if (input.wildCard === 'STEAL_SHARE') {
+      const thief = newPlayers.find(p => p.id === input.playerId)
+      const leader = [...newPlayers].sort((a, b) => b.marketShare - a.marketShare)[0]
+      if (thief && leader && thief.id !== leader.id) {
+        const stolen = 0.05
+        leader.marketShare = Math.max(0.05, leader.marketShare - stolen)
+        thief.marketShare += stolen
+        // Re-normalize
+        const total = newPlayers.reduce((s, p) => s + p.marketShare, 0)
+        newPlayers.forEach(p => { p.marketShare = p.marketShare / total })
+      }
+    }
+  }
 
   // ─────────────────────────────────────────────
   // STEP 9: 生成审计日志
@@ -381,6 +419,7 @@ export function resolveRound(
       priceSensitivity: g.priceSensitivity,
       qualityWeight: g.qualityWeight,
       eventApplied,
+      stakesMultiplier,
     },
     players: calcList,
   }

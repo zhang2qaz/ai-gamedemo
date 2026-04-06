@@ -215,6 +215,9 @@ export const TEA_THEME: ThemeConfig = {
     H: '朝阳果饮',
   },
 
+  // 茶饮：基础平衡场，无特殊机制覆盖
+  mechanicsDescription: '☕ 标准模式 · 四种策略均衡，适合新手入门',
+
   generateIntel(): RoundIntel[] {
     function pick<T>(arr: T[]): T {
       return arr[Math.floor(Math.random() * arr.length)]

@@ -408,4 +408,19 @@ export const SCHOOL_THEME: ThemeConfig = {
     G: '翠园实验',
     H: '朝晖学堂',
   },
+
+  // 名校：声望为王 · 品牌效应极强 · 促销（抢生源）效果弱 · 口碑一旦建立难以撼动
+  mechanicsDescription: '🎓 声望模式 · 品牌热度效果翻倍，但促销抢生源威力减弱',
+  configOverrides: {
+    atkBaseBonus: 7.0,              // 降价抢生源效果弱（家长不完全看价格）
+    mktBaseBonus: 5.0,              // 口碑推广效果翻倍
+    brandHeatGainFromMkt: 30,       // 声望增长极快
+    brandHeatCap: 100,              // 声望天花板极高
+    brandHeatThresholdForMonetize: 40, // 更容易解锁品牌变现
+    brandMonetizeRevenueBonus: 0.15,// 声望变现回报更高
+    momentumGainFromMkt: 1.5,       // 口碑动量好
+    holdPressurePenalty: 1.5,       // 不作为=家长失望，惩罚重
+    qualityInvestCost: 100000,      // 教研投入更贵（师资培训）
+    qualitySignalBonus: 4.0,        // 但教学质量信号更强
+  },
 }

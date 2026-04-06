@@ -77,6 +77,13 @@ export default function ThemeSelect({ onSelect }: Props) {
                 {theme.description}
               </p>
 
+              {/* 主题特色机制 */}
+              {theme.mechanicsDescription && (
+                <div className="text-xs text-stone-300 bg-stone-800/60 border border-stone-700/40 rounded-lg px-3 py-1.5 mb-3">
+                  {theme.mechanicsDescription}
+                </div>
+              )}
+
               {/* 公司阵容 */}
               <div className="flex gap-2 flex-wrap">
                 {theme.companies.slice(0, playerCount).map(c => (
@@ -97,7 +104,7 @@ export default function ThemeSelect({ onSelect }: Props) {
 
       {/* 底部说明 */}
       <div className="mt-8 text-center text-stone-700 text-xs space-y-1">
-        <p>所有主题共享同一套平衡引擎 · 10000局蒙特卡洛验证</p>
+        <p>每个主题有独特机制规则 · 同一引擎不同参数</p>
         <p>{playerCount}位玩家轮流选牌 · 5回合 · 情报真假混杂 · 最高累计利润者胜</p>
       </div>
     </div>

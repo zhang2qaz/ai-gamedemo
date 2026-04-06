@@ -121,4 +121,42 @@ export interface ThemeConfig {
 
   // 初始玩家名称（覆盖 constants.ts 的默认名称）
   playerNames: Partial<Record<PlayerId, string>>
+
+  // 主题独有机制规则（覆盖 CONFIG 默认值）
+  configOverrides?: Partial<{
+    baseCompetitiveness: number
+    atkBaseBonus: number
+    mktBaseBonus: number
+    qualitySignalBonus: number
+    discountPrice: number
+    normalPrice: number
+    discountMargin: number
+    normalMargin: number
+    holdReducedMargin: number
+    qualityInvestCost: number
+    marketingCost: number
+    inertiaOldWeight: number
+    inertiaInstantWeight: number
+    inertiaMomentumWeight: number
+    holdPressurePenalty: number
+    atkFatiguePenaltyFactor: number
+    momentumGainFromMkt: number
+    momentumCap: number
+    momentumDecayEachRound: number
+    momentumDecayOnHold: number
+    qualityBurstBase: number
+    qualityBurstPerCharge: number
+    finalPushBonus: number
+    finalPushProfitMultiplier: number
+    brandMonetizeRevenueBonus: number
+    brandHeatGainFromMkt: number
+    brandHeatDecayOther: number
+    brandHeatCap: number
+    brandHeatThresholdForMonetize: number
+    minCompetitiveness: number
+    roundStakesMultiplier: readonly number[]
+  }>
+
+  // 主题特色机制描述（显示在UI上让玩家知道规则差异）
+  mechanicsDescription?: string
 }
