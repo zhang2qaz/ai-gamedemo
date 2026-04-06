@@ -25,16 +25,33 @@ const PLAYER_COLORS: Record<string, {
 }
 
 export default function GameBoard() {
-  const {
-    phase, theme, global, players, pendingInputs,
-    auditLogs, roundNarrations, gameNarration,
-    currentRoundResult, showAuditLog, generatedIntel, intelTruth,
-    selectTheme, setAction, clearAction, setFinalShift, submitRound,
-    nextRound, resetGame, backToThemeSelect, toggleAuditLog, ensureIntel,
-  } = useGameStore()
+  // 使用独立 selector 避免全量订阅导致的无限重渲染
+  const phase = useGameStore(s => s.phase)
+  const theme = useGameStore(s => s.theme)
+  const global = useGameStore(s => s.global)
+  const players = useGameStore(s => s.players)
+  const pendingInputs = useGameStore(s => s.pendingInputs)
+  const auditLogs = useGameStore(s => s.auditLogs)
+  const roundNarrations = useGameStore(s => s.roundNarrations)
+  const gameNarration = useGameStore(s => s.gameNarration)
+  const currentRoundResult = useGameStore(s => s.currentRoundResult)
+  const showAuditLog = useGameStore(s => s.showAuditLog)
+  const generatedIntel = useGameStore(s => s.generatedIntel)
+  const intelTruth = useGameStore(s => s.intelTruth)
+  const selectTheme = useGameStore(s => s.selectTheme)
+  const setAction = useGameStore(s => s.setAction)
+  const clearAction = useGameStore(s => s.clearAction)
+  const setFinalShift = useGameStore(s => s.setFinalShift)
+  const submitRound = useGameStore(s => s.submitRound)
+  const nextRound = useGameStore(s => s.nextRound)
+  const resetGame = useGameStore(s => s.resetGame)
+  const backToThemeSelect = useGameStore(s => s.backToThemeSelect)
+  const toggleAuditLog = useGameStore(s => s.toggleAuditLog)
+  const ensureIntel = useGameStore(s => s.ensureIntel)
 
-  // 客户端首次渲染时生成情报
-  useEffect(() => { ensureIntel() }, [ensureIntel])
+  // 客户端首次渲染时生成情报（空依赖，只执行一次）
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { ensureIntel() }, [])
 
   // 当前正在输入的玩家（全屏遮罩）
   const [activeInput, setActiveInput] = useState<PlayerId | null>(null)
