@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { ALL_THEMES } from '@/engine/themes'
+import TutorialOverlay from './TutorialOverlay'
 
 type Props = {
   onSelect: (themeId: string, playerCount: number) => void
@@ -21,6 +22,7 @@ export default function ThemeSelect({ onSelect }: Props) {
 
   return (
     <div className="min-h-screen bg-stone-950 text-white flex flex-col items-center justify-center px-4 py-12">
+      <TutorialOverlay />
       {/* 标题 */}
       <div className="text-center mb-10 space-y-3">
         <h1 className="text-amber-400 font-black text-4xl tracking-wider">弈 战</h1>
