@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import type { PlayerState, BaseAction, FinalShift } from '@/engine/types'
 import { formatMoney, formatPercent } from '@/lib/format'
 import { canQualityConvert, canBrandMonetize, calcAtkBonus, calcMktBonus, calcQualityBonus, getActionCost, getUnitPrice, getMargin } from '@/engine/helpers'
@@ -127,6 +127,14 @@ export default function PlayerCard({
   // ── 本地预选状态（确认前不写入 store） ──
   const [pendingAction, setPendingAction] = useState<BaseAction | null>(null)
   const [pendingShift, setPendingShift] = useState<FinalShift>('NONE')
+  const confirmRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to confirm button when action is pre-selected
+  useEffect(() => {
+    if (pendingAction && confirmRef.current) {
+      confirmRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [pendingAction])
 
   // Config overrides from theme
   const cfg = useMemo(() => theme?.configOverrides ? { ...CONFIG, ...theme.configOverrides } : CONFIG, [theme])
@@ -393,7 +401,7 @@ export default function PlayerCard({
             )}
 
             {pendingAction && (
-              <div className="pt-2 space-y-2 animate-fade-in-up">
+              <div ref={confirmRef} className="pt-2 space-y-2 animate-fade-in-up">
                 <button
                   onClick={handleConfirm}
                   className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-black rounded-xl text-sm uppercase tracking-wider transition-all active:scale-95"

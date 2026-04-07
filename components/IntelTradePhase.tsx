@@ -294,7 +294,7 @@ export default function IntelTradePhase() {
         const currentMark = revengeMarks[activePlayer]
 
         return (
-          <div className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-start overflow-y-auto py-6 px-4 gap-4">
+          <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-start overflow-y-auto py-6 px-4 gap-4">
             {/* Header */}
             <div className={`text-center px-6 py-3 rounded-xl border ${c.bg} ${c.border} w-full max-w-md`}>
               <div className={`font-black text-xl ${c.text}`}>{player.name}</div>

@@ -80,6 +80,11 @@ export default function GameBoard() {
     playerElapsedRef.current = {}
   }, [global.roundNumber])
 
+  // Scroll to top on phase change to prevent blank space at top
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [phase])
+
   // ── 主题选择页 ──
   if (phase === 'THEME_SELECT') {
     return <ThemeSelect onSelect={selectTheme} />
@@ -362,7 +367,7 @@ export default function GameBoard() {
         const player = players.find(p => p.id === activeInput)!
         const c = PLAYER_COLORS[activeInput]
         return (
-          <div className="fixed inset-0 z-50 bg-black/92 flex flex-col items-center justify-start overflow-y-auto py-6 px-4 gap-4">
+          <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-start overflow-y-auto py-6 px-4 gap-4">
             <div className={`text-center px-6 py-3 rounded-xl border ${c.bg} ${c.border} w-full max-w-sm`}>
               <div className={`font-black text-xl ${c.text}`}>{player.name}</div>
               <div className="text-stone-400 text-sm mt-1">请选择本回合动作</div>
@@ -526,7 +531,7 @@ function RoundChangeSummary({
   )
 }
 
-const SELECTION_TIME_LIMIT = 30
+const SELECTION_TIME_LIMIT = 45
 
 function SelectionTimer({
   isActive,
