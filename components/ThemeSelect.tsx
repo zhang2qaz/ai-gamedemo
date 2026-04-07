@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ALL_THEMES } from '@/engine/themes'
 import TutorialOverlay from './TutorialOverlay'
+import { getHistory, getAllAchievements, getCurrentSeason, getSeasonRecords, type GameHistoryData } from '@/lib/gameHistory'
 
 type Props = {
   onSelect: (themeId: string, playerCount: number) => void
@@ -19,6 +20,12 @@ const ACCENT_STYLES: Record<string, {
 
 export default function ThemeSelect({ onSelect }: Props) {
   const [playerCount, setPlayerCount] = useState(4)
+  const [showStats, setShowStats] = useState(false)
+  const [history, setHistory] = useState<GameHistoryData | null>(null)
+
+  useEffect(() => {
+    setHistory(getHistory())
+  }, [])
 
   return (
     <div className="min-h-screen bg-stone-950 text-white flex flex-col items-center justify-center px-4 py-12">
@@ -104,10 +111,123 @@ export default function ThemeSelect({ onSelect }: Props) {
         })}
       </div>
 
+      {/* P4: 战绩与成就 */}
+      {history && history.stats.totalGames > 0 && (
+        <div className="mt-8 w-full max-w-2xl">
+          <button
+            onClick={() => setShowStats(!showStats)}
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-stone-900/60 border border-stone-700/50 rounded-xl text-sm hover:bg-stone-800/60 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-amber-400 font-bold">📊 战绩中心</span>
+              <span className="text-stone-500 text-xs">{getCurrentSeason().name}</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-stone-500">
+              <span>{history.stats.totalGames} 场</span>
+              <span>·</span>
+              <span>{history.stats.wins} 胜</span>
+              <span>·</span>
+              <span>{history.stats.achievements.length} 成就</span>
+              <span className="text-stone-600">{showStats ? '▲' : '▼'}</span>
+            </div>
+          </button>
+
+          {showStats && (
+            <div className="mt-2 bg-stone-900/40 border border-stone-800/50 rounded-xl p-4 space-y-4 animate-fade-in-up">
+              {/* Season Stats */}
+              <div className="grid grid-cols-4 gap-3">
+                {[
+                  { label: '总场次', value: history.stats.totalGames, color: 'text-stone-300' },
+                  { label: '胜场', value: history.stats.wins, color: 'text-green-400' },
+                  { label: '最长连胜', value: history.stats.bestWinStreak, color: 'text-amber-400' },
+                  { label: '最高利润', value: `${(history.stats.bestProfit / 10000).toFixed(0)}万`, color: 'text-yellow-400' },
+                ].map(s => (
+                  <div key={s.label} className="text-center">
+                    <div className={`font-black text-xl font-mono ${s.color}`}>{s.value}</div>
+                    <div className="text-stone-600 text-xs">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Season Ranking */}
+              {(() => {
+                const seasonRecords = getSeasonRecords(history)
+                const seasonWins = seasonRecords.filter(r => r.playerResults[0]?.rank === 1).length
+                return seasonRecords.length > 0 ? (
+                  <div className="bg-stone-950/50 rounded-lg p-3">
+                    <div className="text-xs text-stone-500 font-bold mb-1">
+                      🏅 {getCurrentSeason().name}赛季：{seasonRecords.length} 场 / {seasonWins} 胜
+                    </div>
+                    <div className="h-2 bg-stone-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-amber-600 to-amber-400 rounded-full transition-all"
+                        style={{ width: `${seasonRecords.length > 0 ? (seasonWins / seasonRecords.length * 100) : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : null
+              })()}
+
+              {/* Achievements */}
+              <div>
+                <div className="text-xs text-stone-500 font-bold mb-2">🏆 成就收集 ({history.stats.achievements.length}/{getAllAchievements().length})</div>
+                <div className="grid grid-cols-4 gap-2">
+                  {getAllAchievements().map(ach => {
+                    const unlocked = history.stats.achievements.includes(ach.id)
+                    return (
+                      <div
+                        key={ach.id}
+                        className={`text-center p-2 rounded-lg border transition-all ${
+                          unlocked
+                            ? 'border-amber-700/50 bg-amber-950/20'
+                            : 'border-stone-800 bg-stone-950/30 opacity-40'
+                        }`}
+                        title={ach.desc}
+                      >
+                        <div className="text-lg">{unlocked ? ach.emoji : '🔒'}</div>
+                        <div className={`text-xs font-bold mt-0.5 ${unlocked ? 'text-stone-300' : 'text-stone-600'}`}>
+                          {ach.name}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Recent Games */}
+              {history.records.length > 0 && (
+                <div>
+                  <div className="text-xs text-stone-500 font-bold mb-2">📜 最近对局</div>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {history.records.slice(-5).reverse().map(r => {
+                      const isWin = r.playerResults[0]?.rank === 1
+                      const themeIcons: Record<string, string> = { tea: '☕', stock: '📈', factory: '🏭', school: '🎓' }
+                      return (
+                        <div key={r.id} className="flex items-center gap-2 text-xs text-stone-500">
+                          <span>{themeIcons[r.themeId] ?? '🎯'}</span>
+                          <span className="text-stone-400">{r.playerCount}人</span>
+                          <span className={isWin ? 'text-green-400 font-bold' : 'text-stone-500'}>
+                            {isWin ? '🏆 胜' : `#${r.playerResults[0]?.rank ?? '?'}`}
+                          </span>
+                          <span className="text-stone-600">{r.winner}</span>
+                          <span className="text-stone-700 ml-auto">
+                            {new Date(r.timestamp).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 底部说明 */}
       <div className="mt-8 text-center text-stone-700 text-xs space-y-1">
         <p>每个主题有独特机制规则 · 同一引擎不同参数</p>
-        <p>{playerCount}位玩家轮流选牌 · 5回合 · 情报真假混杂 · 最高累计利润者胜</p>
+        <p>{playerCount}位玩家轮流选牌 · 5回合 · 情报交易 · 最高累计利润者胜</p>
       </div>
     </div>
   )

@@ -54,14 +54,14 @@ export type PlayerState = {
   consecutiveHoldCount: number
 }
 
-// ── 暗牌（Wild Card）系统 ──
+// ── 暗牌（Wild Card）系统 ── P2 重设计：通用战术牌
 export type WildCardType =
-  | 'INSIDER'       // 市场内幕：+5 竞争力
-  | 'SHADOW_PRICE'  // 价格暗战：ATK 无视疲劳
-  | 'VIRAL_BUZZ'    // 口碑爆发：MKT 品牌热度 ×2
-  | 'TECH_LEAP'     // 技术飞跃：QUA 立即+5品质（不延迟）
-  | 'IRON_WALL'     // 铁壁防御：HOLD 无惩罚
-  | 'STEAL_SHARE'   // 偷天换日：偷取领先者 5% 份额
+  | 'DOUBLE_DOWN'    // 孤注一掷：本轮收入 ×1.3
+  | 'COST_CUT'       // 成本削减：本轮行动成本归零
+  | 'SHIELD'         // 市场护盾：本轮份额不会下降
+  | 'MOMENTUM_SURGE' // 动量涌潮：立即 +2 动量
+  | 'QUALITY_BOOST'  // 品质突破：立即 +5 品质
+  | 'SCOUT'          // 侦察先机：本轮竞争力 +4
 
 export type WildCard = {
   type: WildCardType
@@ -72,12 +72,12 @@ export type WildCard = {
 }
 
 export const WILD_CARD_POOL: Omit<WildCard, 'used'>[] = [
-  { type: 'INSIDER', name: '市场内幕', description: '本回合竞争力 +5', emoji: '🕵️' },
-  { type: 'SHADOW_PRICE', name: '价格暗战', description: 'ATK 无视疲劳惩罚', emoji: '🗡️' },
-  { type: 'VIRAL_BUZZ', name: '口碑爆发', description: 'MKT 品牌热度增长翻倍', emoji: '📣' },
-  { type: 'TECH_LEAP', name: '技术飞跃', description: 'QUA 本回合立即生效+5品质', emoji: '🔬' },
-  { type: 'IRON_WALL', name: '铁壁防御', description: 'HOLD 无任何惩罚', emoji: '🛡️' },
-  { type: 'STEAL_SHARE', name: '偷天换日', description: '偷取领先者 5% 份额', emoji: '🃏' },
+  { type: 'DOUBLE_DOWN', name: '孤注一掷', description: '本轮收入 ×1.3', emoji: '🎲' },
+  { type: 'COST_CUT', name: '成本削减', description: '本轮行动成本归零', emoji: '✂️' },
+  { type: 'SHIELD', name: '市场护盾', description: '本轮份额不会下降', emoji: '🛡️' },
+  { type: 'MOMENTUM_SURGE', name: '动量涌潮', description: '立即获得 +2 市场动量', emoji: '🌊' },
+  { type: 'QUALITY_BOOST', name: '品质突破', description: '立即 +5 品质分', emoji: '⚡' },
+  { type: 'SCOUT', name: '侦察先机', description: '本轮竞争力 +4', emoji: '🔭' },
 ]
 
 export type RoundInput = {

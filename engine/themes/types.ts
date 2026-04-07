@@ -139,7 +139,12 @@ export interface ThemeConfig {
     inertiaInstantWeight: number
     inertiaMomentumWeight: number
     holdPressurePenalty: number
+    holdMarginBoostPerRound: number
+    holdDefenseBarrier: number
+    atkCooldownFactor: number
+    atkSoloInflux: number
     atkFatiguePenaltyFactor: number
+    mktConsecutiveFatigue: number
     momentumGainFromMkt: number
     momentumCap: number
     momentumDecayEachRound: number

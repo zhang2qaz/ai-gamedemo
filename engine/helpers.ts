@@ -40,26 +40,33 @@ export function calcQualityBonus(qualityScore: number, qualityWeight: number): n
 
 /**
  * 计算 ATK 动作加成
+ * P0-1 重构：冷却机制替代疲劳惩罚
+ * - 独家促销(atkCount=1)不被稀释，获得完整加成
+ * - 连续ATK效率降至 atkCooldownFactor（非惩罚，而是减益）
  */
 export function calcAtkBonus(
   priceSensitivity: number,
   atkCount: number,
-  fatigueIndex: number,
+  _fatigueIndex: number,
   lastAction: BaseAction | null,
   cfg: CfgLike = CONFIG
 ): number {
   const raw = cfg.atkBaseBonus * (priceSensitivity / 0.6) / Math.max(1, atkCount)
-  const fatiguePenalty = lastAction === 'ATK' ? cfg.atkFatiguePenaltyFactor * fatigueIndex : 0
-  return raw - fatiguePenalty
+  // 冷却机制：连续ATK效率降低但不会变成负值
+  const cooldown = lastAction === 'ATK' ? (cfg as any).atkCooldownFactor ?? 0.55 : 1.0
+  return raw * cooldown
 }
 
 /**
  * 计算 MKT 动作加成
+ * P0-2 重构：连续MKT疲劳机制
  */
-export function calcMktBonus(mktCount: number, brandHeat: number, cfg: CfgLike = CONFIG): number {
+export function calcMktBonus(mktCount: number, brandHeat: number, cfg: CfgLike = CONFIG, lastAction?: BaseAction | null): number {
   const mktActionBonus = cfg.mktBaseBonus / Math.max(1, mktCount)
   const brandBonus = Math.max(0, brandHeat - 50) * 0.1
-  return mktActionBonus + brandBonus
+  // 连续MKT效率降低
+  const consecutiveFatigue = lastAction === 'MKT' ? ((cfg as any).mktConsecutiveFatigue ?? 0.6) : 1.0
+  return (mktActionBonus + brandBonus) * consecutiveFatigue
 }
 
 /**
@@ -85,6 +92,7 @@ export function canBrandMonetize(player: PlayerState, cfg: CfgLike = CONFIG): bo
 
 /**
  * 获取利润率
+ * P0-3 重构：HOLD不再有利润率惩罚，反而有累积加成
  */
 export function getMargin(
   action: BaseAction,
@@ -95,9 +103,10 @@ export function getMargin(
   if (action === 'ATK') {
     return cfg.discountMargin
   }
-  // 连续 HOLD >= 2 且未使用 DEFENSIVE_LOCK
-  if (action === 'HOLD' && consecutiveHoldCount >= 2 && finalShift !== 'DEFENSIVE_LOCK') {
-    return cfg.holdReducedMargin
+  // P0-3: HOLD是积极策略 — 连续HOLD给予利润率加成
+  if (action === 'HOLD') {
+    const holdBoost = ((cfg as any).holdMarginBoostPerRound ?? 0.02) * consecutiveHoldCount
+    return Math.min(0.50, cfg.normalMargin + holdBoost) // 上限50%
   }
   return cfg.normalMargin
 }

@@ -499,16 +499,19 @@ export const FACTORY_THEME: ThemeConfig = {
   },
 
   // 工厂：重资产 · 研发便宜但慢热 · HOLD稳健有优势 · 品牌难建但持久
-  mechanicsDescription: '🏭 重工业模式 · 研发成本低但回报慢，稳健运营惩罚减轻',
+  mechanicsDescription: '🏭 重工业模式 · 研发成本低但技术信号弱 · 稳健运营利润率加成高 · 惯性极大难翻盘',
   configOverrides: {
     qualityInvestCost: 50000,       // 工厂研发成本极低（设备摊销）
     qualitySignalBonus: 2.0,        // 但技术信号弱（B2B不像C端那么敏感）
     qualityBurstBase: 6.0,          // 最终量产爆发更强
     qualityBurstPerCharge: 3.0,     // 技术积累回报翻倍
-    holdPressurePenalty: 0.7,       // 稳健运营惩罚减轻（重工业惯性大）
+    holdPressurePenalty: 0,         // P0-3: HOLD无惩罚
+    holdMarginBoostPerRound: 0.03,  // 工厂稳健运营利润率加成更高
+    holdDefenseBarrier: 0.5,        // 工厂防御壁垒中等
     marketingCost: 120000,          // 品牌推广更贵（B2B获客成本高）
-    brandHeatGainFromMkt: 15,       // 品牌热度增长慢
+    brandHeatGainFromMkt: 10,       // 品牌热度增长更慢（P0-2削弱）
     brandHeatCap: 60,               // 品牌天花板低（B2B品牌效应弱）
+    mktConsecutiveFatigue: 0.5,     // B2B连续推广效率更差
     inertiaOldWeight: 0.65,         // 惯性极高→翻盘困难
     inertiaInstantWeight: 0.30,     // 即时竞争力权重低
     inertiaMomentumWeight: 0.05,    // 动量几乎无用

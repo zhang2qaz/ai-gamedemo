@@ -141,8 +141,9 @@ export default function GameBoard() {
               {isFinalRound && (isSubmitting || isIntelPhase) && <span className="ml-1 text-purple-400 font-bold">⚡终盘</span>}
             </span>
             {(isSubmitting || isIntelPhase) && (() => {
-              const multipliers = [1, 0.6, 0.8, 1.2, 1.6, 2.5]
-              const m = multipliers[global.roundNumber] ?? 1
+              const themeMultipliers = t?.configOverrides?.roundStakesMultiplier
+              const defaultMultipliers = [1, 0.8, 0.9, 1.0, 1.2, 1.5]
+              const m = (themeMultipliers ?? defaultMultipliers)[global.roundNumber] ?? 1
               const color = m >= 2 ? 'text-red-400' : m >= 1.5 ? 'text-orange-400' : m >= 1 ? 'text-amber-400' : 'text-stone-500'
               const label = m >= 2 ? '🔥' : m >= 1.5 ? '⬆' : m < 1 ? '⬇' : ''
               return (
@@ -230,6 +231,25 @@ export default function GameBoard() {
         {isIntelPhase && (
           <>
             <ShareBar players={players} />
+
+            {/* P3: 终盘入场横幅 */}
+            {isFinalRound && (
+              <div className="bg-gradient-to-r from-purple-950/60 via-purple-900/40 to-purple-950/60 border border-purple-700/50 rounded-xl p-5 text-center space-y-2 animate-fade-in-up">
+                <div className="text-3xl font-black text-purple-300 animate-pulse">⚡ 终 盘 决 战 ⚡</div>
+                <div className="text-purple-400/80 text-sm">
+                  最后一回合 · 赌注 ×{(t?.configOverrides?.roundStakesMultiplier ?? [1, 0.8, 0.9, 1.0, 1.2, 1.5])[5] ?? 1.5} · 品质储备可爆发 · 终盘转向开放
+                </div>
+                <div className="text-stone-500 text-xs">
+                  谨慎选择 — 这是翻盘的最后机会
+                </div>
+              </div>
+            )}
+
+            {/* P3: 回合变化摘要 */}
+            {global.roundNumber > 1 && !isFinalRound && (
+              <RoundChangeSummary players={players} prevPlayers={prevRoundPlayers} roundNumber={global.roundNumber} />
+            )}
+
             <IntelTradePhase />
           </>
         )}
@@ -430,6 +450,50 @@ function ActiveInputHandler({
   }, [roundNumber, setActiveInput])
 
   return null
+}
+
+// P3: 回合间变化摘要
+function RoundChangeSummary({
+  players,
+  prevPlayers,
+  roundNumber,
+}: {
+  players: import('@/engine/types').PlayerState[]
+  prevPlayers: import('@/engine/types').PlayerState[]
+  roundNumber: number
+}) {
+  if (prevPlayers.length === 0) return null
+
+  const leader = [...players].sort((a, b) => b.cumulativeProfit - a.cumulativeProfit)[0]
+  const prevLeader = [...prevPlayers].sort((a, b) => b.cumulativeProfit - a.cumulativeProfit)[0]
+  const leaderChanged = leader.id !== prevLeader.id
+
+  // Find biggest mover (share delta)
+  const movers = players.map(p => {
+    const prev = prevPlayers.find(pp => pp.id === p.id)
+    return { ...p, shareDelta: prev ? p.marketShare - prev.marketShare : 0 }
+  }).sort((a, b) => Math.abs(b.shareDelta) - Math.abs(a.shareDelta))
+  const bigMover = movers[0]
+
+  const c = PLAYER_COLORS[leader.id]
+
+  return (
+    <div className="bg-stone-900/40 border border-stone-700/40 rounded-xl px-4 py-2.5 flex items-center gap-3 text-xs animate-fade-in-up">
+      <span className="text-stone-600 font-bold shrink-0">R{roundNumber} 形势</span>
+      <span className="text-stone-700">|</span>
+      <span className="text-stone-400">
+        领先：<span className={`font-bold ${c?.text ?? ''}`}>{leader.name}</span>
+        {leaderChanged && <span className="text-amber-400 ml-1">NEW!</span>}
+      </span>
+      <span className="text-stone-700">|</span>
+      <span className="text-stone-400">
+        最大变动：<span className="font-bold text-stone-300">{bigMover.name}</span>
+        <span className={`ml-1 font-mono ${bigMover.shareDelta >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          {bigMover.shareDelta >= 0 ? '+' : ''}{(bigMover.shareDelta * 100).toFixed(1)}%
+        </span>
+      </span>
+    </div>
+  )
 }
 
 const SELECTION_TIME_LIMIT = 15

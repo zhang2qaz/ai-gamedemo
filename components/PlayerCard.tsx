@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import type { PlayerState, BaseAction, FinalShift } from '@/engine/types'
 import { formatMoney, formatPercent } from '@/lib/format'
-import { canQualityConvert, canBrandMonetize, calcAtkBonus, calcMktBonus, calcQualityBonus, getActionCost, getUnitPrice } from '@/engine/helpers'
+import { canQualityConvert, canBrandMonetize, calcAtkBonus, calcMktBonus, calcQualityBonus, getActionCost, getUnitPrice, getMargin } from '@/engine/helpers'
 import { CONFIG } from '@/engine/constants'
 import { useGameStore } from '@/store/gameStore'
 import SpeakBtn from './SpeakBtn'
@@ -67,13 +67,13 @@ function estimateImpact(
 
   switch (action) {
     case 'ATK':
-      // Assume 1 other ATK player
+      // Assume solo ATK (best case)
       actionBonus = calcAtkBonus(priceSensitivity, 1, player.fatigueIndex, player.lastAction, cfg)
-      riskLevel = player.fatigueIndex >= 2 ? 'high' : player.lastAction === 'ATK' ? 'mid' : 'low'
+      riskLevel = player.lastAction === 'ATK' ? 'mid' : 'low'
       break
     case 'MKT':
-      actionBonus = calcMktBonus(1, player.brandHeat, cfg)
-      riskLevel = 'mid'
+      actionBonus = calcMktBonus(1, player.brandHeat, cfg, player.lastAction)
+      riskLevel = player.lastAction === 'MKT' ? 'mid' : 'low'
       break
     case 'QUA':
       actionBonus = isFinalRound ? cfg.qualityBurstBase + cfg.qualityBurstPerCharge * player.qualityCharge : cfg.qualitySignalBonus
@@ -91,8 +91,8 @@ function estimateImpact(
   const estShare = comp / (comp + avgOther * 3)
   const shareDelta = estShare - player.marketShare
 
-  // Rough profit
-  const margin = action === 'ATK' ? cfg.discountMargin : cfg.normalMargin
+  // Rough profit — use getMargin for HOLD boost
+  const margin = getMargin(action, 'NONE', player.consecutiveHoldCount, cfg)
   const revenue = 100000 * estShare * price
   const profit = revenue * margin - cost
 

@@ -410,16 +410,20 @@ export const SCHOOL_THEME: ThemeConfig = {
   },
 
   // 名校：声望为王 · 品牌效应极强 · 促销（抢生源）效果弱 · 口碑一旦建立难以撼动
-  mechanicsDescription: '🎓 声望模式 · 品牌热度效果翻倍，但促销抢生源威力减弱',
+  mechanicsDescription: '🎓 声望模式 · 声望天花板极高 · 促销抢生源效果弱 · 品牌粘性强防御壁垒高',
   configOverrides: {
     atkBaseBonus: 7.0,              // 降价抢生源效果弱（家长不完全看价格）
+    atkSoloInflux: 1.15,            // 名校独家降价吸引力低
     mktBaseBonus: 5.0,              // 口碑推广效果翻倍
-    brandHeatGainFromMkt: 30,       // 声望增长极快
+    brandHeatGainFromMkt: 18,       // 声望增长较快（P0-2: 原30→18）
     brandHeatCap: 100,              // 声望天花板极高
     brandHeatThresholdForMonetize: 40, // 更容易解锁品牌变现
     brandMonetizeRevenueBonus: 0.15,// 声望变现回报更高
-    momentumGainFromMkt: 1.5,       // 口碑动量好
-    holdPressurePenalty: 1.5,       // 不作为=家长失望，惩罚重
+    momentumGainFromMkt: 1.0,       // 口碑动量（P0-2: 原1.5→1.0）
+    mktConsecutiveFatigue: 0.7,     // 连续推广效率降低（口碑审美疲劳）
+    holdPressurePenalty: 0,         // P0-3: HOLD无惩罚
+    holdMarginBoostPerRound: 0.015, // 名校不作为利润率加成较小
+    holdDefenseBarrier: 0.7,        // 名校品牌粘性强，防御壁垒高
     qualityInvestCost: 100000,      // 教研投入更贵（师资培训）
     qualitySignalBonus: 4.0,        // 但教学质量信号更强
   },

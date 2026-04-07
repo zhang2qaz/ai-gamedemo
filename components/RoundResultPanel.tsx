@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import type { RoundAuditLog, PlayerState } from '@/engine/types'
 import { formatMoney, formatPercent } from '@/lib/format'
 import { useGameStore } from '@/store/gameStore'
@@ -342,11 +342,120 @@ export default function RoundResultPanel({ log, players, narration, onNext, isGa
 
       {/* ── 阶段4：叙事 ── */}
       {phase === 'NARRATE' && (
-        <div className="bg-stone-900/60 border border-stone-800 rounded-xl px-4 py-3 text-stone-400 text-sm leading-relaxed whitespace-pre-line relative animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-          <div className="absolute top-3 right-3">
-            <SpeakBtn text={narration} size="md" />
+        <>
+          <div className="bg-stone-900/60 border border-stone-800 rounded-xl px-4 py-3 text-stone-400 text-sm leading-relaxed whitespace-pre-line relative animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+            <div className="absolute top-3 right-3">
+              <SpeakBtn text={narration} size="md" />
+            </div>
+            {narration}
           </div>
-          {narration}
+
+          {/* Intel & Social Report */}
+          <IntelSocialReport log={log} players={players} />
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── Intel & Social Report (shown after narration) ──
+function IntelSocialReport({ log, players }: { log: RoundAuditLog; players: PlayerState[] }) {
+  const lastRoundIntelReport = useGameStore(s => s.lastRoundIntelReport)
+  const announcements = useGameStore(s => s.announcements)
+  const revengeMarks = useGameStore(s => s.revengeMarks)
+  const theme = useGameStore(s => s.theme)
+
+  const an = theme?.actionNarrative
+  const getLabel = (action: string) => an?.[action as keyof typeof an]?.title ?? action
+
+  // Map player actions from audit log
+  const actualActions = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const p of log.players) map[p.id] = p.action
+    return map
+  }, [log.players])
+
+  const hasContent = lastRoundIntelReport.length > 0 || announcements.length > 0 || Object.values(revengeMarks).some(Boolean)
+  if (!hasContent) return null
+
+  return (
+    <div className="bg-stone-950/50 border border-stone-800/50 rounded-xl p-4 space-y-3 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+      <div className="text-amber-400 font-bold text-sm">📋 社交互动复盘</div>
+
+      {/* Intel shares report */}
+      {lastRoundIntelReport.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-stone-500 text-xs font-bold">🃏 情报交易：</div>
+          {lastRoundIntelReport.map((share, i) => {
+            const sender = players.find(p => p.id === share.from)
+            const receiver = players.find(p => p.id === share.to)
+            const senderColor = PC[share.from as keyof typeof PC]
+            const receiverColor = PC[share.to as keyof typeof PC]
+            return (
+              <div key={i} className="flex items-center gap-1.5 text-xs">
+                <span className={senderColor?.text ?? 'text-stone-400'}>{sender?.name}</span>
+                <span className="text-stone-600">→</span>
+                <span className={receiverColor?.text ?? 'text-stone-400'}>{receiver?.name}</span>
+                <span className="text-stone-600">：声称建议</span>
+                <span className="font-bold text-stone-300">{getLabel(share.claimedAction)}</span>
+                <span className={share.isBluff ? 'text-red-400 font-bold' : 'text-green-400'}>
+                  {share.isBluff ? '🎭 虚假!' : '✅ 真实'}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Announcement results */}
+      {announcements.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-stone-500 text-xs font-bold">📢 宣言兑现：</div>
+          {announcements.map((ann, i) => {
+            const player = players.find(p => p.id === ann.playerId)
+            const color = PC[ann.playerId as keyof typeof PC]
+            const actual = actualActions[ann.playerId]
+            const honest = actual === ann.declaredAction
+            return (
+              <div key={i} className="flex items-center gap-1.5 text-xs">
+                <span className={color?.text ?? 'text-stone-400'}>{player?.name}</span>
+                <span className="text-stone-600">宣称</span>
+                <span className="text-stone-300 font-bold">{getLabel(ann.declaredAction)}</span>
+                <span className="text-stone-600">→ 实际</span>
+                <span className="text-stone-300 font-bold">{getLabel(actual)}</span>
+                <span className={honest ? 'text-green-400 font-bold' : 'text-red-400'}>
+                  {honest ? '✅ +¥15k' : '❌ -¥5k'}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Revenge results */}
+      {Object.values(revengeMarks).some(Boolean) && (
+        <div className="space-y-1.5">
+          <div className="text-stone-500 text-xs font-bold">🎯 复仇标记：</div>
+          {Object.entries(revengeMarks).map(([markerId, targetId]) => {
+            if (!targetId) return null
+            const marker = players.find(p => p.id === markerId)
+            const target = players.find(p => p.id === targetId)
+            const markerColor = PC[markerId as keyof typeof PC]
+            const markerAction = actualActions[markerId]
+            const gotBonus = markerAction === 'ATK'
+            return (
+              <div key={markerId} className="flex items-center gap-1.5 text-xs">
+                <span className={markerColor?.text ?? 'text-stone-400'}>{marker?.name}</span>
+                <span className="text-stone-600">标记了</span>
+                <span className="text-stone-300 font-bold">{target?.name}</span>
+                {gotBonus ? (
+                  <span className="text-green-400 font-bold">⚔ 选了ATK → +¥20k 复仇奖金!</span>
+                ) : (
+                  <span className="text-stone-600">但未选ATK，未触发</span>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

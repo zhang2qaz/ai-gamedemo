@@ -20,7 +20,6 @@ import type {
   PlayerRoundCalc,
   PlayerId,
   BaseAction,
-  WildCardType,
 } from './types'
 import { CONFIG } from './constants'
 import { applyEvent } from './events'
@@ -121,23 +120,16 @@ export function resolveRound(
 
     switch (action) {
       case 'ATK':
-        // SHADOW_PRICE 暗牌：忽略疲劳
-        if (wildCard === 'SHADOW_PRICE') {
-          actionBonus = calcAtkBonus(g.priceSensitivity, atkCount, 0, null, C)
-        } else {
-          actionBonus = calcAtkBonus(g.priceSensitivity, atkCount, player.fatigueIndex, player.lastAction, C)
-        }
+        actionBonus = calcAtkBonus(g.priceSensitivity, atkCount, player.fatigueIndex, player.lastAction, C)
         break
       case 'MKT':
-        actionBonus = calcMktBonus(mktCount, player.brandHeat, C)
+        actionBonus = calcMktBonus(mktCount, player.brandHeat, C, player.lastAction)
         break
       case 'QUA':
         if (isFinalRound) {
-          // 终盘新品爆发：立即释放所有积累的新品储备
           actionBonus = C.qualityBurstBase + C.qualityBurstPerCharge * player.qualityCharge
           tempQualityCharge = 0
         } else {
-          // 普通回合：品质信号立即给+3竞争力（研发动态对外可见）
           actionBonus = C.qualitySignalBonus
         }
         break
@@ -171,8 +163,8 @@ export function resolveRound(
       }
     }
 
-    // HOLD 惩罚（IRON_WALL 暗牌免疫）
-    if (action === 'HOLD' && wildCard !== 'IRON_WALL') {
+    // HOLD 惩罚
+    if (action === 'HOLD') {
       const defensiveLock = isFinalRound && finalShift === 'DEFENSIVE_LOCK'
       holdPenalty = calcHoldPenalty(aggressionPressure, defensiveLock, C)
     }
@@ -187,9 +179,9 @@ export function resolveRound(
       }
     }
 
-    // 暗牌竞争力加成
+    // P2: 通用暗牌竞争力加成
     let wildCardBonus = 0
-    if (wildCard === 'INSIDER') wildCardBonus = 5
+    if (wildCard === 'SCOUT') wildCardBonus = 4
 
     // 最终竞争力
     const competitiveness = Math.max(
@@ -255,16 +247,32 @@ export function resolveRound(
     return s + Math.max(0, player.marketMomentum)
   }, 0)
 
+  const holdDefenseBarrier = (C as any).holdDefenseBarrier ?? 0.6
+
   calcList.forEach(c => {
     const player = playersAfterDelay.find(p => p.id === c.id)!
+    const input = inputMap.get(player.id)!
     const momentumShare = positiveMomentumSum > 0
       ? Math.max(0, player.marketMomentum) / positiveMomentumSum
       : 0
 
     c.momentumShare = momentumShare
-    const raw = C.inertiaOldWeight * c.oldShare
+    let raw = C.inertiaOldWeight * c.oldShare
       + C.inertiaInstantWeight * c.instantShare
       + C.inertiaMomentumWeight * momentumShare
+
+    // P0-3: HOLD防御壁垒 — 当份额即将下降时，HOLD玩家抵消部分损失
+    if (input.action === 'HOLD' && raw < c.oldShare) {
+      const loss = c.oldShare - raw
+      raw = c.oldShare - loss * holdDefenseBarrier
+    }
+
+    // P2: SHIELD 暗牌 — 份额不会下降
+    const wc = input.wildCard ?? null
+    if (wc === 'SHIELD' && raw < c.oldShare) {
+      raw = c.oldShare
+    }
+
     c.newShare = raw
   })
 
@@ -279,6 +287,7 @@ export function resolveRound(
   // STEP 7: 计算利润（含动态赌注倍数）
   // ─────────────────────────────────────────────
   const stakesMultiplier = C.roundStakesMultiplier[roundNumber] ?? 1.0
+  const atkSoloInflux = (C as any).atkSoloInflux ?? 1.3
 
   calcList.forEach((c, idx) => {
     const player = playersAfterDelay[idx]
@@ -286,7 +295,9 @@ export function resolveRound(
 
     const unitPrice = getUnitPrice(action, C)
     const margin = getMargin(action, isFinalRound ? finalShift : 'NONE', player.consecutiveHoldCount, C)
-    const revenue = g.totalCustomers * c.newShare * unitPrice * stakesMultiplier
+    // P0-1: 独家促销获客量加成
+    const influxBonus = (action === 'ATK' && atkCount === 1) ? atkSoloInflux : 1.0
+    const revenue = g.totalCustomers * c.newShare * unitPrice * stakesMultiplier * influxBonus
     let grossProfit = revenue * margin
 
     // FINAL_PUSH 利润惩罚
@@ -300,7 +311,14 @@ export function resolveRound(
       revenueBonus = revenue * C.brandMonetizeRevenueBonus
     }
 
-    const actionCost = getActionCost(action, C)
+    // P2: 暗牌利润效果
+    const wildCard = inputMap.get(player.id)?.wildCard ?? null
+    // DOUBLE_DOWN: 收入 ×1.3
+    if (wildCard === 'DOUBLE_DOWN') {
+      grossProfit *= 1.3
+    }
+    // COST_CUT: 行动成本归零
+    const actionCost = wildCard === 'COST_CUT' ? 0 : getActionCost(action, C)
     const netProfit = grossProfit + revenueBonus - actionCost
 
     c.unitPrice = unitPrice
@@ -323,9 +341,8 @@ export function resolveRound(
     const wildCard = inputMap.get(player.id)?.wildCard ?? null
 
     // brandHeat（设上限防止无限累积）
-    const brandHeatGain = wildCard === 'VIRAL_BUZZ' ? C.brandHeatGainFromMkt * 2 : C.brandHeatGainFromMkt
     let brandHeat = action === 'MKT'
-      ? Math.min(C.brandHeatCap, player.brandHeat + brandHeatGain)
+      ? Math.min(C.brandHeatCap, player.brandHeat + C.brandHeatGainFromMkt)
       : Math.max(0, player.brandHeat - C.brandHeatDecayOther)
 
     // marketMomentum
@@ -375,8 +392,13 @@ export function resolveRound(
     c.consecutiveHoldAfter = consecutiveHoldCount
     c.qualityChargeAfter = qualityCharge
 
-    // TECH_LEAP 暗牌：QUA 本回合立即 +5 品质（而非等下回合）
-    const qualityScoreBonus = (wildCard === 'TECH_LEAP' && action === 'QUA') ? 5 : 0
+    // P2: MOMENTUM_SURGE 暗牌：立即 +2 动量
+    if (wildCard === 'MOMENTUM_SURGE') {
+      marketMomentum = Math.min(C.momentumCap, marketMomentum + 2)
+    }
+
+    // P2: QUALITY_BOOST 暗牌：立即 +5 品质（任何动作可用）
+    const qualityScoreBonus = wildCard === 'QUALITY_BOOST' ? 5 : 0
 
     return {
       ...player,
@@ -392,22 +414,6 @@ export function resolveRound(
       lastAction: action,
     }
   })
-
-  // STEAL_SHARE 暗牌：偷取领先者 5% 份额
-  for (const input of inputs) {
-    if (input.wildCard === 'STEAL_SHARE') {
-      const thief = newPlayers.find(p => p.id === input.playerId)
-      const leader = [...newPlayers].sort((a, b) => b.marketShare - a.marketShare)[0]
-      if (thief && leader && thief.id !== leader.id) {
-        const stolen = 0.05
-        leader.marketShare = Math.max(0.05, leader.marketShare - stolen)
-        thief.marketShare += stolen
-        // Re-normalize
-        const total = newPlayers.reduce((s, p) => s + p.marketShare, 0)
-        newPlayers.forEach(p => { p.marketShare = p.marketShare / total })
-      }
-    }
-  }
 
   // ─────────────────────────────────────────────
   // STEP 9: 生成审计日志

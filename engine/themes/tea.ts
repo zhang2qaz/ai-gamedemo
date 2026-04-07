@@ -216,7 +216,7 @@ export const TEA_THEME: ThemeConfig = {
   },
 
   // 茶饮：基础平衡场，无特殊机制覆盖
-  mechanicsDescription: '☕ 标准模式 · 四种策略均衡，适合新手入门',
+  mechanicsDescription: '☕ 标准模式 · 独家促销获客加成 · 连续用同一动作有冷却 · 守势积累利润率',
 
   generateIntel(): RoundIntel[] {
     function pick<T>(arr: T[]): T {
