@@ -6,6 +6,7 @@ import { formatMoney, formatPercent } from '@/lib/format'
 import { useGameStore } from '@/store/gameStore'
 import SpeakBtn from './SpeakBtn'
 import { speak } from '@/lib/tts'
+import { sfxFlipCard, sfxClash, sfxRoundEnd } from '@/lib/sounds'
 
 type Props = {
   log: RoundAuditLog
@@ -64,15 +65,15 @@ export default function RoundResultPanel({ log, players, narration, onNext, isGa
     const playerCount = log.players.length
     const flipTimers: NodeJS.Timeout[] = []
     for (let i = 0; i < playerCount; i++) {
-      flipTimers.push(setTimeout(() => setRevealedCount(i + 1), 300 + i * 300))
+      flipTimers.push(setTimeout(() => { setRevealedCount(i + 1); sfxFlipCard() }, 300 + i * 300))
     }
 
     // 所有牌翻完后 → 冲突动画
     const clashDelay = 300 + playerCount * 300 + 200
-    const clashTimer = setTimeout(() => setPhase('CLASH'), clashDelay)
+    const clashTimer = setTimeout(() => { setPhase('CLASH'); sfxClash() }, clashDelay)
 
     // 冲突动画持续1.2s → 显示完整结果
-    const resultTimer = setTimeout(() => setPhase('RESULT'), clashDelay + 1200)
+    const resultTimer = setTimeout(() => { setPhase('RESULT'); sfxRoundEnd() }, clashDelay + 1200)
 
     // 结果后0.8s → 叙事
     const narrateTimer = setTimeout(() => setPhase('NARRATE'), clashDelay + 2000)
@@ -424,7 +425,7 @@ function IntelSocialReport({ log, players }: { log: RoundAuditLog; players: Play
                 <span className="text-stone-600">→ 实际</span>
                 <span className="text-stone-300 font-bold">{getLabel(actual)}</span>
                 <span className={honest ? 'text-green-400 font-bold' : 'text-red-400'}>
-                  {honest ? '✅ +¥15k' : '❌ -¥5k'}
+                  {honest ? '✅ +¥10k' : '❌ -¥10k'}
                 </span>
               </div>
             )
@@ -442,14 +443,18 @@ function IntelSocialReport({ log, players }: { log: RoundAuditLog; players: Play
             const target = players.find(p => p.id === targetId)
             const markerColor = PC[markerId as keyof typeof PC]
             const markerAction = actualActions[markerId]
-            const gotBonus = markerAction === 'ATK'
+            const targetAction = actualActions[targetId]
+            const gotBonus = markerAction === 'ATK' && targetAction !== 'ATK'
+            const countered = markerAction === 'ATK' && targetAction === 'ATK'
             return (
               <div key={markerId} className="flex items-center gap-1.5 text-xs">
                 <span className={markerColor?.text ?? 'text-stone-400'}>{marker?.name}</span>
                 <span className="text-stone-600">标记了</span>
                 <span className="text-stone-300 font-bold">{target?.name}</span>
                 {gotBonus ? (
-                  <span className="text-green-400 font-bold">⚔ 选了ATK → +¥20k 复仇奖金!</span>
+                  <span className="text-green-400 font-bold">⚔ 选了ATK → +¥15k 复仇奖金!</span>
+                ) : countered ? (
+                  <span className="text-amber-400 font-bold">⚔ 对手反击ATK！奖金无效！</span>
                 ) : (
                   <span className="text-stone-600">但未选ATK，未触发</span>
                 )}

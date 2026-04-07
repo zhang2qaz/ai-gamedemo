@@ -32,23 +32,29 @@ const STEPS = [
   },
 ]
 
-export default function TutorialOverlay() {
+export default function TutorialOverlay({ forceShow, onClose }: { forceShow?: boolean; onClose?: () => void } = {}) {
   const [visible, setVisible] = useState(false)
   const [step, setStep] = useState(0)
 
   useEffect(() => {
+    if (forceShow) {
+      setVisible(true)
+      setStep(0)
+      return
+    }
     if (typeof window === 'undefined') return
     const seen = localStorage.getItem(TUTORIAL_KEY)
     if (!seen) {
       setVisible(true)
     }
-  }, [])
+  }, [forceShow])
 
   function handleDismiss() {
     setVisible(false)
     if (typeof window !== 'undefined') {
       localStorage.setItem(TUTORIAL_KEY, '1')
     }
+    onClose?.()
   }
 
   if (!visible) return null

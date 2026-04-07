@@ -331,8 +331,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const { newGlobal, newPlayers, auditLog } = resolveRound(global, players, inputs, roundIntelCards, theme.configOverrides)
 
       // P1-2: 宣言诚信奖励 — 言行一致的玩家获得利润加成
-      const HONESTY_BONUS = 15000  // 言行一致奖金
-      const BLUFF_PENALTY = -5000  // 食言小惩罚（不严重，允许虚张声势）
+      const HONESTY_BONUS = 10000  // 言行一致奖金
+      const BLUFF_PENALTY = -10000  // 食言惩罚（与奖励对称）
       for (const ann of state.announcements) {
         const p = newPlayers.find(pl => pl.id === ann.playerId)
         const actualAction = pendingInputs[ann.playerId]?.action
@@ -347,15 +347,21 @@ export const useGameStore = create<GameStore>((set, get) => ({
         }
       }
 
-      // P1-3: 复仇标记 — 如果标记者选了ATK且被标记者确实受损，标记者获得额外奖励
-      const REVENGE_BONUS = 20000
+      // P1-3: 复仇标记 — 标记者选ATK获得奖励，但如果被标记者也选ATK则反击抵消
+      const REVENGE_BONUS = 15000
       for (const [markerId, targetId] of Object.entries(state.revengeMarks)) {
         if (!targetId) continue
         const markerAction = pendingInputs[markerId as PlayerId]?.action
+        const targetAction = pendingInputs[targetId as PlayerId]?.action
         const markerPlayer = newPlayers.find(p => p.id === markerId)
         if (markerAction === 'ATK' && markerPlayer) {
-          markerPlayer.cash += REVENGE_BONUS
-          markerPlayer.cumulativeProfit += REVENGE_BONUS
+          // 反击：被标记者也选ATK则奖励被抵消
+          if (targetAction === 'ATK') {
+            // 反击成功 — 无奖励
+          } else {
+            markerPlayer.cash += REVENGE_BONUS
+            markerPlayer.cumulativeProfit += REVENGE_BONUS
+          }
         }
       }
 

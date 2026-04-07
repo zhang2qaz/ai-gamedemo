@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useGameStore } from '@/store/gameStore'
 import type { PlayerId, BaseAction, FinalShift } from '@/engine/types'
 import PlayerCard from './PlayerCard'
@@ -496,7 +496,7 @@ function RoundChangeSummary({
   )
 }
 
-const SELECTION_TIME_LIMIT = 15
+const SELECTION_TIME_LIMIT = 30
 
 function SelectionTimer({
   isActive,
@@ -506,6 +506,8 @@ function SelectionTimer({
   onTimeout: () => void
 }) {
   const [timeLeft, setTimeLeft] = useState(SELECTION_TIME_LIMIT)
+  const onTimeoutRef = useRef(onTimeout)
+  onTimeoutRef.current = onTimeout
 
   useEffect(() => {
     if (!isActive) return
@@ -516,13 +518,13 @@ function SelectionTimer({
     if (!isActive) return
     if (timeLeft <= 0) {
       sfxTimeout()
-      onTimeout()
+      onTimeoutRef.current()
       return
     }
     if (timeLeft <= 5) sfxTick()
     const timer = setInterval(() => setTimeLeft(t => t - 1), 1000)
     return () => clearInterval(timer)
-  }, [isActive, timeLeft, onTimeout])
+  }, [isActive, timeLeft])
 
   if (!isActive) return null
 

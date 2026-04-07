@@ -147,11 +147,11 @@ export default function GameOverPanel({ players, logs, gameNarration, onReset, o
       winner: winner.name,
       winnerProfit: winner.cumulativeProfit,
       rounds: logs.length,
-      playerResults: profitRanked.map((p, i) => ({
-        name: p.name,
-        profit: p.cumulativeProfit,
-        rank: i + 1,
-      })),
+      // Keep original player order so playerResults[0] is P1 (not always winner)
+      playerResults: players.map(p => {
+        const rankIdx = profitRanked.findIndex(pr => pr.id === p.id)
+        return { name: p.name, profit: p.cumulativeProfit, rank: rankIdx + 1 }
+      }),
     })
 
     setHistory(newHistory)
@@ -289,7 +289,7 @@ export default function GameOverPanel({ players, logs, gameNarration, onReset, o
       )}
 
       {/* 操作按钮 */}
-      <div className="flex gap-3 justify-center animate-fade-in-up" style={{ animationDelay: '700ms' }}>
+      <div className="flex gap-3 justify-center flex-wrap animate-fade-in-up" style={{ animationDelay: '700ms' }}>
         <button
           onClick={onShowAuditLog}
           className="px-6 py-2.5 glass-card hover:bg-stone-700/40 text-stone-200 font-bold rounded-xl text-sm transition-all"
@@ -300,7 +300,13 @@ export default function GameOverPanel({ players, logs, gameNarration, onReset, o
           onClick={onReset}
           className="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black font-bold rounded-xl text-sm transition-all btn-3d"
         >
-          ↺ 重开一局
+          ⚔ 同场景再战
+        </button>
+        <button
+          onClick={() => useGameStore.getState().backToThemeSelect()}
+          className="px-6 py-2.5 glass-card hover:bg-stone-700/40 text-stone-200 font-bold rounded-xl text-sm transition-all"
+        >
+          🏠 换场景
         </button>
       </div>
     </div>

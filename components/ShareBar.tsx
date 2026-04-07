@@ -97,7 +97,7 @@ export default function ShareBar({ players }: Props) {
             return (
               <div key={p.id} className="flex items-center gap-1" style={{ transition: 'all 0.5s ease' }}>
                 <span className={`text-sm font-black ${medalStyle}`}>{medal}</span>
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'currentColor' }} />
+                <span className={`w-1.5 h-1.5 rounded-full ${PLAYER_COLORS[p.id]?.dot ?? 'bg-stone-500'}`} />
                 <span className={`text-xs font-bold ${PLAYER_COLORS[p.id]?.text ?? 'text-stone-400'}`}>{p.name.slice(0, 2)}</span>
                 <span className={`text-xs font-mono ${p.cumulativeProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {profitK >= 0 ? '+' : ''}¥{profitK}K

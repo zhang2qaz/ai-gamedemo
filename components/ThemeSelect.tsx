@@ -22,6 +22,7 @@ export default function ThemeSelect({ onSelect }: Props) {
   const [playerCount, setPlayerCount] = useState(4)
   const [showStats, setShowStats] = useState(false)
   const [history, setHistory] = useState<GameHistoryData | null>(null)
+  const [showTutorial, setShowTutorial] = useState(false)
 
   useEffect(() => {
     setHistory(getHistory())
@@ -29,7 +30,7 @@ export default function ThemeSelect({ onSelect }: Props) {
 
   return (
     <div className="min-h-screen bg-stone-950 text-white flex flex-col items-center justify-center px-4 py-12">
-      <TutorialOverlay />
+      <TutorialOverlay forceShow={showTutorial} onClose={() => setShowTutorial(false)} />
       {/* 标题 */}
       <div className="text-center mb-10 space-y-3">
         <h1 className="text-amber-400 font-black text-4xl tracking-wider">弈 战</h1>
@@ -225,9 +226,15 @@ export default function ThemeSelect({ onSelect }: Props) {
       )}
 
       {/* 底部说明 */}
-      <div className="mt-8 text-center text-stone-700 text-xs space-y-1">
+      <div className="mt-8 text-center text-stone-700 text-xs space-y-2">
         <p>每个主题有独特机制规则 · 同一引擎不同参数</p>
         <p>{playerCount}位玩家轮流选牌 · 5回合 · 情报交易 · 最高累计利润者胜</p>
+        <button
+          onClick={() => setShowTutorial(true)}
+          className="text-stone-600 hover:text-amber-400 transition-all text-xs cursor-pointer"
+        >
+          📖 重看教程
+        </button>
       </div>
     </div>
   )
