@@ -60,9 +60,11 @@ type GameStore = {
 
   // P1-2: 公开宣言
   announcements: Announcement[]
+  lastRoundAnnouncements: Announcement[]
 
   // P1-3: 复仇标记
   revengeMarks: Partial<Record<PlayerId, PlayerId | null>>  // 标记者 → 被标记者
+  lastRoundRevengeMarks: Partial<Record<PlayerId, PlayerId | null>>
 
   // Actions
   selectTheme: (themeId: string, playerCount?: number) => void
@@ -171,7 +173,9 @@ function createGameState(theme: ThemeConfig, playerCount = 4) {
     intelShares: [] as IntelShare[],
     lastRoundIntelReport: [] as IntelShare[],
     announcements: [] as Announcement[],
+    lastRoundAnnouncements: [] as Announcement[],
     revengeMarks: {} as Partial<Record<PlayerId, PlayerId | null>>,
+    lastRoundRevengeMarks: {} as Partial<Record<PlayerId, PlayerId | null>>,
   }
 }
 
@@ -198,7 +202,9 @@ function createInitialState() {
     intelShares: [] as IntelShare[],
     lastRoundIntelReport: [] as IntelShare[],
     announcements: [] as Announcement[],
+    lastRoundAnnouncements: [] as Announcement[],
     revengeMarks: {} as Partial<Record<PlayerId, PlayerId | null>>,
+    lastRoundRevengeMarks: {} as Partial<Record<PlayerId, PlayerId | null>>,
   }
 }
 
@@ -392,7 +398,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
         phase: isGameOver ? 'GAME_OVER' : 'ROUND_RESULT',
         gameNarration,
         wildCards: newWildCards,
-        lastRoundIntelReport: [...state.intelShares], // 保存情报交易记录供回合结果展示
+        lastRoundIntelReport: [...state.intelShares],
+        lastRoundAnnouncements: [...state.announcements],
+        lastRoundRevengeMarks: { ...state.revengeMarks },
       })
     } catch (err) {
       console.error('[弈战] submitRound error:', err)

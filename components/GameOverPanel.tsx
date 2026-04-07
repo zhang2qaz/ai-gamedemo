@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { PlayerState, RoundAuditLog, BaseAction } from '@/engine/types'
 import { formatMoney, formatPercent } from '@/lib/format'
 import { getFinalRanking, getShareRanking } from '@/engine/resolveGame'
@@ -136,8 +136,12 @@ export default function GameOverPanel({ players, logs, gameNarration, onReset, o
   const [newAchievements, setNewAchievements] = useState<string[]>([])
   const [showStats, setShowStats] = useState(false)
 
-  // Record game on mount
+  // Record game on mount (with deduplication guard)
+  const recordedRef = useRef(false)
   useEffect(() => {
+    if (recordedRef.current) return
+    recordedRef.current = true
+
     const oldHistory = getHistory()
     const oldAchievements = new Set(oldHistory.stats.achievements)
 

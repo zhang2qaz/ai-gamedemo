@@ -62,9 +62,10 @@ export default function GameBoard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { ensureIntel() }, [])
 
-  // 当前��在输入的玩��（全屏遮罩）
+  // 当前正在输入的玩家（全屏遮罩）
   const [activeInput, setActiveInput] = useState<PlayerId | null>(null)
   const [soundMuted, setSoundMuted] = useState(false)
+  const [showTimeoutBanner, setShowTimeoutBanner] = useState(false)
 
   // Play victory sound on game over
   useEffect(() => {
@@ -296,7 +297,7 @@ export default function GameBoard() {
                 </div>
               </div>
 
-              <div className={`grid gap-3 ${players.length <= 4 ? 'grid-cols-4' : players.length <= 6 ? 'grid-cols-3' : 'grid-cols-4'}`}>
+              <div className={`grid gap-3 grid-cols-2 ${players.length <= 4 ? 'sm:grid-cols-4' : players.length <= 6 ? 'sm:grid-cols-3' : 'sm:grid-cols-4'}`}>
                 {players.map(player => {
                   const isLocked = pendingInputs[player.id]?.action !== null
                   const c = PLAYER_COLORS[player.id]
@@ -355,9 +356,19 @@ export default function GameBoard() {
               <SelectionTimer
                 isActive={pendingInputs[activeInput].action === null}
                 onTimeout={() => {
-                  setAction(activeInput, 'HOLD')
+                  setShowTimeoutBanner(true)
+                  setTimeout(() => {
+                    setAction(activeInput!, 'HOLD')
+                    setShowTimeoutBanner(false)
+                  }, 1500)
                 }}
               />
+              {showTimeoutBanner && (
+                <div className="mt-2 bg-red-900/60 border border-red-500 rounded-lg px-4 py-2 animate-slide-in-scale">
+                  <div className="text-red-300 font-black text-lg">⏰ 时间到！</div>
+                  <div className="text-red-400/80 text-sm">自动选择精细运营(HOLD)</div>
+                </div>
+              )}
             </div>
 
             <div className="w-full max-w-sm">

@@ -86,19 +86,7 @@ export default function RoundResultPanel({ log, players, narration, onNext, isGa
     }
   }, [log.round, log.players.length])
 
-  // 语音
-  useEffect(() => {
-    if (phase !== 'NARRATE') return
-    const summaryLines = sorted.map((p, i) => {
-      const ps = players.find(pl => pl.id === p.id)!
-      const actionName = getLabel(p.action)
-      const profit = p.netProfit >= 0 ? `赚了${formatMoney(p.netProfit)}` : `亏了${formatMoney(Math.abs(p.netProfit))}`
-      return `第${i + 1}名，${ps.name}，选了${actionName}，本轮${profit}。`
-    }).join(' ')
-    const autoText = `第${log.round}回合结算完毕。${summaryLines} ${narration}`
-    const timer = setTimeout(() => speak(autoText, 1.0), 200)
-    return () => clearTimeout(timer)
-  }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Auto-speak removed — disruptive in group settings. Players can use 🔊 button instead.
 
   // 检测冲突事件（多人ATK / 多人MKT / 独家行动）
   const atkCount = log.players.filter(p => p.action === 'ATK').length
@@ -159,7 +147,7 @@ export default function RoundResultPanel({ log, players, narration, onNext, isGa
 
       {/* ── 阶段1：逐张翻牌 ── */}
       {phase === 'FLIP' && (
-        <div className={`grid gap-4 ${log.players.length <= 4 ? 'grid-cols-4' : log.players.length <= 6 ? 'grid-cols-3' : 'grid-cols-4'}`}>
+        <div className={`grid gap-4 grid-cols-2 ${log.players.length <= 4 ? 'lg:grid-cols-4' : log.players.length <= 6 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}>
           {log.players.map((p, idx) => {
             const revealed = idx < revealedCount
             const col = getPlayerColor(p.id)
@@ -362,8 +350,8 @@ export default function RoundResultPanel({ log, players, narration, onNext, isGa
 // ── Intel & Social Report (shown after narration) ──
 function IntelSocialReport({ log, players }: { log: RoundAuditLog; players: PlayerState[] }) {
   const lastRoundIntelReport = useGameStore(s => s.lastRoundIntelReport)
-  const announcements = useGameStore(s => s.announcements)
-  const revengeMarks = useGameStore(s => s.revengeMarks)
+  const announcements = useGameStore(s => s.lastRoundAnnouncements)
+  const revengeMarks = useGameStore(s => s.lastRoundRevengeMarks)
   const theme = useGameStore(s => s.theme)
 
   const an = theme?.actionNarrative

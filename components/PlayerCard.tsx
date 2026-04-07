@@ -236,9 +236,9 @@ export default function PlayerCard({
             />
             <StatusCell
               label={t?.brandHeat ?? '品牌热度'}
-              value={player.brandHeat >= 70 ? '🔓 已达标' : `${player.brandHeat}/70`}
-              sub={player.brandHeat >= 70 ? (t?.brandHeatUnlock ?? '终局可变现') : player.brandHeat >= 50 ? (t?.brandHeatBuilding ?? '推广有加成') : (t?.brandHeatLow ?? '继续推广积累')}
-              status={player.brandHeat >= 70 ? 'unlock' : player.brandHeat >= 50 ? 'building' : 'neutral'}
+              value={player.brandHeat >= (theme?.configOverrides?.brandHeatThresholdForMonetize ?? 50) ? '🔓 已达标' : `${player.brandHeat}/${theme?.configOverrides?.brandHeatThresholdForMonetize ?? 50}`}
+              sub={player.brandHeat >= (theme?.configOverrides?.brandHeatThresholdForMonetize ?? 50) ? (t?.brandHeatUnlock ?? '终局可变现') : player.brandHeat >= 30 ? (t?.brandHeatBuilding ?? '推广有加成') : (t?.brandHeatLow ?? '继续推广积累')}
+              status={player.brandHeat >= (theme?.configOverrides?.brandHeatThresholdForMonetize ?? 50) ? 'unlock' : player.brandHeat >= 30 ? 'building' : 'neutral'}
             />
           </div>
           <div className="grid grid-cols-2 gap-1">
@@ -423,7 +423,7 @@ function FinalShiftSection({ player, selectedAction, selectedFinalShift, onSelec
   const fsn = theme?.finalShiftNarrative
 
   const brandLabel = theme?.terms?.brandHeat ?? '品牌热度'
-  const brandThreshold = theme?.configOverrides?.brandHeatThresholdForMonetize ?? 70
+  const brandThreshold = theme?.configOverrides?.brandHeatThresholdForMonetize ?? 50
   const opts: Array<{ value: FinalShift; emoji: string; label: string; available: boolean; hint: string; desc: string; speakText: string }> = [
     {
       value: 'NONE', emoji: '—', label: fsn?.NONE.title ?? '不附加', available: true, hint: '',

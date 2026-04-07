@@ -61,9 +61,11 @@ export default function IntelTradePhase() {
       endIntelPhase()
       return
     }
+    // Pause timer while a player overlay is open
+    if (activePlayer) return
     const timer = setInterval(() => setTimeLeft(t => t - 1), 1000)
     return () => clearInterval(timer)
-  }, [timeLeft, endIntelPhase])
+  }, [timeLeft, endIntelPhase, activePlayer])
 
   const currentIntel = generatedIntel.find(r => r.round === global.roundNumber)
 
