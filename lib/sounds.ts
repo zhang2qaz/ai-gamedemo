@@ -15,9 +15,13 @@ function getCtx(): AudioContext {
   return audioCtx
 }
 
-// 是否静音
-let muted = false
-export function toggleMute() { muted = !muted; return muted }
+// 是否静音（持久化到 localStorage）
+let muted = typeof window !== 'undefined' && localStorage.getItem('yizhan_muted') === '1'
+export function toggleMute() {
+  muted = !muted
+  try { localStorage.setItem('yizhan_muted', muted ? '1' : '0') } catch {}
+  return muted
+}
 export function isMuted() { return muted }
 
 function playTone(freq: number, duration: number, type: OscillatorType = 'sine', volume = 0.15) {

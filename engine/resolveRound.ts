@@ -146,9 +146,15 @@ export function resolveRound(
           break
         case 'QUALITY_CONVERT':
           if (canQualityConvert(player)) {
-            finalShiftBonus = C.qualityBurstBase + C.qualityBurstPerCharge * player.qualityCharge
-            tempMarketMomentum += player.qualityCharge
-            tempQualityCharge = 0
+            // If action is also QUA (which already consumed charges), don't double burst
+            if (action === 'QUA') {
+              // QUA action already applied burst; shift only adds momentum bonus
+              tempMarketMomentum += player.qualityCharge
+            } else {
+              finalShiftBonus = C.qualityBurstBase + C.qualityBurstPerCharge * player.qualityCharge
+              tempMarketMomentum += player.qualityCharge
+              tempQualityCharge = 0
+            }
           }
           break
         case 'DEFENSIVE_LOCK':

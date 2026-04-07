@@ -337,19 +337,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const { newGlobal, newPlayers, auditLog } = resolveRound(global, players, inputs, roundIntelCards, theme.configOverrides)
 
       // P1-2: 宣言诚信奖励 — 言行一致的玩家获得利润加成
-      const HONESTY_BONUS = 10000  // 言行一致奖金
-      const BLUFF_PENALTY = -10000  // 食言惩罚（与奖励对称）
+      const HONESTY_BONUS = 10000
+      const BLUFF_PENALTY = -10000
+      const socialBonuses: Record<string, number> = {}
       for (const ann of state.announcements) {
         const p = newPlayers.find(pl => pl.id === ann.playerId)
         const actualAction = pendingInputs[ann.playerId]?.action
         if (p && actualAction) {
-          if (actualAction === ann.declaredAction) {
-            p.cash += HONESTY_BONUS
-            p.cumulativeProfit += HONESTY_BONUS
-          } else {
-            p.cash += BLUFF_PENALTY
-            p.cumulativeProfit += BLUFF_PENALTY
-          }
+          const bonus = actualAction === ann.declaredAction ? HONESTY_BONUS : BLUFF_PENALTY
+          p.cash += bonus
+          p.cumulativeProfit += bonus
+          socialBonuses[ann.playerId] = (socialBonuses[ann.playerId] ?? 0) + bonus
         }
       }
 
@@ -360,14 +358,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
         const markerAction = pendingInputs[markerId as PlayerId]?.action
         const targetAction = pendingInputs[targetId as PlayerId]?.action
         const markerPlayer = newPlayers.find(p => p.id === markerId)
-        if (markerAction === 'ATK' && markerPlayer) {
-          // 反击：被标记者也选ATK则奖励被抵消
-          if (targetAction === 'ATK') {
-            // 反击成功 — 无奖励
-          } else {
-            markerPlayer.cash += REVENGE_BONUS
-            markerPlayer.cumulativeProfit += REVENGE_BONUS
-          }
+        if (markerAction === 'ATK' && markerPlayer && targetAction !== 'ATK') {
+          markerPlayer.cash += REVENGE_BONUS
+          markerPlayer.cumulativeProfit += REVENGE_BONUS
+          socialBonuses[markerId] = (socialBonuses[markerId] ?? 0) + REVENGE_BONUS
+        }
+      }
+
+      // Update audit log with social bonuses so audit trail is accurate
+      for (const ap of auditLog.players) {
+        const bonus = socialBonuses[ap.id] ?? 0
+        if (bonus !== 0) {
+          ap.netProfit += bonus
         }
       }
 
@@ -424,10 +426,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const state = get()
       if (state.theme) {
         const generatedIntel = state.theme.generateIntel()
+        const playerIntel = distributeIntel(generatedIntel, state.playerCount)
         set({
           ...createGameState(state.theme, state.playerCount),
           generatedIntel,
           intelTruth: buildIntelTruth(generatedIntel),
+          playerIntel,
         })
       } else {
         set(createInitialState())

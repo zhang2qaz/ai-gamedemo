@@ -109,7 +109,7 @@ export default function AuditLogPanel({ logs, onClose }: Props) {
                   <tbody>
                     <LogRow label="动作" values={log.players.map(p => ACTION_LABELS[p.action])} />
                     <LogRow label="终盘转向" values={log.players.map(p => FINAL_SHIFT_LABELS[p.finalShift])} />
-                    <LogRowSep />
+                    <LogRowSep colSpan={1 + log.players.length} />
                     <LogRow label="旧份额" values={log.players.map(p => formatPercent(p.oldShare))} />
                     <LogRow label="品质分(结算前)" values={log.players.map(p => p.qualityScoreBefore.toFixed(1))} />
                     <LogRow label="品质提升(上回合QUA)" values={log.players.map(p => `+${p.qualityDeltaFromLastRound}`)} />
@@ -122,21 +122,21 @@ export default function AuditLogPanel({ logs, onClose }: Props) {
                     <LogRow label="动量(后)" values={log.players.map(p => p.marketMomentumAfter.toFixed(2))} />
                     <LogRow label="疲劳(前)" values={log.players.map(p => p.fatigueBefore.toFixed(0))} />
                     <LogRow label="疲劳(后)" values={log.players.map(p => p.fatigueAfter.toFixed(0))} />
-                    <LogRowSep />
+                    <LogRowSep colSpan={1 + log.players.length} />
                     <LogRow label="ATK人数" values={log.players.map(p => p.atkCount.toFixed(0))} />
                     <LogRow label="MKT人数" values={log.players.map(p => p.mktCount.toFixed(0))} />
                     <LogRow label="进攻压力" values={log.players.map(p => p.aggressionPressure.toFixed(0))} />
-                    <LogRowSep />
+                    <LogRowSep colSpan={1 + log.players.length} />
                     <LogRow label="动作加成" values={log.players.map(p => p.actionBonus.toFixed(3))} />
                     <LogRow label="品质基础加成" values={log.players.map(p => p.qualityBonus.toFixed(3))} />
                     <LogRow label="终盘加成" values={log.players.map(p => p.finalShiftBonus.toFixed(3))} />
                     <LogRow label="HOLD惩罚" values={log.players.map(p => (-p.holdPenalty).toFixed(3))} />
                     <LogRow label="最终竞争力" values={log.players.map(p => p.competitiveness.toFixed(3))} highlight />
-                    <LogRowSep />
+                    <LogRowSep colSpan={1 + log.players.length} />
                     <LogRow label="即时份额" values={log.players.map(p => formatPercent(p.instantShare, 2))} />
                     <LogRow label="动量份额" values={log.players.map(p => formatPercent(p.momentumShare, 2))} />
                     <LogRow label="新份额" values={log.players.map(p => formatPercent(p.newShare, 2))} highlight />
-                    <LogRowSep />
+                    <LogRowSep colSpan={1 + log.players.length} />
                     <LogRow label="单价" values={log.players.map(p => `¥${p.unitPrice}`)} />
                     <LogRow label="利润率" values={log.players.map(p => formatPercent(p.margin))} />
                     <LogRow label="收入" values={log.players.map(p => formatMoney(p.revenue))} />
@@ -169,6 +169,6 @@ function LogRow({ label, values, highlight = false }: { label: string; values: s
   )
 }
 
-function LogRowSep() {
-  return <tr className="h-1"><td colSpan={5} /></tr>
+function LogRowSep({ colSpan = 5 }: { colSpan?: number }) {
+  return <tr className="h-1"><td colSpan={colSpan} /></tr>
 }

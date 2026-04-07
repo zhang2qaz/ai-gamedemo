@@ -17,8 +17,6 @@ export default function ShareBar({ players }: Props) {
   // Track previous shares for trend arrows
   const prevSharesRef = useRef<Record<string, number>>({})
   const [trends, setTrends] = useState<Record<string, 'up' | 'down' | 'flat'>>({})
-  const [prevProfitOrder, setPrevProfitOrder] = useState<string[]>([])
-
   useEffect(() => {
     const prev = prevSharesRef.current
     const newTrends: Record<string, 'up' | 'down' | 'flat'> = {}
@@ -36,13 +34,6 @@ export default function ShareBar({ players }: Props) {
     }
     setTrends(newTrends)
     prevSharesRef.current = Object.fromEntries(players.map(p => [p.id, p.marketShare]))
-  }, [players])
-
-  // Track profit order changes
-  useEffect(() => {
-    const currentOrder = sorted.map(p => p.id)
-    setPrevProfitOrder(currentOrder)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [players])
 
   const trendIcon = (id: string) => {

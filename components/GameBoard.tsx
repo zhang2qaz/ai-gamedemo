@@ -66,11 +66,19 @@ export default function GameBoard() {
   const [activeInput, setActiveInput] = useState<PlayerId | null>(null)
   const [soundMuted, setSoundMuted] = useState(false)
   const [showTimeoutBanner, setShowTimeoutBanner] = useState(false)
+  // Track elapsed seconds per player to prevent timer exploit (re-entering overlay resets timer)
+  const playerElapsedRef = useRef<Record<string, number>>({})
+  const lastOpenTimeRef = useRef<number>(0)
 
   // Play victory sound on game over
   useEffect(() => {
     if (phase === 'GAME_OVER') sfxVictory()
   }, [phase])
+
+  // Reset per-player elapsed time tracking on new round
+  useEffect(() => {
+    playerElapsedRef.current = {}
+  }, [global.roundNumber])
 
   // ── 主题选择页 ──
   if (phase === 'THEME_SELECT') {
@@ -188,10 +196,10 @@ export default function GameBoard() {
                 📋 审计
               </button>
             )}
-            <button onClick={backToThemeSelect} className="px-3 py-1.5 text-xs bg-stone-900 hover:bg-stone-800 text-stone-500 hover:text-stone-300 rounded-lg border border-stone-800 transition-all">
+            <button onClick={() => { if (global.roundNumber <= 1 || confirm('确定要换场景吗？当前进度将丢失。')) backToThemeSelect() }} className="px-3 py-1.5 text-xs bg-stone-900 hover:bg-stone-800 text-stone-500 hover:text-stone-300 rounded-lg border border-stone-800 transition-all">
               🏠 换场景
             </button>
-            <button onClick={resetGame} className="px-3 py-1.5 text-xs bg-stone-900 hover:bg-red-950 text-stone-600 hover:text-red-400 rounded-lg border border-stone-800 hover:border-red-900 transition-all">
+            <button onClick={() => { if (global.roundNumber <= 1 || confirm('确定要重开吗？当前进度将丢失。')) resetGame() }} className="px-3 py-1.5 text-xs bg-stone-900 hover:bg-red-950 text-stone-600 hover:text-red-400 rounded-lg border border-stone-800 hover:border-red-900 transition-all">
               ↺ 重开
             </button>
           </div>
@@ -238,7 +246,7 @@ export default function GameBoard() {
               <div className="bg-gradient-to-r from-purple-950/60 via-purple-900/40 to-purple-950/60 border border-purple-700/50 rounded-xl p-5 text-center space-y-2 animate-fade-in-up">
                 <div className="text-3xl font-black text-purple-300 animate-pulse">⚡ 终 盘 决 战 ⚡</div>
                 <div className="text-purple-400/80 text-sm">
-                  最后一回合 · 赌注 ×{(t?.configOverrides?.roundStakesMultiplier ?? [1, 0.8, 0.9, 1.0, 1.2, 1.5])[5] ?? 1.5} · 品质储备可爆发 · 终盘转向开放
+                  最后一回合 · 赌注 ×{(t?.configOverrides?.roundStakesMultiplier ?? [1, 0.8, 0.9, 1.0, 1.2, 1.5])[global.maxRounds] ?? 1.5} · 品质储备可爆发 · 终盘转向开放
                 </div>
                 <div className="text-stone-500 text-xs">
                   谨慎选择 — 这是翻盘的最后机会
@@ -282,7 +290,7 @@ export default function GameBoard() {
                 )}
                 {isFinalRound && (
                   <div className="bg-purple-950/40 border border-purple-800/40 rounded-xl px-4 py-2 text-purple-300 text-sm font-bold shrink-0">
-                    ⚡ 第 5 回合 · 可选终盘转向
+                    ⚡ 第 {global.maxRounds} 回合 · 可选终盘转向
                   </div>
                 )}
               </div>
@@ -304,7 +312,12 @@ export default function GameBoard() {
                   return (
                     <button
                       key={player.id}
-                      onClick={() => { if (!isLocked) setActiveInput(player.id as PlayerId) }}
+                      onClick={() => {
+                        if (!isLocked) {
+                          lastOpenTimeRef.current = Date.now()
+                          setActiveInput(player.id as PlayerId)
+                        }
+                      }}
                       disabled={isLocked}
                       className={`relative rounded-xl border p-4 text-center transition-all select-none ${
                         isLocked
@@ -355,6 +368,7 @@ export default function GameBoard() {
               <div className="text-stone-400 text-sm mt-1">请选择本回合动作</div>
               <SelectionTimer
                 isActive={pendingInputs[activeInput].action === null}
+                elapsedBefore={playerElapsedRef.current[activeInput] ?? 0}
                 onTimeout={() => {
                   setShowTimeoutBanner(true)
                   setTimeout(() => {
@@ -418,7 +432,12 @@ export default function GameBoard() {
 
             {pendingInputs[activeInput].action === null && (
               <button
-                onClick={() => setActiveInput(null)}
+                onClick={() => {
+                  // Save elapsed time for this player
+                  const elapsed = Math.floor((Date.now() - lastOpenTimeRef.current) / 1000)
+                  playerElapsedRef.current[activeInput] = (playerElapsedRef.current[activeInput] ?? 0) + elapsed
+                  setActiveInput(null)
+                }}
                 className="text-stone-600 hover:text-stone-400 text-sm transition-all py-2"
               >
                 ← 返回（暂不选）
@@ -512,18 +531,20 @@ const SELECTION_TIME_LIMIT = 30
 function SelectionTimer({
   isActive,
   onTimeout,
+  elapsedBefore = 0,
 }: {
   isActive: boolean
   onTimeout: () => void
+  elapsedBefore?: number
 }) {
-  const [timeLeft, setTimeLeft] = useState(SELECTION_TIME_LIMIT)
+  const [timeLeft, setTimeLeft] = useState(Math.max(1, SELECTION_TIME_LIMIT - elapsedBefore))
   const onTimeoutRef = useRef(onTimeout)
   onTimeoutRef.current = onTimeout
 
   useEffect(() => {
     if (!isActive) return
-    setTimeLeft(SELECTION_TIME_LIMIT)
-  }, [isActive])
+    setTimeLeft(Math.max(1, SELECTION_TIME_LIMIT - elapsedBefore))
+  }, [isActive, elapsedBefore])
 
   useEffect(() => {
     if (!isActive) return

@@ -56,6 +56,7 @@ function estimateImpact(
   qualityWeight: number,
   isFinalRound: boolean,
   cfg: typeof CONFIG = CONFIG,
+  playerCount: number = 4,
 ): { profitHint: string; shareHint: string; riskLevel: 'low' | 'mid' | 'high' } {
   const qualityBonus = calcQualityBonus(player.qualityScore, qualityWeight)
   const baseComp = cfg.baseCompetitiveness + qualityBonus
@@ -86,9 +87,9 @@ function estimateImpact(
   }
 
   const comp = baseComp + actionBonus
-  // Rough share estimate (assume 4 players with avg competitiveness 13)
+  // Rough share estimate based on actual player count
   const avgOther = 13
-  const estShare = comp / (comp + avgOther * 3)
+  const estShare = comp / (comp + avgOther * (playerCount - 1))
   const shareDelta = estShare - player.marketShare
 
   // Rough profit — use getMargin for HOLD boost
@@ -117,6 +118,7 @@ export default function PlayerCard({
   onSelectAction, onSelectFinalShift, onClearAction,
 }: Props) {
   const theme = useGameStore(s => s.theme)
+  const playerCount = useGameStore(s => s.playerCount)
   const acc = PLAYER_ACCENT[player.id]
   const company = theme?.companies.find(c => c.id === player.id)
   const hasSubmitted = selectedAction !== null
@@ -132,8 +134,8 @@ export default function PlayerCard({
   // 动作预估
   const impact = useMemo(() => {
     if (!pendingAction) return null
-    return estimateImpact(pendingAction, player, priceSensitivity, qualityWeight, isFinalRound, cfg)
-  }, [pendingAction, player, priceSensitivity, qualityWeight, isFinalRound, cfg])
+    return estimateImpact(pendingAction, player, priceSensitivity, qualityWeight, isFinalRound, cfg, playerCount)
+  }, [pendingAction, player, priceSensitivity, qualityWeight, isFinalRound, cfg, playerCount])
 
   function handleConfirm() {
     if (!pendingAction) return

@@ -281,10 +281,10 @@ export default function RoundResultPanel({ log, players, narration, onNext, isGa
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <div className="h-2 rounded-l bg-stone-700 animate-bar-grow" style={{ width: `${(p.oldShare * 4 * 100).toFixed(0)}%`, minWidth: '2px' }} />
+                      <div className="h-2 rounded-l bg-stone-700 animate-bar-grow" style={{ width: `${Math.min(100, p.oldShare * log.players.length * 100).toFixed(0)}%`, minWidth: '2px' }} />
                       {shareDelta >= 0
-                        ? <div className="h-2 rounded-r bg-green-500 animate-bar-grow" style={{ width: `${(shareDelta * 4 * 100).toFixed(0)}%`, minWidth: shareDelta > 0 ? '2px' : '0', animationDelay: '300ms' }} />
-                        : <div className="h-2 rounded-r bg-red-600 animate-bar-grow" style={{ width: `${(Math.abs(shareDelta) * 4 * 100).toFixed(0)}%`, minWidth: '2px', animationDelay: '300ms' }} />
+                        ? <div className="h-2 rounded-r bg-green-500 animate-bar-grow" style={{ width: `${Math.min(30, shareDelta * log.players.length * 100).toFixed(0)}%`, minWidth: shareDelta > 0 ? '2px' : '0', animationDelay: '300ms' }} />
+                        : <div className="h-2 rounded-r bg-red-600 animate-bar-grow" style={{ width: `${Math.min(30, Math.abs(shareDelta) * log.players.length * 100).toFixed(0)}%`, minWidth: '2px', animationDelay: '300ms' }} />
                       }
                     </div>
                   </div>

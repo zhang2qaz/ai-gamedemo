@@ -55,6 +55,17 @@ export default function IntelTradePhase() {
   // Track which players have viewed their intel
   const [viewedPlayers, setViewedPlayers] = useState<Set<string>>(new Set())
 
+  // Reset all local state when round changes
+  useEffect(() => {
+    setTimeLeft(INTEL_PHASE_DURATION)
+    setActivePlayer(null)
+    setRevealedCards(new Set())
+    setSharingCard(null)
+    setShareTarget(null)
+    setShareClaimedAction(null)
+    setViewedPlayers(new Set())
+  }, [global.roundNumber])
+
   useEffect(() => {
     if (timeLeft <= 0) {
       setActivePlayer(null)
