@@ -7,7 +7,6 @@ import { useGameStore } from '@/store/gameStore'
 export default function ModeSelect() {
   const [view, setView] = useState<'main' | 'host' | 'join'>('main')
   const [playerName, setPlayerName] = useState('')
-  const [hostAddr, setHostAddr] = useState('')
   const [roomCode, setRoomCode] = useState('')
   const error = useMultiplayerStore(s => s.error)
   const hostGame = useMultiplayerStore(s => s.hostGame)
@@ -22,21 +21,10 @@ export default function ModeSelect() {
   }
 
   const handleJoin = async () => {
-    if (!playerName.trim() || !hostAddr.trim() || !roomCode.trim()) return
-    let host = hostAddr.trim()
-    let port = 3000
-    if (host.includes(':')) {
-      const parts = host.split(':')
-      host = parts[0]
-      port = parseInt(parts[1]) || 3000
-    }
-    if (host.startsWith('http')) {
-      try {
-        const url = new URL(host)
-        host = url.hostname
-        port = parseInt(url.port) || 3000
-      } catch { /* 忽略 */ }
-    }
+    if (!playerName.trim() || !roomCode.trim()) return
+    // 直接用当前页面的地址作为服务器地址（同一 WiFi 下一定是对的）
+    const host = window.location.hostname
+    const port = parseInt(window.location.port) || 3000
     await joinGame(host, port, roomCode.trim().toUpperCase(), playerName.trim())
   }
 
@@ -90,7 +78,7 @@ export default function ModeSelect() {
 
           <div className="text-center space-y-2">
             <h2 className="font-black text-2xl text-sky-400" style={{ textShadow: '0 0 20px rgba(56,189,248,0.3)' }}>加入房间</h2>
-            <p className="text-stone-500 text-sm text-emboss">输入房主告诉你的地址和房间号</p>
+            <p className="text-stone-500 text-sm text-emboss">输入你的名字和房间号即可加入</p>
           </div>
 
           <div>
@@ -101,16 +89,7 @@ export default function ModeSelect() {
               placeholder="输入你的名字"
               className="w-full glass-card rounded-xl px-4 py-3.5 text-white placeholder:text-stone-600 focus:border-sky-500/50 focus:outline-none focus:ring-1 focus:ring-sky-500/30 transition-all"
               maxLength={8}
-            />
-          </div>
-
-          <div>
-            <label className="text-stone-500 text-xs mb-1.5 block font-bold uppercase tracking-wider">房主地址</label>
-            <input
-              value={hostAddr}
-              onChange={e => setHostAddr(e.target.value)}
-              placeholder="如 192.168.1.42"
-              className="w-full glass-card rounded-xl px-4 py-3.5 text-white placeholder:text-stone-600 focus:border-sky-500/50 focus:outline-none focus:ring-1 focus:ring-sky-500/30 transition-all font-mono text-sm"
+              autoComplete="off"
             />
           </div>
 
@@ -122,6 +101,8 @@ export default function ModeSelect() {
               placeholder="如 A3K7"
               className="w-full glass-card rounded-xl px-4 py-3.5 text-white placeholder:text-stone-600 focus:border-sky-500/50 focus:outline-none focus:ring-1 focus:ring-sky-500/30 transition-all font-mono text-2xl text-center tracking-[0.5em]"
               maxLength={4}
+              autoComplete="off"
+              inputMode="text"
             />
           </div>
 
@@ -133,7 +114,7 @@ export default function ModeSelect() {
 
           <button
             onClick={handleJoin}
-            disabled={!playerName.trim() || !hostAddr.trim() || roomCode.length < 4}
+            disabled={!playerName.trim() || roomCode.length < 4}
             className="w-full py-3.5 bg-gradient-to-r from-sky-600 to-sky-500 hover:from-sky-500 hover:to-sky-400 disabled:from-stone-700 disabled:to-stone-700 disabled:text-stone-500 text-black font-black rounded-xl text-base transition-all btn-3d disabled:shadow-none disabled:transform-none"
           >
             🚀 加入游戏
@@ -189,7 +170,7 @@ export default function ModeSelect() {
             onClick: () => setView('host'),
             emoji: '🏠',
             title: '创建房间',
-            desc: '你做房主，其他人输地址加入',
+            desc: '你做房主，其他人输房间号加入',
             borderColor: 'border-amber-800/50',
             hoverBorder: 'hover:border-amber-500/50',
             hoverBg: 'hover:bg-amber-950/20',
@@ -202,7 +183,7 @@ export default function ModeSelect() {
             onClick: () => setView('join'),
             emoji: '🚀',
             title: '加入房间',
-            desc: '输入房间号，加入别人的游戏',
+            desc: '输入房间号，加入同WiFi的游戏',
             borderColor: 'border-sky-800/50',
             hoverBorder: 'hover:border-sky-500/50',
             hoverBg: 'hover:bg-sky-950/20',

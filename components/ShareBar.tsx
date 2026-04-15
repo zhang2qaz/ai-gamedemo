@@ -44,11 +44,11 @@ export default function ShareBar({ players }: Props) {
   }
 
   return (
-    <div className="glass-card rounded-xl px-4 py-3 space-y-2.5">
+    <div className="glass-card rounded-xl px-3 py-2.5 space-y-2">
       {/* 市场份额条 */}
-      <div className="flex items-center gap-2">
-        <span className="text-stone-500 text-xs w-14 shrink-0 font-bold">{t?.marketShare ?? '份额'}</span>
-        <div className="flex flex-1 h-8 rounded-lg overflow-hidden gap-[2px] bg-stone-800/50">
+      <div className="space-y-1">
+        <span className="text-stone-500 text-xs font-bold">{t?.marketShare ?? '份额'}</span>
+        <div className="flex h-7 rounded-lg overflow-hidden gap-[2px] bg-stone-800/50">
           {players.map(p => {
             const pct = p.marketShare * 100
             return (
@@ -59,7 +59,6 @@ export default function ShareBar({ players }: Props) {
                   width: `${pct.toFixed(1)}%`,
                   transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
-                title={`${p.name}：${pct.toFixed(1)}%`}
               >
                 {pct >= 8 ? (
                   <span className="text-black text-xs font-black leading-none select-none drop-shadow-sm flex items-center">
@@ -77,20 +76,20 @@ export default function ShareBar({ players }: Props) {
         </div>
       </div>
 
-      {/* 品牌名称图例 + 利润排行 */}
-      <div className="flex items-center gap-2">
-        <span className="text-stone-500 text-xs w-14 shrink-0 font-bold">{t?.profit ?? '利润'}榜</span>
-        <div className="flex flex-1 gap-3 flex-wrap">
+      {/* 利润排行（移动端2列网格） */}
+      <div className="space-y-1">
+        <span className="text-stone-500 text-xs font-bold">{t?.profit ?? '利润'}榜</span>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
           {sorted.map((p, i) => {
             const medalStyle = ['text-gradient-gold', 'text-gradient-silver', 'text-gradient-bronze'][i] ?? 'text-stone-600'
             const medal = MEDAL_NUMBERS[i] ?? `${i + 1}`
             const profitK = Math.round(p.cumulativeProfit / 1000)
             return (
-              <div key={p.id} className="flex items-center gap-1" style={{ transition: 'all 0.5s ease' }}>
+              <div key={p.id} className="flex items-center gap-1">
                 <span className={`text-sm font-black ${medalStyle}`}>{medal}</span>
                 <span className={`w-1.5 h-1.5 rounded-full ${PLAYER_COLORS[p.id]?.dot ?? 'bg-stone-500'}`} />
-                <span className={`text-xs font-bold ${PLAYER_COLORS[p.id]?.text ?? 'text-stone-400'}`}>{p.name.slice(0, 2)}</span>
-                <span className={`text-xs font-mono ${p.cumulativeProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                <span className={`text-xs font-bold ${PLAYER_COLORS[p.id]?.text ?? 'text-stone-400'} truncate`}>{p.name}</span>
+                <span className={`text-xs font-mono ml-auto ${p.cumulativeProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {profitK >= 0 ? '+' : ''}¥{profitK}K
                 </span>
                 {trendIcon(p.id)}

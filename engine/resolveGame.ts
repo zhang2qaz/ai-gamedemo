@@ -60,7 +60,7 @@ export function generateRoundNarration(log: RoundAuditLog, playerStates?: Player
   const profitLabel = t?.terms.profit ?? '利润'
   lines.push(`本回合${profitLabel}最高：${getName(topProfit.id)}（净${profitLabel} ¥${Math.round(topProfit.netProfit).toLocaleString()}）`)
 
-  const shareLabel = t?.terms.marketShare ?? '客流份额'
+  const shareLabel = t?.terms.marketShare ?? '市场份额'
   const shareGainValue = topShareGain.newShare - topShareGain.oldShare
   if (Math.abs(shareGainValue) > 0.005) {
     const direction = shareGainValue > 0 ? '扩大' : '缩小'
@@ -84,7 +84,7 @@ export function generateGameNarration(
 
   const profitLabel = t?.terms.cumulativeProfit ?? '累计利润'
   const shareLabel = t?.terms.marketShare ?? '市场份额'
-  const unit = t?.terms.unit ?? '杯'
+  const unit = t?.terms.unit ?? '单位'
 
   const lines: string[] = ['═══════════════════════════════', '【局后复盘】', '']
 

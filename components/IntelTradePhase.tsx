@@ -279,7 +279,7 @@ export default function IntelTradePhase() {
             </div>
             <div>• 情报只有你自己能看 — 面对面讨论时可以说真话也可以说假话</div>
             <div>• 宣言言行一致 +¥10k，食言 -¥10k（风险对等）</div>
-            <div>• 标记对手后选ATK可获 +¥15k，但对手也选ATK则标记无效</div>
+            <div>• 标记对手后出击可获 +¥15k，但对手也出击则标记无效</div>
           </div>
         </div>
       </div>
@@ -468,7 +468,7 @@ export default function IntelTradePhase() {
             {/* ── 复仇标记 ── */}
             <div className="w-full max-w-md space-y-2">
               <div className="text-stone-500 text-xs font-bold">🎯 标记对手（可选）</div>
-              <div className="text-stone-600 text-xs">标记后选ATK +¥15k · 但对手也选ATK则无效</div>
+              <div className="text-stone-600 text-xs">标记后出击 +¥15k · 但对手也出击则无效</div>
               <div className="flex gap-2">
                 {players.filter(p => p.id !== activePlayer).map(target => {
                   const tc = PLAYER_COLORS[target.id]

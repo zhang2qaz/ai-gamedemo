@@ -10,6 +10,7 @@ const CATEGORY_ICON: Record<string, string> = {
   action: '⚔️',
   strategy: '🧠',
   mechanic: '⚙️',
+  concept: '📚',
 }
 
 const CATEGORY_COLOR: Record<string, string> = {
@@ -18,6 +19,7 @@ const CATEGORY_COLOR: Record<string, string> = {
   action: 'border-red-800 bg-red-950/30',
   strategy: 'border-purple-800 bg-purple-950/30',
   mechanic: 'border-stone-700 bg-stone-900/60',
+  concept: 'border-amber-700 bg-amber-950/30',
 }
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -26,17 +28,30 @@ const CATEGORY_LABEL: Record<string, string> = {
   action: '动作解读',
   strategy: '策略建议',
   mechanic: '机制科普',
+  concept: '学到了什么',
 }
 
-export default function CoachPanel() {
+type CoachPanelProps = {
+  auditLogs?: import('@/engine/types').RoundAuditLog[]
+  players?: import('@/engine/types').PlayerState[]
+  theme?: import('@/engine/themes/types').ThemeConfig | null
+  phase?: string
+}
+
+export default function CoachPanel(props: CoachPanelProps = {}) {
   const [open, setOpen] = useState(false)
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
   const [filterCat, setFilterCat] = useState<string | null>(null)
   const [hasNewInsights, setHasNewInsights] = useState(false)
-  const auditLogs = useGameStore(s => s.auditLogs)
-  const players = useGameStore(s => s.players)
-  const theme = useGameStore(s => s.theme)
-  const phase = useGameStore(s => s.phase)
+  const storeAuditLogs = useGameStore(s => s.auditLogs)
+  const storePlayers = useGameStore(s => s.players)
+  const storeTheme = useGameStore(s => s.theme)
+  const storePhase = useGameStore(s => s.phase)
+
+  const auditLogs = props.auditLogs ?? storeAuditLogs
+  const players = props.players ?? storePlayers
+  const theme = props.theme !== undefined ? props.theme : storeTheme
+  const phase = props.phase ?? storePhase
 
   const insights = useMemo(
     () => generateInsights(auditLogs, players, theme),

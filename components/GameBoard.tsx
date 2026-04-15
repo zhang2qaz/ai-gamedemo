@@ -8,13 +8,13 @@ import RoundResultPanel from './RoundResultPanel'
 import AuditLogPanel from './AuditLogPanel'
 import GameOverPanel from './GameOverPanel'
 import ShareBar from './ShareBar'
-import IntelFeed from './IntelFeed'
+import ForecastBanner from './ForecastBanner'
 import ThemeSelect from './ThemeSelect'
 import { getFinalRanking } from '@/engine/resolveGame'
 import { getSignalForRound } from '@/engine/events'
 import SpeakBtn from './SpeakBtn'
 import CoachPanel from './CoachPanel'
-import IntelTradePhase from './IntelTradePhase'
+import ForecastPhase from './ForecastPhase'
 import { sfxSelect, sfxLock, sfxReveal, sfxWildCard, sfxTick, sfxTimeout, sfxVictory, toggleMute, isMuted } from '@/lib/sounds'
 import WhatIfAnalysis from './WhatIfAnalysis'
 
@@ -41,8 +41,9 @@ export default function GameBoard() {
   const gameNarration = useGameStore(s => s.gameNarration)
   const currentRoundResult = useGameStore(s => s.currentRoundResult)
   const showAuditLog = useGameStore(s => s.showAuditLog)
-  const generatedIntel = useGameStore(s => s.generatedIntel)
-  const intelTruth = useGameStore(s => s.intelTruth)
+  const lastRoundForecast = useGameStore(s => s.lastRoundForecast)
+  const lastRoundPledges = useGameStore(s => s.lastRoundPledges)
+  const currentForecast = useGameStore(s => s.currentForecast)
   const prevRoundPlayers = useGameStore(s => s.prevRoundPlayers)
   const prevRoundGlobal = useGameStore(s => s.prevRoundGlobal)
   const wildCards = useGameStore(s => s.wildCards)
@@ -56,12 +57,6 @@ export default function GameBoard() {
   const backToThemeSelect = useGameStore(s => s.backToThemeSelect)
   const toggleAuditLog = useGameStore(s => s.toggleAuditLog)
   const toggleWildCard = useGameStore(s => s.toggleWildCard)
-  const ensureIntel = useGameStore(s => s.ensureIntel)
-
-  // 客户端首次渲染时生成情报（空依赖，只执行一次）
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { ensureIntel() }, [])
-
   // 当前正在输入的玩家（全屏遮罩）
   const [activeInput, setActiveInput] = useState<PlayerId | null>(null)
   const [soundMuted, setSoundMuted] = useState(false)
@@ -148,7 +143,7 @@ export default function GameBoard() {
           {/* 状态文字 + 赌注倍数 */}
           <div className="text-sm whitespace-nowrap shrink-0 flex items-center gap-2">
             <span>
-              {isIntelPhase && <span className="text-cyan-400 font-bold">R{global.roundNumber} · 情报交易</span>}
+              {isIntelPhase && <span className="text-cyan-400 font-bold">R{global.roundNumber} · 风向讨论</span>}
               {isSubmitting && <span className="text-amber-400 font-bold">R{global.roundNumber} · 选牌</span>}
               {isRoundResult && <span className="text-green-400 font-bold">R{global.roundNumber - 1} · 结算完毕</span>}
               {isGameOver && <span className="text-yellow-400 font-bold">⚑ 终局</span>}
@@ -221,19 +216,13 @@ export default function GameBoard() {
 
         {/* 回合结果 */}
         {isRoundResult && currentRoundResult && (() => {
-          const prevRound = global.roundNumber - 1
-          const intel = generatedIntel.find(r => r.round === prevRound) ?? null
           return (
           <>
             <ShareBar players={players} />
-            {intel && (
-              <IntelFeed
-                intel={intel}
-                truthOverrides={intelTruth[prevRound]}
-                revealed={true}
-              />
+            {lastRoundForecast && (
+              <ForecastBanner forecast={lastRoundForecast} revealed={true} />
             )}
-            <RoundResultPanel log={currentRoundResult} players={players} narration={currentNarration} onNext={nextRound} isGameOver={false} />
+            <RoundResultPanel log={currentRoundResult} players={players} narration={currentNarration} onNext={nextRound} isGameOver={false} lastRoundForecast={lastRoundForecast} lastRoundPledges={lastRoundPledges} />
             {prevRoundPlayers.length > 0 && prevRoundGlobal && (
               <WhatIfAnalysis log={currentRoundResult} prevPlayers={prevRoundPlayers} prevGlobal={prevRoundGlobal} />
             )}
@@ -264,24 +253,19 @@ export default function GameBoard() {
               <RoundChangeSummary players={players} prevPlayers={prevRoundPlayers} roundNumber={global.roundNumber} />
             )}
 
-            <IntelTradePhase />
+            <ForecastPhase />
           </>
         )}
 
         {/* 提交阶段 */}
         {isSubmitting && (() => {
-          const intel = generatedIntel.find(r => r.round === global.roundNumber) ?? null
           return (
           <>
             <ShareBar players={players} />
 
-            {/* 情报流 */}
-            {intel && (
-              <IntelFeed
-                intel={intel}
-                truthOverrides={intelTruth[global.roundNumber]}
-                revealed={false}
-              />
+            {/* 市场风向 */}
+            {currentForecast && (
+              <ForecastBanner forecast={currentForecast} revealed={false} />
             )}
 
             {/* 事件生效 + 终盘 横幅 */}
@@ -390,23 +374,7 @@ export default function GameBoard() {
               )}
             </div>
 
-            <div className="w-full max-w-sm">
-              <PlayerCard
-                player={player}
-                rank={rankMap[activeInput] || 4}
-                selectedAction={pendingInputs[activeInput].action}
-                selectedFinalShift={pendingInputs[activeInput].finalShift}
-                isFinalRound={isFinalRound}
-                isSubmitting={isSubmitting}
-                qualityWeight={global.qualityWeight}
-                priceSensitivity={global.priceSensitivity}
-                onSelectAction={(action: BaseAction) => { sfxSelect(); setAction(activeInput, action) }}
-                onSelectFinalShift={(shift: FinalShift) => { sfxSelect(); setFinalShift(activeInput, shift) }}
-                onClearAction={() => clearAction(activeInput)}
-              />
-            </div>
-
-            {/* 暗牌 */}
+            {/* 暗牌（优先展示） */}
             {wildCards[activeInput] && !wildCards[activeInput].used && (
               <div className="w-full max-w-sm">
                 <button
@@ -434,6 +402,23 @@ export default function GameBoard() {
             {wildCards[activeInput]?.used && (
               <div className="text-stone-700 text-xs">🃏 暗牌已使用</div>
             )}
+
+            {/* 常规动作 + 终盘转向 */}
+            <div className="w-full max-w-sm">
+              <PlayerCard
+                player={player}
+                rank={rankMap[activeInput] || 4}
+                selectedAction={pendingInputs[activeInput].action}
+                selectedFinalShift={pendingInputs[activeInput].finalShift}
+                isFinalRound={isFinalRound}
+                isSubmitting={isSubmitting}
+                qualityWeight={global.qualityWeight}
+                priceSensitivity={global.priceSensitivity}
+                onSelectAction={(action: BaseAction) => { sfxSelect(); setAction(activeInput, action) }}
+                onSelectFinalShift={(shift: FinalShift) => { sfxSelect(); setFinalShift(activeInput, shift) }}
+                onClearAction={() => clearAction(activeInput)}
+              />
+            </div>
 
             {pendingInputs[activeInput].action === null && (
               <button

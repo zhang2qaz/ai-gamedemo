@@ -2,7 +2,7 @@
 // 弈战 - 名校之争主题
 // =====================
 
-import type { IntelSource, RoundIntel, IntelCard, CompanyProfile, ThemeConfig } from './types'
+import type { IntelSource, RoundIntel, IntelCard, CompanyProfile, ThemeConfig, MarketForecast } from './types'
 import { CONFIG } from '../constants'
 import type { BaseAction } from '../types'
 
@@ -395,6 +395,44 @@ export const SCHOOL_THEME: ThemeConfig = {
       effectText: '【事件生效】新评估标准实施！家长对学费的敏感度下降，教学质量权重提升。',
     },
   ],
+
+  generateForecast(): MarketForecast[] {
+    const actions: BaseAction[] = ['ATK', 'QUA', 'MKT', 'HOLD']
+    const pool: Record<BaseAction, Array<{ headline: string; detail: string }>> = {
+      ATK: [
+        { headline: '周边学区房价格松动', detail: '家长对学费更敏感，奖学金抢生源效果可能更强' },
+        { headline: '竞争对手缩减招生预算', detail: '独家发放奖学金有望大幅抢占优质生源' },
+        { headline: '教育局鼓励扩大招生规模', detail: '政策支持下奖学金抢生的阻力更小' },
+      ],
+      QUA: [
+        { headline: '重点高中提高自主招生门槛', detail: '教研投入提升教学质量可能更受家长青睐' },
+        { headline: '新课标改革方案即将落地', detail: '提前布局教研有助于率先适配新标准' },
+        { headline: '区教研室发布教学质量排名', detail: '教研积累深厚的学校可能获得排名红利' },
+      ],
+      MKT: [
+        { headline: '家长择校季信息搜索量激增', detail: '口碑宣传在信息高峰期传播效率更高' },
+        { headline: '本区教育公众号阅读量翻倍', detail: '此时投入口碑推广可能获得更高曝光回报' },
+        { headline: '学区房中介加大推荐力度', detail: '借助渠道口碑宣传可以低成本触达目标家长' },
+      ],
+      HOLD: [
+        { headline: '多校竞争导致招生成本飙升', detail: '稳健办学避免消耗战可能是更明智的选择' },
+        { headline: '教育政策进入观望期', detail: '稳健经营等待政策明朗再出手风险更低' },
+        { headline: '在校生家长满意度调查结果良好', detail: '维持现状稳定办学有助于巩固存量生源' },
+      ],
+    }
+    return Array.from({ length: 5 }, (_, i) => {
+      const signal = actions[Math.floor(Math.random() * 4)]
+      const options = pool[signal]
+      const pick = options[Math.floor(Math.random() * options.length)]
+      return {
+        round: i + 1,
+        signal,
+        isTrue: Math.random() < 0.5,
+        headline: pick.headline,
+        detail: pick.detail,
+      }
+    })
+  },
 
   generateIntel,
 

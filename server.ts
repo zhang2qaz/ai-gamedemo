@@ -53,6 +53,12 @@ app.prepare().then(() => {
       return
     }
 
+    // HTML 页面不缓存，确保每次拿到最新版本
+    if (!parsedUrl.pathname || parsedUrl.pathname === '/' || !parsedUrl.pathname.includes('.')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+      res.setHeader('Pragma', 'no-cache')
+    }
+
     handle(req, res, parsedUrl)
   })
 

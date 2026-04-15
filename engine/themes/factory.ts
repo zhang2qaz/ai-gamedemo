@@ -2,7 +2,7 @@
 // 弈战 - 工厂风云主题
 // =====================
 
-import type { IntelSource, RoundIntel, IntelCard, CompanyProfile, ThemeConfig } from './types'
+import type { IntelSource, RoundIntel, IntelCard, CompanyProfile, ThemeConfig, MarketForecast } from './types'
 import { CONFIG } from '../constants'
 import type { BaseAction } from '../types'
 
@@ -515,6 +515,44 @@ export const FACTORY_THEME: ThemeConfig = {
     inertiaOldWeight: 0.65,         // 惯性极高→翻盘困难
     inertiaInstantWeight: 0.30,     // 即时竞争力权重低
     inertiaMomentumWeight: 0.05,    // 动量几乎无用
+  },
+
+  generateForecast(): MarketForecast[] {
+    const actions: BaseAction[] = ['ATK', 'QUA', 'MKT', 'HOLD']
+    const pool: Record<BaseAction, Array<{ headline: string; detail: string }>> = {
+      ATK: [
+        { headline: '下游客户紧急追加订单', detail: '低价抢单可能在本轮拿到大批量采购合同' },
+        { headline: '竞争对手产能不足交期延迟', detail: '趁机低价抢单有望快速扩大订单份额' },
+        { headline: '原材料价格短期回落', detail: '成本下降为低价抢单提供了利润空间' },
+      ],
+      QUA: [
+        { headline: '客户验厂标准全面升级', detail: '技术升级可能帮助通过更严格的质量审核' },
+        { headline: '行业新标准即将实施', detail: '提前投入技术升级有助于抢占合规先机' },
+        { headline: '高端客户释放大额订单意向', detail: '技术实力过硬的工厂更有机会中标' },
+      ],
+      MKT: [
+        { headline: '行业展会即将开幕', detail: '品牌推广投入可能带来高质量的客户询盘' },
+        { headline: '行业媒体评选"年度优质供应商"', detail: '加大品牌曝光有望入选榜单获得背书' },
+        { headline: '采购经理人指数回升', detail: '下游采购意愿增强，品牌推广效果放大' },
+      ],
+      HOLD: [
+        { headline: '订单需求季节性回落', detail: '稳定生产控制成本可能是淡季的最优策略' },
+        { headline: '供应链波动风险上升', detail: '维持稳定生产节奏有助于保障交付可靠性' },
+        { headline: '同行竞相压价利润承压', detail: '稳定生产守住利润率可能优于跟风降价' },
+      ],
+    }
+    return Array.from({ length: 5 }, (_, i) => {
+      const signal = actions[Math.floor(Math.random() * 4)]
+      const options = pool[signal]
+      const pick = options[Math.floor(Math.random() * options.length)]
+      return {
+        round: i + 1,
+        signal,
+        isTrue: Math.random() < 0.5,
+        headline: pick.headline,
+        detail: pick.detail,
+      }
+    })
   },
 
   generateIntel,

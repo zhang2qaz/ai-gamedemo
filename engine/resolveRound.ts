@@ -52,7 +52,9 @@ export function resolveRound(
   players: PlayerState[],
   inputs: RoundInput[],
   roundIntelCards?: Array<{ impliedAction: BaseAction; isTrue: boolean }>,
-  configOverrides?: Partial<typeof CONFIG>
+  configOverrides?: Partial<typeof CONFIG>,
+  forecast?: { signal: BaseAction; isTrue: boolean } | null,
+  pledges?: Array<{ playerId: PlayerId; pledgedAction: BaseAction }>,
 ): ResolveRoundResult {
   // Merge base CONFIG with theme-specific overrides
   const C = configOverrides ? { ...CONFIG, ...configOverrides } : CONFIG
@@ -67,14 +69,13 @@ export function resolveRound(
 
   // ─────────────────────────────────────────────
   // STEP 2: 延迟效果结转
-  // 若上一回合某玩家选择了 QUA，本回合开始时生效
-  // 第 5 回合选 QUA 不生效（无下一回合）
+  // qualityCharge 从上回合 QUA 累积（用于终盘爆发）
+  // qualityScore+10 已改为同轮生效（见 STEP 4 & STEP 8）
   // ─────────────────────────────────────────────
   const playersAfterDelay = players.map(p => {
     if (p.lastAction === 'QUA') {
       return {
         ...p,
-        qualityScore: p.qualityScore + 10,
         qualityCharge: p.qualityCharge + 1,
       }
     }
@@ -108,8 +109,8 @@ export function resolveRound(
     const fatigueBefore = player.fatigueIndex
     const consecutiveHoldBefore = player.consecutiveHoldCount
 
-    // 品质基础加成
-    const qualityBonus = calcQualityBonus(player.qualityScore, g.qualityWeight)
+    // 品质基础加成（QUA同轮生效：当前选QUA时用+10的品质分计算）
+    let qualityBonus = calcQualityBonus(player.qualityScore, g.qualityWeight)
 
     // 动作加成
     let actionBonus = 0
@@ -131,6 +132,8 @@ export function resolveRound(
           tempQualityCharge = 0
         } else {
           actionBonus = C.qualitySignalBonus
+          // QUA同轮生效：品质+10立即反映在竞争力中
+          qualityBonus = calcQualityBonus(player.qualityScore + 10, g.qualityWeight)
         }
         break
       case 'HOLD':
@@ -175,13 +178,28 @@ export function resolveRound(
       holdPenalty = calcHoldPenalty(aggressionPressure, defensiveLock, C)
     }
 
-    // 情报加成
-    let intelBonus = 0
-    if (roundIntelCards && Array.isArray(roundIntelCards)) {
+    // 风向加成（替代旧情报系统）
+    let forecastBonus = 0
+    if (forecast && action === forecast.signal) {
+      forecastBonus = forecast.isTrue ? C.forecastTrueBonus : -C.forecastFalsePenalty
+    }
+    // 兼容旧情报卡（已废弃）
+    let intelBonus = forecastBonus
+    if (!forecast && roundIntelCards && Array.isArray(roundIntelCards)) {
+      intelBonus = 0
       for (const card of roundIntelCards) {
         if (card && card.impliedAction === action) {
           intelBonus += card.isTrue ? 1.0 : -1.0
         }
+      }
+    }
+
+    // 立誓加成
+    let pledgeBonus = 0
+    if (pledges) {
+      const myPledge = pledges.find(p => p.playerId === player.id)
+      if (myPledge) {
+        pledgeBonus = action === myPledge.pledgedAction ? C.pledgeKeepBonus : -C.pledgeBreakPenalty
       }
     }
 
@@ -192,7 +210,7 @@ export function resolveRound(
     // 最终竞争力
     const competitiveness = Math.max(
       C.minCompetitiveness,
-      C.baseCompetitiveness + actionBonus + qualityBonus + finalShiftBonus + intelBonus + wildCardBonus - holdPenalty
+      C.baseCompetitiveness + actionBonus + qualityBonus + finalShiftBonus + intelBonus + pledgeBonus + wildCardBonus - holdPenalty
     )
 
     return {
@@ -202,7 +220,7 @@ export function resolveRound(
       oldShare: player.marketShare,
       qualityScoreBefore,
       qualityDeltaFromLastRound,
-      qualityScoreAfter: player.qualityScore, // 在 STEP 2 已经更新
+      qualityScoreAfter: player.qualityScore + (action === 'QUA' && !isFinalRound ? 10 : 0), // QUA同轮生效
       qualityChargeBefore,
       qualityChargeAfter: tempQualityCharge,
       brandHeatBefore,
@@ -284,7 +302,36 @@ export function resolveRound(
 
   // 归一化
   const rawShares = Object.fromEntries(calcList.map(c => [c.id, c.newShare]))
-  const normalizedShares = normalizeShares(rawShares)
+  let normalizedShares = normalizeShares(rawShares)
+
+  // SHIELD 暗牌二次保护：归一化后仍然不能低于 oldShare
+  // （归一化可能把 SHIELD 保护的份额压低）
+  const shieldIds = calcList.filter(c => {
+    const input = inputMap.get(c.id)!
+    return (input.wildCard ?? null) === 'SHIELD'
+  }).map(c => c.id)
+
+  if (shieldIds.length > 0) {
+    const shares = { ...normalizedShares }
+    for (const id of shieldIds) {
+      const c = calcList.find(cc => cc.id === id)!
+      if (shares[id] < c.oldShare) {
+        shares[id] = c.oldShare
+      }
+    }
+    // 非 SHIELD 玩家按比例吸收差额
+    const nonShieldIds = calcList.map(c => c.id).filter(id => !shieldIds.includes(id))
+    const shieldTotal = shieldIds.reduce((s, id) => s + shares[id], 0)
+    const remaining = 1 - shieldTotal
+    const nonShieldRawTotal = nonShieldIds.reduce((s, id) => s + normalizedShares[id], 0)
+    if (nonShieldRawTotal > 0 && remaining > 0) {
+      for (const id of nonShieldIds) {
+        shares[id] = (normalizedShares[id] / nonShieldRawTotal) * remaining
+      }
+    }
+    normalizedShares = shares
+  }
+
   calcList.forEach(c => {
     c.newShare = normalizedShares[c.id]
   })
@@ -405,12 +452,14 @@ export function resolveRound(
 
     // P2: QUALITY_BOOST 暗牌：立即 +5 品质（任何动作可用）
     const qualityScoreBonus = wildCard === 'QUALITY_BOOST' ? 5 : 0
+    // QUA同轮生效：当前选QUA（非终盘）立即+10品质
+    const quaSameRoundBonus = (action === 'QUA' && !isFinalRound) ? 10 : 0
 
     return {
       ...player,
       cash: c.cashAfter,
       marketShare: c.newShare,
-      qualityScore: player.qualityScore + qualityScoreBonus,
+      qualityScore: player.qualityScore + qualityScoreBonus + quaSameRoundBonus,
       cumulativeProfit: c.cumulativeProfitAfter,
       brandHeat,
       marketMomentum,

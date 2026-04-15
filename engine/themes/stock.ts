@@ -2,7 +2,7 @@
 // 弈战 - 股市风云主题
 // =====================
 
-import type { IntelSource, RoundIntel, IntelCard, CompanyProfile, ThemeConfig } from './types'
+import type { IntelSource, RoundIntel, IntelCard, CompanyProfile, ThemeConfig, MarketForecast } from './types'
 import type { BaseAction } from '../types'
 
 const companies: CompanyProfile[] = [
@@ -171,6 +171,44 @@ export const STOCK_THEME: ThemeConfig = {
     inertiaInstantWeight: 0.45,    // 即时竞争力权重高
     inertiaMomentumWeight: 0.15,   // 动量影响翻倍
     roundStakesMultiplier: [1.0, 0.6, 0.8, 1.2, 1.5, 2.0] as readonly number[],
+  },
+
+  generateForecast: (): MarketForecast[] => {
+    const actions: BaseAction[] = ['ATK', 'QUA', 'MKT', 'HOLD']
+    const pool: Record<BaseAction, Array<{ headline: string; detail: string }>> = {
+      ATK: [
+        { headline: '北向资金大幅净流入', detail: '激进做多可能在本轮获得超额收益' },
+        { headline: '科技板块融资余额创新高', detail: '市场做多情绪浓厚，跟随趋势抢筹胜率较高' },
+        { headline: '多只科技股突破关键阻力位', detail: '技术面看多信号明确，激进建仓可能获利丰厚' },
+      ],
+      QUA: [
+        { headline: '半导体行业进入新一轮景气周期', detail: '深度研究产业链可能挖掘出被低估的标的' },
+        { headline: '多家科技公司发布超预期财报', detail: '基本面研究在当前市场环境中更具价值' },
+        { headline: 'AI算力需求持续超预期', detail: '深入研究算力产业链可能发现隐藏的投资机会' },
+      ],
+      MKT: [
+        { headline: '财经自媒体流量暴增', detail: '造势宣传的传播效率高于往期' },
+        { headline: '券商策略会密集召开', detail: '此时发布研报造势可获得更高关注度' },
+        { headline: '投资者情绪指数攀升至高位', detail: '市场关注度变现的窗口期可能已经到来' },
+      ],
+      HOLD: [
+        { headline: '技术指标显示短期超买', detail: '稳健持仓等待回调可能是更理性的选择' },
+        { headline: '监管层释放维稳信号', detail: '市场波动率将下降，持仓观望风险最低' },
+        { headline: '量化交易占比提升加剧波动', detail: '主动减仓持币观望有助于规避尾部风险' },
+      ],
+    }
+    return Array.from({ length: 5 }, (_, i) => {
+      const signal = actions[Math.floor(Math.random() * 4)]
+      const options = pool[signal]
+      const pick = options[Math.floor(Math.random() * options.length)]
+      return {
+        round: i + 1,
+        signal,
+        isTrue: Math.random() < 0.5,
+        headline: pick.headline,
+        detail: pick.detail,
+      }
+    })
   },
 
   generateIntel: (): RoundIntel[] => {

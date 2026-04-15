@@ -7,6 +7,7 @@ import { canQualityConvert, canBrandMonetize, calcAtkBonus, calcMktBonus, calcQu
 import { CONFIG } from '@/engine/constants'
 import { useGameStore } from '@/store/gameStore'
 import SpeakBtn from './SpeakBtn'
+import ActionExplainer from './ActionExplainer'
 
 type Props = {
   player: PlayerState
@@ -123,6 +124,7 @@ export default function PlayerCard({
   const company = theme?.companies.find(c => c.id === player.id)
   const hasSubmitted = selectedAction !== null
   const t = theme?.terms
+  const explainer = theme?.actionExplainer
 
   // ── 本地预选状态（确认前不写入 store） ──
   const [pendingAction, setPendingAction] = useState<BaseAction | null>(null)
@@ -336,23 +338,27 @@ export default function PlayerCard({
                 )
               }
               return (
-                <button
-                  key={def.id}
-                  onClick={() => setPendingAction(def.id)}
-                  className={`w-full rounded-lg border-2 text-left transition-all duration-200 cursor-pointer ${
-                    isPending
-                      ? `${def.selectedBorder} ${def.selectedBg} ${def.selectedText} ring-2 ring-white/10 scale-[1.01]`
-                      : `${def.dimBorder} bg-stone-900/40 text-stone-300 ${def.hoverBg}`
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 px-2 pt-2 pb-1">
-                    <span className="text-sm shrink-0">{def.emoji}</span>
-                    <span className="font-bold text-xs whitespace-nowrap flex-1">{def.label}</span>
-                    {isPending && <span className="text-xs font-bold opacity-80">✓ 预选</span>}
-                    <SpeakBtn text={def.speakText} />
-                  </div>
-                  <div className={`px-2 pb-1.5 text-xs leading-snug ${isPending ? 'opacity-70' : 'text-stone-600'}`}>{def.cost}</div>
-                </button>
+                <div key={def.id}>
+                  <button
+                    onClick={() => setPendingAction(def.id)}
+                    className={`w-full rounded-lg border-2 text-left transition-all duration-200 cursor-pointer ${
+                      isPending
+                        ? `${def.selectedBorder} ${def.selectedBg} ${def.selectedText} ring-2 ring-white/10 scale-[1.01]`
+                        : `${def.dimBorder} bg-stone-900/40 text-stone-300 ${def.hoverBg}`
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 px-2 pt-2 pb-1">
+                      <span className="text-sm shrink-0">{def.emoji}</span>
+                      <span className="font-bold text-xs whitespace-nowrap flex-1">{def.label}</span>
+                      {isPending && <span className="text-xs font-bold opacity-80">✓ 预选</span>}
+                      <SpeakBtn text={def.speakText} />
+                    </div>
+                    <div className={`px-2 pb-1.5 text-xs leading-snug ${isPending ? 'opacity-70' : 'text-stone-600'}`}>{def.cost}</div>
+                  </button>
+                  {explainer?.[def.id] && (
+                    <ActionExplainer action={def.id} actionTitle={def.label} data={explainer[def.id]} />
+                  )}
+                </div>
               )
             })}
 

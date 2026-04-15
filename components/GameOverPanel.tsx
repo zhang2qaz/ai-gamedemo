@@ -116,7 +116,7 @@ function computeAwards(players: PlayerState[], logs: RoundAuditLog[]): Award[] {
       emoji: '🧘',
       title: '稳如泰山',
       player: getName(topHold[0]),
-      detail: `${topHold[1]} 次精细运营`,
+      detail: `${topHold[1]} 次稳健`,
     })
   }
 

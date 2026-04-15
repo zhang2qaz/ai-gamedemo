@@ -3,7 +3,7 @@
 // =====================
 
 import { create } from 'zustand'
-import type { PlayerId, BaseAction, FinalShift, PlayerState, GlobalState, RoundAuditLog, RoundInput, WildCard, WildCardType } from '@/engine/types'
+import type { PlayerId, BaseAction, FinalShift, PlayerState, GlobalState, RoundAuditLog, RoundInput, WildCard, WildCardType, MarketForecast, Pledge } from '@/engine/types'
 import { INITIAL_PLAYER_STATES, INITIAL_GLOBAL_STATE, createInitialPlayerStates } from '@/engine/constants'
 import { ALL_PLAYER_IDS, WILD_CARD_POOL } from '@/engine/types'
 import { resolveRound } from '@/engine/resolveRound'
@@ -46,24 +46,29 @@ type GameStore = {
   roundNarrations: string[]
   gameNarration: string
   currentRoundResult: RoundAuditLog | null
-  prevRoundPlayers: PlayerState[]   // 上一回合结算前的玩家状态（用于 What-If 分析）
+  prevRoundPlayers: PlayerState[]
   prevRoundGlobal: GlobalState | null
   showAuditLog: boolean
   generatedIntel: RoundIntel[]
   intelTruth: Record<number, boolean[]>
-  playerIntel: Record<PlayerId, number[]>   // 每个玩家看到的情报卡片索引
-  wildCards: Record<PlayerId, WildCard>     // 每个玩家的暗牌
+  playerIntel: Record<PlayerId, number[]>
+  wildCards: Record<PlayerId, WildCard>
 
-  // P1-1: 情报交易
-  intelShares: IntelShare[]                  // 本轮的情报分享记录
-  lastRoundIntelReport: IntelShare[]         // 上轮情报分享复盘（结算后显示）
+  // v2.5 市场风向系统
+  generatedForecasts: MarketForecast[]
+  currentForecast: MarketForecast | null
+  lastRoundForecast: MarketForecast | null
 
-  // P1-2: 公开宣言
+  // v2.5 立誓系统
+  pledges: Pledge[]
+  lastRoundPledges: Pledge[]
+
+  // 旧社交系统（保留字段兼容，但不再使用）
+  intelShares: IntelShare[]
+  lastRoundIntelReport: IntelShare[]
   announcements: Announcement[]
   lastRoundAnnouncements: Announcement[]
-
-  // P1-3: 复仇标记
-  revengeMarks: Partial<Record<PlayerId, PlayerId | null>>  // 标记者 → 被标记者
+  revengeMarks: Partial<Record<PlayerId, PlayerId | null>>
   lastRoundRevengeMarks: Partial<Record<PlayerId, PlayerId | null>>
 
   // Actions
@@ -74,6 +79,7 @@ type GameStore = {
   clearAction: (playerId: PlayerId) => void
   setFinalShift: (playerId: PlayerId, finalShift: FinalShift) => void
   toggleWildCard: (playerId: PlayerId) => void
+  setPledge: (playerId: PlayerId, action: BaseAction | null) => void
   shareIntel: (from: PlayerId, to: PlayerId, cardIdx: number, claimedAction: BaseAction, isBluff: boolean) => void
   announce: (playerId: PlayerId, declaredAction: BaseAction | null) => void
   setRevengeMark: (from: PlayerId, target: PlayerId | null) => void
@@ -170,6 +176,13 @@ function createGameState(theme: ThemeConfig, playerCount = 4) {
     intelTruth: {} as Record<number, boolean[]>,
     playerIntel: {} as Record<PlayerId, number[]>,
     wildCards: distributeWildCards(playerCount),
+    // v2.5 新社交系统
+    generatedForecasts: [] as MarketForecast[],
+    currentForecast: null as MarketForecast | null,
+    lastRoundForecast: null as MarketForecast | null,
+    pledges: [] as Pledge[],
+    lastRoundPledges: [] as Pledge[],
+    // 旧社交系统（兼容）
     intelShares: [] as IntelShare[],
     lastRoundIntelReport: [] as IntelShare[],
     announcements: [] as Announcement[],
@@ -199,6 +212,11 @@ function createInitialState() {
     intelTruth: {} as Record<number, boolean[]>,
     playerIntel: {} as Record<PlayerId, number[]>,
     wildCards: distributeWildCards(4),
+    generatedForecasts: [] as MarketForecast[],
+    currentForecast: null as MarketForecast | null,
+    lastRoundForecast: null as MarketForecast | null,
+    pledges: [] as Pledge[],
+    lastRoundPledges: [] as Pledge[],
     intelShares: [] as IntelShare[],
     lastRoundIntelReport: [] as IntelShare[],
     announcements: [] as Announcement[],
@@ -216,11 +234,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const theme = getTheme(themeId)
       const generatedIntel = theme.generateIntel()
       const playerIntel = distributeIntel(generatedIntel, playerCount)
+      const generatedForecasts = theme.generateForecast()
+      const currentForecast = generatedForecasts.find(f => f.round === 1) ?? null
       set({
         ...createGameState(theme, playerCount),
         generatedIntel,
         intelTruth: buildIntelTruth(generatedIntel),
         playerIntel,
+        generatedForecasts,
+        currentForecast,
       })
     } catch (err) {
       console.error('[弈战] selectTheme error:', err)
@@ -293,6 +315,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     })
   },
 
+  setPledge: (playerId, action) => {
+    set(state => {
+      const filtered = state.pledges.filter(p => p.playerId !== playerId)
+      if (action) {
+        return { pledges: [...filtered, { playerId, pledgedAction: action }] }
+      }
+      return { pledges: filtered }
+    })
+  },
+
   setRevengeMark: (from, target) => {
     set(state => ({
       revengeMarks: { ...state.revengeMarks, [from]: target },
@@ -326,52 +358,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
         }
       })
 
-      const currentIntel = (state.generatedIntel ?? []).find(r => r.round === global.roundNumber) ?? null
-      const roundIntelCards = currentIntel
-        ? currentIntel.cards.map(card => ({
-            impliedAction: card.impliedAction,
-            isTrue: card.isTrue,
-          }))
-        : undefined
+      // v2.5: 使用市场风向 + 立誓系统（替代旧情报系统）
+      const currentForecast = state.currentForecast
+      const forecastParam = currentForecast
+        ? { signal: currentForecast.signal, isTrue: currentForecast.isTrue }
+        : null
+      const pledgeParam = state.pledges.length > 0 ? state.pledges : undefined
 
-      const { newGlobal, newPlayers, auditLog } = resolveRound(global, players, inputs, roundIntelCards, theme.configOverrides)
-
-      // P1-2: 宣言诚信奖励 — 言行一致的玩家获得利润加成
-      const HONESTY_BONUS = 10000
-      const BLUFF_PENALTY = -10000
-      const socialBonuses: Record<string, number> = {}
-      for (const ann of state.announcements) {
-        const p = newPlayers.find(pl => pl.id === ann.playerId)
-        const actualAction = pendingInputs[ann.playerId]?.action
-        if (p && actualAction) {
-          const bonus = actualAction === ann.declaredAction ? HONESTY_BONUS : BLUFF_PENALTY
-          p.cash += bonus
-          p.cumulativeProfit += bonus
-          socialBonuses[ann.playerId] = (socialBonuses[ann.playerId] ?? 0) + bonus
-        }
-      }
-
-      // P1-3: 复仇标记 — 标记者选ATK获得奖励，但如果被标记者也选ATK则反击抵消
-      const REVENGE_BONUS = 15000
-      for (const [markerId, targetId] of Object.entries(state.revengeMarks)) {
-        if (!targetId) continue
-        const markerAction = pendingInputs[markerId as PlayerId]?.action
-        const targetAction = pendingInputs[targetId as PlayerId]?.action
-        const markerPlayer = newPlayers.find(p => p.id === markerId)
-        if (markerAction === 'ATK' && markerPlayer && targetAction !== 'ATK') {
-          markerPlayer.cash += REVENGE_BONUS
-          markerPlayer.cumulativeProfit += REVENGE_BONUS
-          socialBonuses[markerId] = (socialBonuses[markerId] ?? 0) + REVENGE_BONUS
-        }
-      }
-
-      // Update audit log with social bonuses so audit trail is accurate
-      for (const ap of auditLog.players) {
-        const bonus = socialBonuses[ap.id] ?? 0
-        if (bonus !== 0) {
-          ap.netProfit += bonus
-        }
-      }
+      const { newGlobal, newPlayers, auditLog } = resolveRound(
+        global, players, inputs,
+        undefined,  // roundIntelCards: 不再使用旧情报
+        theme.configOverrides,
+        forecastParam,
+        pledgeParam,
+      )
 
       const narration = generateRoundNarration(auditLog, players, theme)
       const newAuditLogs = [...state.auditLogs, auditLog]
@@ -400,9 +400,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
         phase: isGameOver ? 'GAME_OVER' : 'ROUND_RESULT',
         gameNarration,
         wildCards: newWildCards,
-        lastRoundIntelReport: [...state.intelShares],
-        lastRoundAnnouncements: [...state.announcements],
-        lastRoundRevengeMarks: { ...state.revengeMarks },
+        // v2.5: 保存本轮风向和立誓记录供结算面板显示
+        lastRoundForecast: currentForecast,
+        lastRoundPledges: [...state.pledges],
       })
     } catch (err) {
       console.error('[弈战] submitRound error:', err)
@@ -411,10 +411,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   nextRound: () => {
     const state = get()
+    const nextRoundNum = state.global.roundNumber
+    const nextForecast = state.generatedForecasts.find(f => f.round === nextRoundNum) ?? null
     set({
       phase: 'INTEL_PHASE',
       pendingInputs: createInitialPendingInputs(state.playerCount),
       currentRoundResult: null,
+      // v2.5: 设置下一轮风向，清空立誓
+      currentForecast: nextForecast,
+      pledges: [],
+      // 旧系统兼容
       intelShares: [],
       announcements: [],
       revengeMarks: {},
@@ -427,11 +433,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
       if (state.theme) {
         const generatedIntel = state.theme.generateIntel()
         const playerIntel = distributeIntel(generatedIntel, state.playerCount)
+        const generatedForecasts = state.theme.generateForecast()
+        const currentForecast = generatedForecasts.find(f => f.round === 1) ?? null
         set({
           ...createGameState(state.theme, state.playerCount),
           generatedIntel,
           intelTruth: buildIntelTruth(generatedIntel),
           playerIntel,
+          generatedForecasts,
+          currentForecast,
         })
       } else {
         set(createInitialState())

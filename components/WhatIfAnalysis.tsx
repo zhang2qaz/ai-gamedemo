@@ -11,13 +11,15 @@ type Props = {
   log: RoundAuditLog
   prevPlayers: PlayerState[]     // Players BEFORE this round
   prevGlobal: { roundNumber: number; maxRounds: number; totalCustomers: number; priceSensitivity: number; qualityWeight: number; eventQueue: import('@/engine/types').GameEvent[] }
+  theme?: import('@/engine/themes/types').ThemeConfig | null
 }
 
 const ACTIONS: BaseAction[] = ['ATK', 'QUA', 'MKT', 'HOLD']
 const ACTION_EMOJI: Record<string, string> = { ATK: '⚔', QUA: '🔬', MKT: '📣', HOLD: '🛡' }
 
-export default function WhatIfAnalysis({ log, prevPlayers, prevGlobal }: Props) {
-  const theme = useGameStore(s => s.theme)
+export default function WhatIfAnalysis({ log, prevPlayers, prevGlobal, theme: themeProp }: Props) {
+  const storeTheme = useGameStore(s => s.theme)
+  const theme = themeProp !== undefined ? themeProp : storeTheme
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerId | null>(null)
   const [altAction, setAltAction] = useState<BaseAction | null>(null)
 

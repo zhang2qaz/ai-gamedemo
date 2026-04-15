@@ -3,9 +3,9 @@
 // =====================
 // 引擎（resolveRound, CONFIG）完全不变，主题只改叙事文本。
 
-import type { PlayerId, BaseAction, FinalShift, GameEvent } from '../types'
+import type { PlayerId, BaseAction, FinalShift, GameEvent, MarketForecast } from '../types'
 
-// ── 情报系统类型 ──
+// ── 情报系统类型（已废弃，保留向后兼容） ──
 export type IntelSource =
   | '行业报告'
   | '竞品情报'
@@ -27,6 +27,8 @@ export type RoundIntel = {
   headline: string
   cards: IntelCard[]
 }
+
+export { type MarketForecast } from '../types'
 
 export type CompanyProfile = {
   id: PlayerId
@@ -116,7 +118,10 @@ export interface ThemeConfig {
   // 事件队列
   events: GameEvent[]
 
-  // 情报生成器（每局调用一次）
+  // 市场风向生成器（每局调用一次，每轮1条风向）
+  generateForecast: () => MarketForecast[]
+
+  // 情报生成器（已废弃，仅兼容旧主题）
   generateIntel: () => RoundIntel[]
 
   // 初始玩家名称（覆盖 constants.ts 的默认名称）
@@ -164,4 +169,12 @@ export interface ThemeConfig {
 
   // 主题特色机制描述（显示在UI上让玩家知道规则差异）
   mechanicsDescription?: string
+
+  // 行动解释面板（青少年财商模式用，帮助理解每个决策的现实含义）
+  actionExplainer?: Record<BaseAction, {
+    realWorld: string      // "现实中就像..."
+    risk: string           // "风险是..."
+    whenToUse: string      // "什么时候该用..."
+    dataPoints: string     // "数据：..."
+  }>
 }

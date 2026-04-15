@@ -3,8 +3,8 @@
 // =====================
 
 import type { WebSocket } from 'ws'
-import type { PlayerId, BaseAction, FinalShift, PlayerState, GlobalState, RoundAuditLog, RoundInput } from '@/engine/types'
-import { ALL_PLAYER_IDS } from '@/engine/types'
+import type { PlayerId, BaseAction, FinalShift, PlayerState, GlobalState, RoundAuditLog, RoundInput, MarketForecast, Pledge, WildCard, WildCardType } from '@/engine/types'
+import { ALL_PLAYER_IDS, WILD_CARD_POOL } from '@/engine/types'
 import { createInitialPlayerStates, INITIAL_GLOBAL_STATE } from '@/engine/constants'
 import { resolveRound } from '@/engine/resolveRound'
 import { generateRoundNarration, generateGameNarration } from '@/engine/resolveGame'
@@ -16,11 +16,13 @@ import { generateRoomCode } from './protocol'
 type PendingInput = {
   action: BaseAction | null
   finalShift: FinalShift
+  useWildCard: boolean
 }
 
-type RoomPhase = 'LOBBY' | 'SUBMITTING' | 'ROUND_RESULT' | 'GAME_OVER'
+type RoomPhase = 'LOBBY' | 'INTEL_PHASE' | 'SUBMITTING' | 'ROUND_RESULT' | 'GAME_OVER'
 
 const MAX_PLAYERS = 8
+const INTEL_PHASE_DURATION = 30_000 // 30 seconds
 
 export class RoomManager {
   roomCode: string
@@ -45,6 +47,15 @@ export class RoomManager {
   roundNarrations: string[] = []
   generatedIntel: RoundIntel[] = []
   intelTruth: Record<number, boolean[]> = {}
+  generatedForecasts: MarketForecast[] = []
+  pledges: Pledge[] = []
+  wildCards: Record<string, WildCard> = {}
+  cpuPlayerIds: Set<PlayerId> = new Set()
+  intelPhaseTimer: ReturnType<typeof setTimeout> | null = null
+  intelPhaseEndsAt: number = 0
+  beginnerMode: boolean = false
+  readyStartPlayers: Set<PlayerId> = new Set()
+  readyNextPlayers: Set<PlayerId> = new Set()
 
   constructor() {
     this.roomCode = generateRoomCode()
@@ -108,10 +119,18 @@ export class RoomManager {
         break
       case 'HOST_START_GAME':
         if (playerId !== 'A') return
-        this.handleStartGame()
+        this.beginnerMode = !!msg.beginnerMode
+        // 不再直接开始游戏，改为通过 READY_START 投票系统
+        break
+      case 'HOST_SKIP_INTEL':
+        if (playerId !== 'A') return
+        this.handleSkipIntel()
         break
       case 'ACTION':
-        this.handleAction(playerId, msg.action, msg.finalShift)
+        this.handleAction(playerId, msg.action, msg.finalShift, msg.useWildCard)
+        break
+      case 'PLEDGE':
+        this.handlePledge(playerId, msg.action)
         break
       case 'CLEAR_ACTION':
         this.handleClearAction(playerId)
@@ -123,6 +142,12 @@ export class RoomManager {
       case 'HOST_RESET':
         if (playerId !== 'A') return
         this.handleReset()
+        break
+      case 'READY_START':
+        this.handleReadyStart(playerId)
+        break
+      case 'READY_NEXT_ROUND':
+        this.handleReadyNextRound(playerId)
         break
     }
   }
@@ -180,7 +205,7 @@ export class RoomManager {
 
   // ── 开始游戏 ──
   handleStartGame() {
-    if (this.playerNames.size < 2) return
+    if (this.playerNames.size < 1) return
     if (!this.themeId) return
 
     try {
@@ -189,53 +214,88 @@ export class RoomManager {
       return
     }
 
-    // 确定活跃玩家（只使用已加入的真人玩家，不再填充 AI）
-    this.activePlayerIds = this.getActivePlayerIds()
+    // 确定活跃玩家：真人 + 电脑补满至少4人
+    const humanIds = this.getActivePlayerIds()
+    const MIN_PLAYERS = 4
+    this.cpuPlayerIds = new Set<PlayerId>()
+    if (humanIds.length < MIN_PLAYERS) {
+      const allIds: PlayerId[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] as PlayerId[]
+      for (const id of allIds) {
+        if (humanIds.length + this.cpuPlayerIds.size >= MIN_PLAYERS) break
+        if (!humanIds.includes(id)) {
+          this.cpuPlayerIds.add(id)
+        }
+      }
+    }
+    this.activePlayerIds = [...humanIds, ...this.cpuPlayerIds]
+    // Sort by player ID order
+    const idOrder: PlayerId[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] as PlayerId[]
+    this.activePlayerIds.sort((a, b) => idOrder.indexOf(a) - idOrder.indexOf(b))
     const playerCount = this.activePlayerIds.length
 
     this.global = { ...INITIAL_GLOBAL_STATE, eventQueue: this.theme.events }
-    this.players = createInitialPlayerStates(playerCount).map(p => ({
-      ...p,
-      name: this.playerNames.get(p.id) ?? this.theme!.playerNames?.[p.id] ?? p.name,
-    }))
+    this.players = createInitialPlayerStates(playerCount).map(p => {
+      const isCpu = this.cpuPlayerIds.has(p.id)
+      const themeName = this.theme!.playerNames?.[p.id] ?? p.name
+      return {
+        ...p,
+        name: isCpu
+          ? `${themeName}🤖`
+          : (this.playerNames.get(p.id) ?? themeName),
+      }
+    })
     this.resetPendingInputs()
     this.auditLogs = []
     this.roundNarrations = []
-    this.phase = 'SUBMITTING'
+    this.phase = 'INTEL_PHASE'
 
-    // 生成情报
+    // 生成情报（旧系统兼容）
     this.generatedIntel = this.theme.generateIntel()
     this.intelTruth = {}
     for (const ri of this.generatedIntel) {
       this.intelTruth[ri.round] = ri.cards.map(c => c.isTrue)
     }
 
+    // 生成市场风向
+    this.generatedForecasts = this.theme.generateForecast()
+    this.pledges = []
+
+    // 分配暗牌
+    this.wildCards = this.distributeWildCards(playerCount)
+
     this.broadcast({
       type: 'GAME_START',
       themeId: this.themeId,
       global: this.global,
       players: this.players,
+      forecasts: this.generatedForecasts,
       intel: this.generatedIntel,
       intelTruth: this.intelTruth,
+      wildCards: this.wildCards,
+      beginnerMode: this.beginnerMode,
     })
 
-    // 发送初始回合状态
-    this.broadcastRoundState()
+    // 进入情报讨论阶段
+    this.startIntelPhase()
   }
 
   // ── 提交动作 ──
-  handleAction(playerId: PlayerId, action: BaseAction, finalShift: FinalShift) {
+  handleAction(playerId: PlayerId, action: BaseAction, finalShift: FinalShift, useWildCard?: boolean) {
     if (this.phase !== 'SUBMITTING') return
 
-    this.pendingInputs[playerId] = { action, finalShift }
+    this.pendingInputs[playerId] = { action, finalShift, useWildCard: !!useWildCard }
     this.broadcastRoundState()
 
     // 检查是否所有活跃玩家都提交了
     const allSubmitted = this.activePlayerIds.every(id => {
+      // CPU 玩家由 scheduleCpuActions 处理
+      if (this.cpuPlayerIds.has(id)) {
+        return this.pendingInputs[id]?.action !== null
+      }
       if (!this.connections.has(id)) {
-        // 断线玩家自动选HOLD
+        // 断线真人玩家自动选HOLD
         if (!this.pendingInputs[id] || this.pendingInputs[id].action === null) {
-          this.pendingInputs[id] = { action: 'HOLD', finalShift: 'NONE' }
+          this.pendingInputs[id] = { action: 'HOLD', finalShift: 'NONE', useWildCard: false }
         }
         return true
       }
@@ -250,27 +310,66 @@ export class RoomManager {
   // ── 撤回动作 ──
   handleClearAction(playerId: PlayerId) {
     if (this.phase !== 'SUBMITTING') return
-    this.pendingInputs[playerId] = { action: null, finalShift: 'NONE' }
+    this.pendingInputs[playerId] = { action: null, finalShift: 'NONE', useWildCard: false }
     this.broadcastRoundState()
+  }
+
+  // ── 立誓 ──
+  handlePledge(playerId: PlayerId, action: BaseAction | null) {
+    if (this.phase !== 'SUBMITTING' && this.phase !== 'INTEL_PHASE') return
+    this.pledges = this.pledges.filter(p => p.playerId !== playerId)
+    if (action) {
+      this.pledges.push({ playerId, pledgedAction: action })
+    }
+    if (this.phase === 'INTEL_PHASE') {
+      this.broadcastIntelPhase()
+    } else {
+      this.broadcastRoundState()
+    }
   }
 
   // ── 结算回合 ──
   resolveCurrentRound() {
     if (!this.theme) return
 
-    const inputs: RoundInput[] = this.activePlayerIds.map(id => ({
-      playerId: id,
-      action: this.pendingInputs[id]?.action ?? 'HOLD',
-      finalShift: this.pendingInputs[id]?.finalShift ?? 'NONE',
-    }))
+    const usedWildCardIds: PlayerId[] = []
+    const inputs: RoundInput[] = this.activePlayerIds.map(id => {
+      const pi = this.pendingInputs[id]
+      const wc = this.wildCards[id]
+      const useWild = pi?.useWildCard && wc && !wc.used
+      if (useWild) usedWildCardIds.push(id)
+      return {
+        playerId: id,
+        action: pi?.action ?? 'HOLD',
+        finalShift: pi?.finalShift ?? 'NONE',
+        wildCard: useWild ? wc.type : null,
+      }
+    })
 
     const currentIntel = this.generatedIntel.find(r => r.round === this.global.roundNumber)
     const roundIntelCards = currentIntel
       ? currentIntel.cards.map(card => ({ impliedAction: card.impliedAction, isTrue: card.isTrue }))
       : undefined
 
-    const { newGlobal, newPlayers, auditLog } = resolveRound(this.global, this.players, inputs, roundIntelCards)
+    // 风向参数
+    const currentForecast = this.generatedForecasts.find(f => f.round === this.global.roundNumber) ?? null
+    const forecastParam = currentForecast
+      ? { signal: currentForecast.signal, isTrue: currentForecast.isTrue }
+      : null
+    const pledgeParam = this.pledges.length > 0 ? this.pledges : undefined
+
+    const { newGlobal, newPlayers, auditLog } = resolveRound(
+      this.global, this.players, inputs, roundIntelCards,
+      this.theme.configOverrides, forecastParam, pledgeParam
+    )
     const narration = generateRoundNarration(auditLog, this.players, this.theme)
+
+    // 标记已使用的暗牌
+    for (const id of usedWildCardIds) {
+      if (this.wildCards[id]) {
+        this.wildCards[id] = { ...this.wildCards[id], used: true }
+      }
+    }
 
     this.global = newGlobal
     this.players = newPlayers
@@ -278,6 +377,10 @@ export class RoomManager {
     this.roundNarrations.push(narration)
 
     const isGameOver = auditLog.round >= INITIAL_GLOBAL_STATE.maxRounds
+
+    // 保存本轮 forecast/pledges 供结果展示
+    const roundForecast = currentForecast
+    const roundPledges = [...this.pledges]
 
     if (isGameOver) {
       this.phase = 'GAME_OVER'
@@ -296,20 +399,71 @@ export class RoomManager {
         players: this.players,
         auditLog,
         narration,
+        forecast: roundForecast,
+        pledges: roundPledges,
       })
     }
   }
 
-  // ── 下一回合 ──
+  // ── 下一回合 ─��
   handleNextRound() {
     if (this.phase !== 'ROUND_RESULT') return
-    this.phase = 'SUBMITTING'
+    this.pledges = []
     this.resetPendingInputs()
+    this.startIntelPhase()
+  }
+
+  // ── 情报讨论阶段 ──
+  startIntelPhase() {
+    this.phase = 'INTEL_PHASE'
+    // 新手模式：不设倒计时（endsAt 设为极大值），由房主手动跳过
+    this.intelPhaseEndsAt = this.beginnerMode ? Date.now() + 999_999_000 : Date.now() + INTEL_PHASE_DURATION
+
+    // 广播 INTEL_PHASE
+    this.broadcastIntelPhase()
+
+    // 非新手模式：自动倒计时结束后进入出牌
+    if (this.intelPhaseTimer) clearTimeout(this.intelPhaseTimer)
+    if (!this.beginnerMode) {
+      this.intelPhaseTimer = setTimeout(() => {
+        if (this.phase === 'INTEL_PHASE') {
+          this.endIntelPhase()
+        }
+      }, INTEL_PHASE_DURATION)
+    }
+  }
+
+  endIntelPhase() {
+    if (this.phase !== 'INTEL_PHASE') return
+    if (this.intelPhaseTimer) {
+      clearTimeout(this.intelPhaseTimer)
+      this.intelPhaseTimer = null
+    }
+    this.phase = 'SUBMITTING'
     this.broadcastRoundState()
+    // 电脑玩家延迟自动出牌
+    this.scheduleCpuActions()
+  }
+
+  handleSkipIntel() {
+    this.endIntelPhase()
+  }
+
+  broadcastIntelPhase() {
+    const currentForecast = this.generatedForecasts.find(f => f.round === this.global.roundNumber) ?? null
+    this.broadcast({
+      type: 'INTEL_PHASE',
+      global: this.global,
+      players: this.players,
+      currentForecast,
+      pledges: this.pledges,
+      endsAt: this.intelPhaseEndsAt,
+    })
   }
 
   // ── 重置游戏 ──
   handleReset() {
+    if (this.intelPhaseTimer) { clearTimeout(this.intelPhaseTimer); this.intelPhaseTimer = null }
     this.phase = 'LOBBY'
     this.themeId = null
     this.theme = null
@@ -317,7 +471,55 @@ export class RoomManager {
     this.roundNarrations = []
     this.generatedIntel = []
     this.intelTruth = {}
+    this.generatedForecasts = []
+    this.pledges = []
+    this.wildCards = {}
+    this.cpuPlayerIds = new Set()
+    this.beginnerMode = false
+    this.readyStartPlayers.clear()
+    this.readyNextPlayers.clear()
     this.broadcast({ type: 'LOBBY_UPDATE', players: this.getPlayerSlots() })
+  }
+
+  // ── 准备开始（所有人就绪后开始游戏） ──
+  handleReadyStart(playerId: PlayerId) {
+    if (this.phase !== 'LOBBY' || !this.themeId) return
+    this.readyStartPlayers.add(playerId)
+    const humanIds = this.getHumanPlayerIds()
+    this.broadcast({
+      type: 'READY_UPDATE',
+      readyPlayers: [...this.readyStartPlayers],
+      totalHumans: humanIds.length,
+      context: 'start',
+    })
+    // 所有真人都准备好了 → 开始游戏
+    if (humanIds.every(id => this.readyStartPlayers.has(id))) {
+      this.readyStartPlayers.clear()
+      this.handleStartGame()
+    }
+  }
+
+  // ── 准备下一回合（所有人就绪后进入下一回合） ──
+  handleReadyNextRound(playerId: PlayerId) {
+    if (this.phase !== 'ROUND_RESULT' && this.phase !== 'GAME_OVER') return
+    this.readyNextPlayers.add(playerId)
+    const humanIds = this.getHumanPlayerIds()
+    this.broadcast({
+      type: 'READY_UPDATE',
+      readyPlayers: [...this.readyNextPlayers],
+      totalHumans: humanIds.length,
+      context: 'next_round',
+    })
+    // 所有真人都准备好了 → 下一回合
+    if (humanIds.every(id => this.readyNextPlayers.has(id))) {
+      this.readyNextPlayers.clear()
+      this.handleNextRound()
+    }
+  }
+
+  // 获取当前已连接的真人玩家 ID 列表
+  private getHumanPlayerIds(): PlayerId[] {
+    return [...this.connections.keys()].filter(id => !this.cpuPlayerIds.has(id))
   }
 
   // ── 广播回合状态 ──
@@ -327,12 +529,15 @@ export class RoomManager {
       pendingStatus[id] = this.pendingInputs[id]?.action !== null
     }
 
+    const currentForecast = this.generatedForecasts.find(f => f.round === this.global.roundNumber) ?? null
     this.broadcast({
       type: 'ROUND_STATE',
       phase: 'SUBMITTING',
       global: this.global,
       players: this.players,
       pendingStatus,
+      currentForecast,
+      pledges: this.pledges,
     })
   }
 
@@ -347,23 +552,54 @@ export class RoomManager {
       themeId: this.themeId,
       global: this.global,
       players: this.players,
+      forecasts: this.generatedForecasts,
       intel: this.generatedIntel,
       intelTruth: this.intelTruth,
+      wildCards: this.wildCards,
+      beginnerMode: this.beginnerMode,
     })
 
     // 再发当前阶段
-    if (this.phase === 'SUBMITTING') {
+    if (this.phase === 'INTEL_PHASE') {
+      const currentForecast = this.generatedForecasts.find(f => f.round === this.global.roundNumber) ?? null
+      this.sendTo(ws, {
+        type: 'INTEL_PHASE',
+        global: this.global,
+        players: this.players,
+        currentForecast,
+        pledges: this.pledges,
+        endsAt: this.intelPhaseEndsAt,
+      })
+    } else if (this.phase === 'SUBMITTING') {
       const pendingStatus: Record<string, boolean> = {}
       for (const id of this.activePlayerIds) {
         pendingStatus[id] = this.pendingInputs[id]?.action !== null
       }
+      const currentForecast = this.generatedForecasts.find(f => f.round === this.global.roundNumber) ?? null
       this.sendTo(ws, {
         type: 'ROUND_STATE',
         phase: 'SUBMITTING',
         global: this.global,
         players: this.players,
         pendingStatus,
+        currentForecast,
+        pledges: this.pledges,
       })
+    } else if (this.phase === 'ROUND_RESULT') {
+      const auditLog = this.auditLogs[this.auditLogs.length - 1]
+      const narration = this.roundNarrations[this.roundNarrations.length - 1] || ''
+      const lastForecast = this.generatedForecasts.find(f => f.round === auditLog?.round) ?? null
+      if (auditLog) {
+        this.sendTo(ws, {
+          type: 'ROUND_RESULT',
+          global: this.global,
+          players: this.players,
+          auditLog,
+          narration,
+          forecast: lastForecast,
+          pledges: this.pledges,
+        })
+      }
     } else if (this.phase === 'GAME_OVER') {
       const gameNarration = generateGameNarration(this.players, this.auditLogs, this.theme)
       this.sendTo(ws, {
@@ -384,6 +620,35 @@ export class RoomManager {
         break
       }
     }
+
+    // 检查是否所有真人玩家都已断线
+    const humanConnected = [...this.connections.keys()].filter(id => !this.cpuPlayerIds.has(id))
+    if (humanConnected.length === 0) {
+      console.log(`[房间 ${this.roomCode}] 所有玩家已退出，重置房间`)
+      // 清理定时器
+      if (this.intelPhaseTimer) { clearTimeout(this.intelPhaseTimer); this.intelPhaseTimer = null }
+      // 重置所有状态
+      this.phase = 'LOBBY'
+      this.themeId = null
+      this.theme = null
+      this.hostWs = null
+      this.connections.clear()
+      this.playerNames.clear()
+      this.activePlayerIds = []
+      this.auditLogs = []
+      this.roundNarrations = []
+      this.generatedIntel = []
+      this.intelTruth = {}
+      this.generatedForecasts = []
+      this.pledges = []
+      this.wildCards = {}
+      this.cpuPlayerIds = new Set()
+      this.beginnerMode = false
+      this.pendingInputs = {}
+      // 生成新房间号
+      this.roomCode = generateRoomCode()
+      console.log(`[新房间号] ${this.roomCode}`)
+    }
   }
 
   // ── 工具方法 ──
@@ -398,8 +663,221 @@ export class RoomManager {
   private resetPendingInputs() {
     this.pendingInputs = {}
     for (const id of this.activePlayerIds) {
-      this.pendingInputs[id] = { action: null, finalShift: 'NONE' }
+      this.pendingInputs[id] = { action: null, finalShift: 'NONE', useWildCard: false }
     }
+  }
+
+  // ── 电脑玩家自动出牌 ──
+  private scheduleCpuActions() {
+    if (this.cpuPlayerIds.size === 0) return
+    // 每个电脑玩家随机延迟 1-3 秒后出牌
+    for (const cpuId of this.cpuPlayerIds) {
+      const delay = 1000 + Math.random() * 2000
+      setTimeout(() => {
+        if (this.phase !== 'SUBMITTING') return
+        if (this.pendingInputs[cpuId]?.action !== null) return
+        const { action, finalShift, useWild } = this.cpuChooseAction(cpuId)
+        this.pendingInputs[cpuId] = { action, finalShift, useWildCard: useWild }
+        this.broadcastRoundState()
+        // 重新检查是否所有人都提交了
+        const allSubmitted = this.activePlayerIds.every(id =>
+          this.pendingInputs[id]?.action !== null
+        )
+        if (allSubmitted) {
+          this.resolveCurrentRound()
+        }
+      }, delay)
+    }
+  }
+
+  /**
+   * 高级 AI 策略：小型蒙特卡洛前瞻 + 规则启发式
+   * 对每个可选动作模拟 N 次（假设对手随机），取期望净利润最高的
+   */
+  private cpuChooseAction(cpuId: PlayerId): { action: BaseAction; finalShift: FinalShift; useWild: boolean } {
+    const player = this.players.find(p => p.id === cpuId)
+    if (!player) return { action: 'HOLD', finalShift: 'NONE', useWild: false }
+
+    const isFinalRound = this.global.roundNumber === this.global.maxRounds
+    const roundsLeft = this.global.maxRounds - this.global.roundNumber
+    const candidates: BaseAction[] = ['ATK', 'QUA', 'MKT', 'HOLD']
+    const SIMS_PER_ACTION = 30 // 每个动作模拟 30 次
+
+    // ── 收集其他已提交的真实动作 ──
+    const knownActions: Record<string, BaseAction | null> = {}
+    for (const id of this.activePlayerIds) {
+      if (id === cpuId) continue
+      knownActions[id] = this.pendingInputs[id]?.action ?? null
+    }
+
+    // ── 对手随机动作生成器 ──
+    const randomOpAction = (): BaseAction => candidates[Math.floor(Math.random() * 4)]
+
+    // ── 评估每个候选动作 ──
+    const scores: Record<string, number> = {}
+    for (const testAction of candidates) {
+      let totalScore = 0
+
+      for (let sim = 0; sim < SIMS_PER_ACTION; sim++) {
+        // 构建本次模拟的输入
+        const inputs: RoundInput[] = this.activePlayerIds.map(id => {
+          if (id === cpuId) {
+            return { playerId: id, action: testAction, finalShift: 'NONE' as FinalShift }
+          }
+          // 已提交的玩家用真实动作，未提交的随机
+          const known = knownActions[id]
+          return {
+            playerId: id,
+            action: known ?? randomOpAction(),
+            finalShift: 'NONE' as FinalShift,
+          }
+        })
+
+        try {
+          const { newPlayers } = resolveRound(
+            this.global, this.players, inputs,
+            undefined, this.theme?.configOverrides
+          )
+          const me = newPlayers.find(p => p.id === cpuId)
+          if (me) {
+            // 综合评分：利润 + 份额价值
+            const profitGain = me.cumulativeProfit - player.cumulativeProfit
+            const shareValue = (me.marketShare - player.marketShare) * 500000 // 份额折算价值
+            totalScore += profitGain + shareValue
+          }
+        } catch {
+          // 模拟失败忽略
+        }
+      }
+      scores[testAction] = totalScore / SIMS_PER_ACTION
+    }
+
+    // ── 规则修正：长期战略加成 ──
+    // QUA 加分：品质投资有延迟收益，模拟只看一步会低估
+    if (roundsLeft >= 2) {
+      scores['QUA'] += 15000 * roundsLeft // 越早研发越有价值
+    }
+    // 品质蓄量高时 QUA 的爆发价值
+    if (player.qualityCharge >= 2 && isFinalRound) {
+      scores['QUA'] += 30000
+    }
+
+    // MKT 加分：品牌热度有累积效应
+    if (player.brandHeat < 40 && roundsLeft >= 2) {
+      scores['MKT'] += 10000
+    }
+
+    // ATK 冷却惩罚：连续 ATK 效率衰减
+    if (player.lastAction === 'ATK') {
+      scores['ATK'] *= 0.85
+    }
+
+    // HOLD 惩罚：连续 HOLD 的动量损失和压力成本
+    if (player.consecutiveHoldCount >= 1) {
+      scores['HOLD'] -= 8000 * player.consecutiveHoldCount
+    }
+
+    // 落后追赶：份额低于均值时加大进攻倾向
+    const avgShare = 1 / this.activePlayerIds.length
+    if (player.marketShare < avgShare * 0.8) {
+      scores['ATK'] += 20000
+      scores['MKT'] += 15000
+    }
+
+    // 领先保护：份额远高于均值时品质和守势更有价值
+    if (player.marketShare > avgShare * 1.3) {
+      scores['QUA'] += 12000
+      scores['HOLD'] += 8000
+    }
+
+    // ── 选择最优动作 ──
+    let bestAction: BaseAction = 'HOLD'
+    let bestScore = -Infinity
+    for (const a of candidates) {
+      // 添加微小随机扰动，避免完全确定性
+      const finalScore = scores[a] + (Math.random() - 0.5) * 3000
+      if (finalScore > bestScore) {
+        bestScore = finalScore
+        bestAction = a
+      }
+    }
+
+    // ── 终盘转向：基于条件选最佳 ──
+    let finalShift: FinalShift = 'NONE'
+    if (isFinalRound) {
+      // 品质蓄量 ≥ 1 → QUALITY_CONVERT（爆发力极强）
+      if (player.qualityCharge >= 1 && bestAction === 'QUA') {
+        finalShift = 'QUALITY_CONVERT'
+      }
+      // 品牌热度高 → BRAND_MONETIZE
+      else if (player.brandHeat >= 50 && (bestAction === 'MKT' || bestAction === 'HOLD')) {
+        finalShift = 'BRAND_MONETIZE'
+      }
+      // 落后大 → FINAL_PUSH 全力冲刺
+      else if (player.marketShare < avgShare * 0.85) {
+        finalShift = 'FINAL_PUSH'
+      }
+      // 领先选 HOLD → DEFENSIVE_LOCK
+      else if (bestAction === 'HOLD' && player.marketShare > avgShare * 1.2) {
+        finalShift = 'DEFENSIVE_LOCK'
+      }
+      // 默认用 FINAL_PUSH（除非 HOLD）
+      else if (bestAction !== 'HOLD') {
+        finalShift = Math.random() < 0.6 ? 'FINAL_PUSH' : 'NONE'
+      }
+    }
+
+    // ── 暗牌策略 ──
+    const wc = this.wildCards[cpuId]
+    let useWild = false
+    if (wc && !wc.used) {
+      // 根据暗牌类型和当前状况决定使用时机
+      switch (wc.type) {
+        case 'DOUBLE_DOWN':
+          // 高利润回合使用（终盘或赌注倍数高时）
+          useWild = isFinalRound || this.global.roundNumber >= 4
+          break
+        case 'COST_CUT':
+          // 高成本动作时使用（QUA 成本 75k, MKT 成本 50k）
+          useWild = bestAction === 'QUA' || bestAction === 'MKT'
+          break
+        case 'SHIELD':
+          // 领先且可能被抢份额时使用
+          useWild = player.marketShare > avgShare * 1.1
+          break
+        case 'MOMENTUM_SURGE':
+          // 配合 MKT 使用效果最佳
+          useWild = bestAction === 'MKT'
+          break
+        case 'QUALITY_BOOST':
+          // 品质投资时使用
+          useWild = bestAction === 'QUA' || isFinalRound
+          break
+        case 'SCOUT':
+          // 竞争激烈或落后时使用（+4 竞争力很强）
+          useWild = player.marketShare < avgShare || isFinalRound
+          break
+        default:
+          useWild = isFinalRound
+      }
+    }
+
+    return { action: bestAction, finalShift, useWild }
+  }
+
+  private distributeWildCards(playerCount: number): Record<string, WildCard> {
+    const ids = this.activePlayerIds
+    const pool = [...WILD_CARD_POOL]
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[pool[i], pool[j]] = [pool[j], pool[i]]
+    }
+    const result: Record<string, WildCard> = {}
+    for (let i = 0; i < ids.length; i++) {
+      const card = pool[i % pool.length]
+      result[ids[i]] = { ...card, used: false }
+    }
+    return result
   }
 
   private broadcast(msg: ServerMessage) {

@@ -11,7 +11,7 @@ import { CONFIG } from './constants'
 export type CoachInsight = {
   title: string
   body: string
-  category: 'share' | 'profit' | 'action' | 'strategy' | 'mechanic'
+  category: 'share' | 'profit' | 'action' | 'strategy' | 'mechanic' | 'concept'
 }
 
 // ── 从最近一轮审计日志中提取所有有意义的洞察 ──
@@ -128,7 +128,7 @@ export function generateInsights(
       insights.push({
         title: `守势玩家被进攻压力压制`,
         body: [
-          `本轮进攻压力（ATK + MKT 人数）= ${pressure}`,
+          `本轮进攻压力（促销 + 推广 人数）= ${pressure}`,
           `守势惩罚 = ${CONFIG.holdPressurePenalty} × ${pressure} = ${(CONFIG.holdPressurePenalty * pressure).toFixed(1)}`,
           '',
           holdPlayers.map(p =>
@@ -228,7 +228,135 @@ export function generateInsights(
     }
   }
 
-  // ── 8. 核心规则科普（始终包含） ──
+  // ── 8. 商业概念教学（在特定游戏事件触发时解释） ──
+  // 只在主题有 actionExplainer 时才生成概念卡片（青少年教学模式）
+  if (theme?.actionExplainer) {
+    // 8a. 囚徒困境：多人同时 ATK
+    if (actionGroups['ATK'] && actionGroups['ATK'].length >= 2) {
+      insights.push({
+        title: '📚 商业概念：囚徒困境',
+        body: [
+          '刚才发生的事情，在经济学里叫"囚徒困境"。',
+          '',
+          '简单说：每个人单独降价都是最优选择，但所有人都降价后，大家的结果都变差了。',
+          '',
+          '现实例子：',
+          '• 滴滴和快的打车大战——双方疯狂补贴，谁先停谁就亏',
+          '• 可口可乐和百事可乐——如果一方降价，另一方必须跟进',
+          '• 考试前大家都刷夜——如果你不刷、别人刷了，你就吃亏',
+          '',
+          '破解方法：差异化竞争。不在价格上硬拼，而是用品质、品牌等维度建立独特优势。',
+        ].join('\n'),
+        category: 'concept',
+      })
+    }
+
+    // 8b. 边际效用递减：连续 MKT 效果下降
+    const mktFatigued = latest.players.find(p => p.action === 'MKT' && logs.length >= 2 && logs[logs.length - 2].players.find(pp => pp.id === p.id)?.action === 'MKT')
+    if (mktFatigued) {
+      insights.push({
+        title: '📚 商业概念：边际效用递减',
+        body: [
+          `${getName(mktFatigued.id)} 连续做推广，但效果比上次差了——这就是"边际效用递减"。`,
+          '',
+          '简单说：同样的东西做第二遍，效果不如第一遍好。第三遍更差。',
+          '',
+          '现实例子：',
+          '• 第一口冰淇淋超好吃，第十口就没感觉了',
+          '• 第一次看到广告会注意，看了十遍就直接滑走',
+          '• 刚开始学习效率很高，学久了就走神',
+          '',
+          '应用：不要在同一个方向死磕。连续做同一件事效果递减时，应该换个策略试试。',
+        ].join('\n'),
+        category: 'concept',
+      })
+    }
+
+    // 8c. 长期投资 vs 短期收益：QUA 玩家最终排名靠前
+    if (logs.length >= 3) {
+      const quaCountByPlayer: Record<string, number> = {}
+      for (const log of logs) {
+        for (const p of log.players) {
+          if (p.action === 'QUA') {
+            quaCountByPlayer[p.id] = (quaCountByPlayer[p.id] ?? 0) + 1
+          }
+        }
+      }
+      const topQua = Object.entries(quaCountByPlayer).sort((a, b) => b[1] - a[1])[0]
+      if (topQua && topQua[1] >= 2) {
+        const sorted = [...players].sort((a, b) => b.cumulativeProfit - a.cumulativeProfit)
+        const quaPlayerRank = sorted.findIndex(p => p.id === topQua[0]) + 1
+        if (quaPlayerRank <= Math.ceil(sorted.length / 2)) {
+          insights.push({
+            title: '📚 商业概念：长期投资 vs 短期收益',
+            body: [
+              `${getName(topQua[0])} 已经投入了 ${topQua[1]} 轮研发，现在排名第 ${quaPlayerRank}——长期投资开始见效了。`,
+              '',
+              '简单说：有些事情短期看不到回报，但坚持做下去会产生"复利效应"——收益越来越大。',
+              '',
+              '现实例子：',
+              '• 巴菲特的投资理念——"别人恐惧时我贪婪"，耐心等待长期回报',
+              '• 学英语——每天背单词短期看不到效果，但坚持一年词汇量暴增',
+              '• 苹果公司——每年巨额研发投入，换来产品力持续领先',
+              '',
+              '关键：延迟满足是一种能力。能忍住短期诱惑、坚持长期策略的人，往往赢在终局。',
+            ].join('\n'),
+            category: 'concept',
+          })
+        }
+      }
+    }
+
+    // 8d. 马太效应：份额领先者持续拉大差距
+    if (logs.length >= 2) {
+      const sorted = [...players].sort((a, b) => b.marketShare - a.marketShare)
+      const leader = sorted[0]
+      const prevLog = logs[logs.length - 2]
+      const prevLeader = prevLog.players.reduce((a, b) => a.newShare > b.newShare ? a : b)
+      if (leader.id === prevLeader.id && leader.marketShare > 0.35) {
+        insights.push({
+          title: '📚 商业概念：马太效应',
+          body: [
+            `${getName(leader.id)} 连续保持${shareLabel}第一，而且优势在扩大——这就是"马太效应"。`,
+            '',
+            '简单说："强者越强，弱者越弱"。一旦你建立了领先优势，惯性会帮你维持。',
+            '',
+            '在这个游戏里的体现：',
+            '• 新' + shareLabel + '的55%来自旧' + shareLabel + '——' + shareLabel + '高的人天然有优势',
+            '• 品牌热度高的人推广有额外加成——领先者做同样的事效果更好',
+            '',
+            '现实例子：',
+            '• 微信——用的人越多越好用，新人也只能用微信',
+            '• 名校效应——名校毕业更容易找好工作、赚更多钱、捐更多给母校',
+            '',
+            '如何对抗马太效应？找到领先者的薄弱环节，用差异化策略打破局面。',
+          ].join('\n'),
+          category: 'concept',
+        })
+      }
+    }
+
+    // 8e. 市场不进则退：HOLD 被压制
+    if (holdPlayers && holdPlayers.length > 0 && holdPlayers[0].aggressionPressure >= 2) {
+      insights.push({
+        title: '📚 商业概念：市场不进则退',
+        body: [
+          '守势玩家被进攻压力压制——这说明在竞争激烈的市场里，"不动"也是一种选择，但有代价。',
+          '',
+          '简单说：市场是动态的。当别人在进步时，你原地不动就等于在退步。',
+          '',
+          '现实例子：',
+          '• 诺基亚——曾经手机市场第一，但智能手机时代来临时选择"不动"，被苹果和安卓取代',
+          '• 柯达——发明了数码相机但不愿放弃胶卷业务，最终破产',
+          '',
+          '但也要注意：不是所有时候都要进攻。当竞争不激烈时，稳健经营反而利润最高。关键是判断"局势"。',
+        ].join('\n'),
+        category: 'concept',
+      })
+    }
+  }
+
+  // ── 9. 核心规则科普（始终包含） ──
   insights.push({
     title: '核心公式速查',
     body: [
@@ -246,6 +374,10 @@ export function generateInsights(
       `  促销：¥${CONFIG.discountPrice}/位，${profitLabel}率${(CONFIG.discountMargin * 100).toFixed(0)}%`,
       `  正常：¥${CONFIG.normalPrice}/位，${profitLabel}率${(CONFIG.normalMargin * 100).toFixed(0)}%`,
       `  研发成本：¥${(CONFIG.qualityInvestCost / 10000).toFixed(0)}万 / 推广成本：¥${(CONFIG.marketingCost / 10000).toFixed(0)}万`,
+      '',
+      '社交机制：',
+      `  市场风向：跟风+风向正确 → +${CONFIG.forecastTrueBonus} 竞争力 / 跟风+风向偏差 → -${CONFIG.forecastFalsePenalty} 竞争力`,
+      `  立誓：守誓 → +${CONFIG.pledgeKeepBonus} 竞争力 / 背誓 → -${CONFIG.pledgeBreakPenalty} 竞争力`,
     ].join('\n'),
     category: 'mechanic',
   })

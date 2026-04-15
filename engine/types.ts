@@ -150,6 +150,21 @@ export type RoundAuditLog = {
   players: PlayerRoundCalc[]
 }
 
+// ── 市场风向 ──
+export type MarketForecast = {
+  round: number
+  signal: BaseAction        // 本轮推荐行动
+  isTrue: boolean           // 50% 概率真/假（玩家不知道）
+  headline: string          // 主题化叙事标题
+  detail: string            // 详细分析说明
+}
+
+// ── 立誓 ──
+export type Pledge = {
+  playerId: PlayerId
+  pledgedAction: BaseAction
+}
+
 export type GamePhase = 'WAITING' | 'SUBMITTING' | 'RESOLVING' | 'ROUND_RESULT' | 'GAME_OVER'
 
 export type GameState = {

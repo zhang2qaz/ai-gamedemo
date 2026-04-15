@@ -1,5 +1,12 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+};
 
 export const metadata: Metadata = {
   title: "弈战 v2.4 · 商业博弈 Demo",
@@ -13,7 +20,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" className="h-full">
-      <body className="min-h-full bg-stone-950">{children}</body>
+      <body className="min-h-full bg-stone-950">
+        {children}
+      </body>
     </html>
   );
 }
