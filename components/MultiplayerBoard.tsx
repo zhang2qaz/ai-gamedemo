@@ -1,11 +1,26 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useMultiplayerStore } from '@/store/multiplayerStore'
 import type { BaseAction, FinalShift, PlayerId, PlayerState } from '@/engine/types'
 import { getFinalRanking } from '@/engine/resolveGame'
 import { getSignalForRound } from '@/engine/events'
+import { predictOutcome } from '@/lib/prediction'
 import PlayerCard from './PlayerCard'
+import PredictionHint from './PredictionHint'
+import ReactionBar from './ReactionBar'
+import ReactionFeed from './ReactionFeed'
+import ObjectiveCard from './ObjectiveCard'
+import ObjectiveReveal from './ObjectiveReveal'
+import PrivateIntelCard from './PrivateIntelCard'
+import RelationshipGraph from './RelationshipGraph'
+import SkillRadar from './SkillRadar'
+import ChatPanel from './ChatPanel'
+import PactPanel from './PactPanel'
+import PactResults from './PactResults'
+import IntelMarket from './IntelMarket'
+import BossBanner from './BossBanner'
+import PveOutcome from './PveOutcome'
 import RoundResultPanel from './RoundResultPanel'
 import GameOverPanel from './GameOverPanel'
 import ShareBar from './ShareBar'
@@ -53,6 +68,8 @@ export default function MultiplayerBoard() {
   const skipIntel = useMultiplayerStore(s => s.skipIntel)
   const beginnerMode = useMultiplayerStore(s => s.beginnerMode)
   const readyNextRound = useMultiplayerStore(s => s.readyNextRound)
+  const pledgesHistory = useMultiplayerStore(s => s.pledgesHistory)
+  const generatedForecasts = useMultiplayerStore(s => s.generatedForecasts)
   const readyPlayers = useMultiplayerStore(s => s.readyPlayers)
   const readyTotal = useMultiplayerStore(s => s.readyTotal)
   const readyContext = useMultiplayerStore(s => s.readyContext)
@@ -187,16 +204,46 @@ export default function MultiplayerBoard() {
       {/* ── 主内容 ── */}
       <div className="flex-1 max-w-screen-sm mx-auto w-full px-4 py-4 flex flex-col gap-3">
 
+        {/* PvE 巨头横幅 */}
+        {!isGameOver && <BossBanner />}
+
+        {/* 秘密目标卡（始终显示，但默认折叠） */}
+        {(isIntelPhase || isSubmitting || isRoundResult) && <ObjectiveCard />}
+
+        {/* 私有线索（每回合刷新，仅本人可见） */}
+        {(isIntelPhase || isSubmitting) && <PrivateIntelCard />}
+
+        {/* 双人契约 + 情报市场 + 房间聊天（情报和出牌阶段） */}
+        {(isIntelPhase || isSubmitting) && (
+          <>
+            <PactPanel />
+            <IntelMarket />
+            <ChatPanel />
+          </>
+        )}
+
         {/* 游戏结束 */}
         {isGameOver && (
-          <GameOverPhase
-            players={players}
-            allAuditLogs={allAuditLogs}
-            gameNarration={gameNarration}
-            isHost={isHost}
-            resetGame={resetGame}
-            toggleAuditLog={toggleAuditLog}
-          />
+          <>
+            <PveOutcome />
+            <GameOverPhase
+              players={players}
+              allAuditLogs={allAuditLogs}
+              gameNarration={gameNarration}
+              isHost={isHost}
+              resetGame={resetGame}
+              toggleAuditLog={toggleAuditLog}
+            />
+            <ObjectiveReveal players={players} />
+            <RelationshipGraph players={players} logs={allAuditLogs} pledgesHistory={pledgesHistory} />
+            <SkillRadar
+              myPlayerId={myPlayerId}
+              logs={allAuditLogs}
+              forecasts={generatedForecasts}
+              finalPlayers={players}
+            />
+            <ReactionBar />
+          </>
         )}
 
         {/* 风向讨论阶段 */}
@@ -247,6 +294,12 @@ export default function MultiplayerBoard() {
                 theme={theme}
               />
             )}
+
+            {/* 契约结算 */}
+            <PactResults />
+
+            {/* 表情反应栏 */}
+            <ReactionBar />
 
             {/* 所有玩家的"准备下一回合"按钮 */}
             {(() => {
@@ -332,6 +385,9 @@ export default function MultiplayerBoard() {
         )}
       </div>
 
+      {/* 表情反应 · 浮动消息流（全局） */}
+      <ReactionFeed />
+
       {/* 审计日志 */}
       {showAuditLog && <AuditLogPanel logs={allAuditLogs} onClose={toggleAuditLog} />}
 
@@ -414,6 +470,22 @@ function SubmittingPhase({
   const timerPct = (timeLeft / SELECTION_TIME_LIMIT) * 100
   const timerColor = timeLeft <= 5 ? 'bg-red-500' : timeLeft <= 15 ? 'bg-amber-500' : 'bg-green-500'
   const timerTextColor = timeLeft <= 5 ? 'text-red-400' : timeLeft <= 15 ? 'text-amber-400' : 'text-stone-500'
+
+  // 决策预测：localAction 改变时重新计算
+  const prediction = useMemo(() => {
+    if (!localAction || iSubmitted) return null
+    return predictOutcome({
+      global,
+      players,
+      myId: myPlayerId,
+      myAction: localAction,
+      myFinalShift: localFinalShift,
+      myWildCard: useWildCard && myWildCard && !myWildCard.used ? myWildCard.type : null,
+      forecast: currentForecast,
+      pledges,
+      configOverrides: theme.configOverrides,
+    })
+  }, [localAction, localFinalShift, useWildCard, iSubmitted, global, players, myPlayerId, myWildCard, currentForecast, pledges, theme])
 
   return (
     <div className="space-y-3 animate-fade-in">
@@ -602,6 +674,9 @@ function SubmittingPhase({
             onSelectFinalShift={(shift: FinalShift) => { sfxSelect(); setLocalFinalShift(shift) }}
             onClearAction={() => { setLocalAction(null); setLocalFinalShift('NONE') }}
           />
+
+          {/* 决策预测（选了动作后显示） */}
+          {localAction && prediction && <PredictionHint prediction={prediction} />}
 
           {localAction && (
             <button

@@ -1,17 +1,21 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useGameStore } from '@/store/gameStore'
 import type { PlayerId, BaseAction, FinalShift } from '@/engine/types'
 import PlayerCard from './PlayerCard'
+import PredictionHint from './PredictionHint'
 import RoundResultPanel from './RoundResultPanel'
 import AuditLogPanel from './AuditLogPanel'
 import GameOverPanel from './GameOverPanel'
+import RelationshipGraph from './RelationshipGraph'
+import SkillRadar from './SkillRadar'
 import ShareBar from './ShareBar'
 import ForecastBanner from './ForecastBanner'
 import ThemeSelect from './ThemeSelect'
 import { getFinalRanking } from '@/engine/resolveGame'
 import { getSignalForRound } from '@/engine/events'
+import { predictOutcome } from '@/lib/prediction'
 import SpeakBtn from './SpeakBtn'
 import CoachPanel from './CoachPanel'
 import ForecastPhase from './ForecastPhase'
@@ -44,6 +48,7 @@ export default function GameBoard() {
   const lastRoundForecast = useGameStore(s => s.lastRoundForecast)
   const lastRoundPledges = useGameStore(s => s.lastRoundPledges)
   const currentForecast = useGameStore(s => s.currentForecast)
+  const generatedForecasts = useGameStore(s => s.generatedForecasts)
   const prevRoundPlayers = useGameStore(s => s.prevRoundPlayers)
   const prevRoundGlobal = useGameStore(s => s.prevRoundGlobal)
   const wildCards = useGameStore(s => s.wildCards)
@@ -94,6 +99,26 @@ export default function GameBoard() {
   const playerIds = players.map(p => p.id)
   const allSubmitted = playerIds.every(id => pendingInputs[id]?.action !== null)
   const submittedCount = playerIds.filter(id => pendingInputs[id]?.action !== null).length
+
+  // 当前正在选牌玩家的决策预测
+  const activePrediction = useMemo(() => {
+    if (!activeInput || !theme || !global) return null
+    const input = pendingInputs[activeInput]
+    if (!input?.action) return null
+    const wc = wildCards[activeInput]
+    const useWild = input.useWildCard && wc && !wc.used
+    return predictOutcome({
+      global,
+      players,
+      myId: activeInput,
+      myAction: input.action,
+      myFinalShift: input.finalShift,
+      myWildCard: useWild ? wc.type : null,
+      forecast: currentForecast,
+      pledges: useGameStore.getState().pledges,
+      configOverrides: theme.configOverrides,
+    })
+  }, [activeInput, pendingInputs, global, players, wildCards, currentForecast, theme])
 
   const currentNarration = roundNarrations[roundNarrations.length - 1] ?? ''
   const rankingOrder = getFinalRanking(players)
@@ -211,7 +236,17 @@ export default function GameBoard() {
 
         {/* 游戏结束 */}
         {isGameOver && (
-          <GameOverPanel players={players} logs={auditLogs} gameNarration={gameNarration} onReset={resetGame} onShowAuditLog={toggleAuditLog} />
+          <>
+            <GameOverPanel players={players} logs={auditLogs} gameNarration={gameNarration} onReset={resetGame} onShowAuditLog={toggleAuditLog} />
+            <RelationshipGraph players={players} logs={auditLogs} />
+            {/* 单机版默认追踪玩家 A */}
+            <SkillRadar
+              myPlayerId="A"
+              logs={auditLogs}
+              forecasts={generatedForecasts}
+              finalPlayers={players}
+            />
+          </>
         )}
 
         {/* 回合结果 */}
@@ -419,6 +454,12 @@ export default function GameBoard() {
                 onClearAction={() => clearAction(activeInput)}
               />
             </div>
+
+            {pendingInputs[activeInput].action !== null && activePrediction && (
+              <div className="w-full max-w-sm">
+                <PredictionHint prediction={activePrediction} />
+              </div>
+            )}
 
             {pendingInputs[activeInput].action === null && (
               <button

@@ -5,6 +5,11 @@
 import { create } from 'zustand'
 import type { PlayerId, BaseAction, FinalShift, PlayerState, GlobalState, RoundAuditLog, MarketForecast, Pledge, WildCard } from '@/engine/types'
 import type { RoundIntel } from '@/engine/themes/types'
+import type { Objective, ObjectiveResult } from '@/engine/objectives'
+import type { PrivateIntel } from '@/engine/privateIntel'
+import type { Pact, PactResult } from '@/engine/pacts'
+import type { IntelListing } from '@/engine/intelMarket'
+import { incrementStat } from '@/lib/gameHistory'
 import type { PlayerSlot, ServerMessage } from '@/lib/multiplayer/protocol'
 import { wsClient } from '@/lib/multiplayer/wsClient'
 import type { ThemeConfig } from '@/engine/themes/types'
@@ -21,6 +26,23 @@ export type MultiplayerPhase =
   | 'GAME_OVER'     // 终局
 
 export type GameMode = 'local' | 'host' | 'player'
+
+export type Reaction = {
+  id: string
+  fromId: PlayerId
+  fromName: string
+  emoji: string
+  phrase?: string
+  ts: number
+}
+
+export type ChatMessage = {
+  id: string
+  fromId: PlayerId
+  fromName: string
+  text: string
+  ts: number
+}
 
 type MultiplayerStore = {
   mode: GameMode | null
@@ -48,6 +70,7 @@ type MultiplayerStore = {
   generatedForecasts: MarketForecast[]
   currentForecast: MarketForecast | null
   pledges: Pledge[]
+  pledgesHistory: Pledge[][]
   lastRoundForecast: MarketForecast | null
   lastRoundPledges: Pledge[]
 
@@ -59,10 +82,32 @@ type MultiplayerStore = {
   intelPhaseEndsAt: number
   beginnerMode: boolean
 
+  // PvE 巨头模式
+  pveMode: boolean
+  bossId: PlayerId | null
+
   // 准备状态（所有人投票）
   readyPlayers: string[]
   readyTotal: number
   readyContext: 'start' | 'next_round' | null
+
+  // 实时表情/短语（归属感）
+  reactions: Reaction[]
+
+  // 秘密目标（自主感）
+  myObjective: Objective | null
+  objectiveResults: Record<string, ObjectiveResult> | null
+
+  // 差异化私有情报（自主感）
+  myPrivateIntel: PrivateIntel | null
+
+  // 公开聊天 + 双人契约（归属感 / 自主感）
+  chatMessages: ChatMessage[]
+  pacts: Pact[]
+  lastPactResults: PactResult[]
+  intelListings: IntelListing[]
+  purchasedIntel: PrivateIntel[]   // 我买到的别人的情报
+  lastSoldNotice: { price: number; toName: string } | null
 
   // 回合间对比 & UI
   prevRoundPlayers: PlayerState[]
@@ -76,7 +121,8 @@ type MultiplayerStore = {
   hostGame: (playerName: string) => Promise<void>
   joinGame: (host: string, port: number, roomCode: string, playerName: string) => Promise<void>
   selectTheme: (themeId: string) => void
-  startGame: (beginnerMode?: boolean) => void
+  startGame: (beginnerMode?: boolean, pveMode?: boolean) => void
+  setPveMode: (v: boolean) => void
   submitAction: (action: BaseAction, finalShift: FinalShift) => void
   submitPledge: (action: BaseAction | null) => void
   toggleWildCard: () => void
@@ -85,6 +131,15 @@ type MultiplayerStore = {
   nextRound: () => void
   readyStart: () => void
   readyNextRound: () => void
+  sendReaction: (emoji: string, phrase?: string) => void
+  dismissReaction: (id: string) => void
+  sendChat: (text: string) => void
+  proposePact: (targetId: PlayerId, action: BaseAction) => void
+  respondPact: (pactId: string, accept: boolean) => void
+  listIntel: (price: number) => void
+  unlistIntel: () => void
+  buyIntel: (listingId: string) => void
+  dismissSoldNotice: () => void
   resetGame: () => void
   backToModeSelect: () => void
   toggleAuditLog: () => void
@@ -113,15 +168,28 @@ const INITIAL_STATE = {
   generatedForecasts: [] as MarketForecast[],
   currentForecast: null as MarketForecast | null,
   pledges: [] as Pledge[],
+  pledgesHistory: [] as Pledge[][],
   lastRoundForecast: null as MarketForecast | null,
   lastRoundPledges: [] as Pledge[],
   wildCards: {} as Record<string, WildCard>,
   useWildCard: false,
   intelPhaseEndsAt: 0,
   beginnerMode: false,
+  pveMode: false,
+  bossId: null as PlayerId | null,
   readyPlayers: [] as string[],
   readyTotal: 0,
   readyContext: null as 'start' | 'next_round' | null,
+  reactions: [] as Reaction[],
+  myObjective: null as Objective | null,
+  objectiveResults: null as Record<string, ObjectiveResult> | null,
+  myPrivateIntel: null as PrivateIntel | null,
+  chatMessages: [] as ChatMessage[],
+  pacts: [] as Pact[],
+  lastPactResults: [] as PactResult[],
+  intelListings: [] as IntelListing[],
+  purchasedIntel: [] as PrivateIntel[],
+  lastSoldNotice: null as { price: number; toName: string } | null,
   prevRoundPlayers: [] as PlayerState[],
   prevRoundGlobal: null as GlobalState | null,
   showAuditLog: false,
@@ -136,6 +204,7 @@ export const useMultiplayerStore = create<MultiplayerStore>((set, get) => ({
   },
 
   setBeginnerMode: (v) => set({ beginnerMode: v }),
+  setPveMode: (v) => set({ pveMode: v }),
 
   hostGame: async (playerName) => {
     try {
@@ -187,8 +256,8 @@ export const useMultiplayerStore = create<MultiplayerStore>((set, get) => ({
     wsClient.send({ type: 'HOST_SELECT_THEME', themeId })
   },
 
-  startGame: (beginnerMode) => {
-    wsClient.send({ type: 'HOST_START_GAME', beginnerMode })
+  startGame: (beginnerMode, pveMode) => {
+    wsClient.send({ type: 'HOST_START_GAME', beginnerMode, pveMode })
   },
 
   submitAction: (action, finalShift) => {
@@ -219,9 +288,9 @@ export const useMultiplayerStore = create<MultiplayerStore>((set, get) => ({
 
   readyStart: () => {
     const state = get()
-    // 房主先发送配置（新手模式），再投票准备
+    // 房主先发送配置（新手模式 + PvE 模式），再投票准备
     if (state.mode === 'host') {
-      wsClient.send({ type: 'HOST_START_GAME', beginnerMode: state.beginnerMode })
+      wsClient.send({ type: 'HOST_START_GAME', beginnerMode: state.beginnerMode, pveMode: state.pveMode })
     }
     wsClient.send({ type: 'READY_START' })
   },
@@ -229,6 +298,40 @@ export const useMultiplayerStore = create<MultiplayerStore>((set, get) => ({
   readyNextRound: () => {
     wsClient.send({ type: 'READY_NEXT_ROUND' })
   },
+
+  sendReaction: (emoji, phrase) => {
+    wsClient.send({ type: 'REACTION', emoji, phrase })
+  },
+
+  dismissReaction: (id) => {
+    set(s => ({ reactions: s.reactions.filter(r => r.id !== id) }))
+  },
+
+  sendChat: (text) => {
+    wsClient.send({ type: 'CHAT', text })
+  },
+
+  proposePact: (targetId, action) => {
+    wsClient.send({ type: 'PROPOSE_PACT', targetId, action })
+  },
+
+  respondPact: (pactId, accept) => {
+    wsClient.send({ type: 'RESPOND_PACT', pactId, accept })
+  },
+
+  listIntel: (price) => {
+    wsClient.send({ type: 'LIST_INTEL', price })
+  },
+
+  unlistIntel: () => {
+    wsClient.send({ type: 'UNLIST_INTEL' })
+  },
+
+  buyIntel: (listingId) => {
+    wsClient.send({ type: 'BUY_INTEL', listingId })
+  },
+
+  dismissSoldNotice: () => set({ lastSoldNotice: null }),
 
   resetGame: () => {
     wsClient.send({ type: 'HOST_RESET' })
@@ -293,9 +396,19 @@ export const useMultiplayerStore = create<MultiplayerStore>((set, get) => ({
           wildCards: msg.wildCards ?? {},
           useWildCard: false,
           beginnerMode: msg.beginnerMode ?? false,
+          pveMode: msg.pveMode ?? false,
+          bossId: msg.bossId ?? null,
           readyPlayers: [],
           readyTotal: 0,
           readyContext: null,
+          objectiveResults: null,
+          myPrivateIntel: null,
+          chatMessages: [],
+          pacts: [],
+          lastPactResults: [],
+          intelListings: [],
+          purchasedIntel: [],
+          lastSoldNotice: null,
           prevRoundPlayers: [],
           prevRoundGlobal: null,
           showAuditLog: false,
@@ -356,14 +469,33 @@ export const useMultiplayerStore = create<MultiplayerStore>((set, get) => ({
         })
         break
 
-      case 'GAME_OVER':
+      case 'GAME_OVER': {
         set({
           phase: 'GAME_OVER',
           players: msg.players,
           allAuditLogs: msg.auditLogs,
           gameNarration: msg.gameNarration,
+          pledgesHistory: msg.pledgesHistory ?? [],
         })
+        // 检查 PvE 胜利和"变形金刚"成就
+        const state = get()
+        const myId = state.myPlayerId
+        if (state.pveMode && state.bossId && myId) {
+          const boss = msg.players.find(p => p.id === state.bossId)
+          if (boss && boss.marketShare < 0.30) {
+            incrementStat('pveWins')
+          }
+        }
+        if (myId) {
+          const myActions = new Set<string>()
+          for (const log of msg.auditLogs) {
+            const me = log.players.find(p => p.id === myId)
+            if (me) myActions.add(me.action)
+          }
+          if (myActions.size === 4) incrementStat('shapeshifterCount')
+        }
         break
+      }
 
       case 'READY_UPDATE':
         set({
@@ -372,6 +504,98 @@ export const useMultiplayerStore = create<MultiplayerStore>((set, get) => ({
           readyContext: msg.context,
         })
         break
+
+      case 'OBJECTIVE_ASSIGNED':
+        set({ myObjective: msg.objective })
+        break
+
+      case 'OBJECTIVE_RESULTS': {
+        set({ objectiveResults: msg.results })
+        // 如果我达成了目标 → 累计成就计数
+        const myId = get().myPlayerId
+        if (myId && msg.results[myId]?.achieved) {
+          incrementStat('objectivesAchieved')
+        }
+        break
+      }
+
+      case 'PRIVATE_INTEL':
+        set({ myPrivateIntel: msg.intel })
+        break
+
+      case 'CHAT': {
+        const newMsg: ChatMessage = {
+          id: `${msg.fromId}-${msg.ts}-${Math.random().toString(36).slice(2, 6)}`,
+          fromId: msg.fromId,
+          fromName: msg.fromName,
+          text: msg.text,
+          ts: msg.ts,
+        }
+        set(s => ({ chatMessages: [...s.chatMessages, newMsg].slice(-30) }))
+        break
+      }
+
+      case 'PACT_PROPOSAL':
+        set(s => ({ pacts: [...s.pacts.filter(p => p.id !== msg.pact.id), msg.pact] }))
+        break
+
+      case 'PACT_UPDATE':
+        set(s => ({ pacts: s.pacts.map(p => p.id === msg.pact.id ? msg.pact : p) }))
+        break
+
+      case 'PACT_RESULTS': {
+        set({ lastPactResults: msg.results, pacts: [] })
+        // 累计契约统计
+        const myId = get().myPlayerId
+        if (myId) {
+          for (const r of msg.results) {
+            const involved = r.pact.proposerId === myId || r.pact.targetId === myId
+            if (!involved) continue
+            const myKept = r.pact.proposerId === myId ? r.proposerKept : r.targetKept
+            if (myKept) incrementStat('pactsKept')
+            else incrementStat('pactsBroken')
+          }
+        }
+        break
+      }
+
+      case 'INTEL_MARKET':
+        set({ intelListings: msg.listings })
+        break
+
+      case 'INTEL_PURCHASED':
+        set(s => ({ purchasedIntel: [...s.purchasedIntel, msg.intel] }))
+        incrementStat('intelBought')
+        break
+
+      case 'INTEL_SOLD':
+        incrementStat('intelSold')
+        set({ lastSoldNotice: { price: msg.price, toName: msg.toName } })
+        // 自动消失
+        setTimeout(() => {
+          const cur = get().lastSoldNotice
+          if (cur && cur.price === msg.price && cur.toName === msg.toName) {
+            set({ lastSoldNotice: null })
+          }
+        }, 5000)
+        break
+
+      case 'REACTION': {
+        const newReaction: Reaction = {
+          id: `${msg.fromId}-${msg.ts}-${Math.random().toString(36).slice(2, 6)}`,
+          fromId: msg.fromId,
+          fromName: msg.fromName,
+          emoji: msg.emoji,
+          phrase: msg.phrase,
+          ts: msg.ts,
+        }
+        set(s => ({ reactions: [...s.reactions, newReaction].slice(-20) }))
+        // 3 秒后自动清理
+        setTimeout(() => {
+          get().dismissReaction(newReaction.id)
+        }, 3000)
+        break
+      }
 
       case 'ERROR':
         set({ error: msg.message })

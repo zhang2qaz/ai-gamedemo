@@ -12,6 +12,10 @@ import { getTheme } from '@/engine/themes'
 import type { ThemeConfig, RoundIntel } from '@/engine/themes/types'
 import type { ClientMessage, ServerMessage, PlayerSlot } from './protocol'
 import { generateRoomCode } from './protocol'
+import { assignObjectives, evaluateObjective, type Objective, type ObjectiveResult } from '@/engine/objectives'
+import { generatePrivateIntel, type PrivateIntel } from '@/engine/privateIntel'
+import { evaluatePact, makePactId, type Pact, type PactResult } from '@/engine/pacts'
+import { makeListingId, type IntelListing } from '@/engine/intelMarket'
 
 type PendingInput = {
   action: BaseAction | null
@@ -49,11 +53,19 @@ export class RoomManager {
   intelTruth: Record<number, boolean[]> = {}
   generatedForecasts: MarketForecast[] = []
   pledges: Pledge[] = []
+  pledgesHistory: Pledge[][] = []  // 每回合的立誓历史（供目标评估）
+  objectives: Record<string, Objective> = {}  // 每人的秘密目标
+  privateIntel: Record<string, PrivateIntel[]> = {}  // 每人每回合的私有情报
+  pacts: Pact[] = []                                  // 当前回合的契约
+  intelListings: IntelListing[] = []                  // 当前回合的情报市场
+  private chatCooldowns: Map<PlayerId, number> = new Map()
   wildCards: Record<string, WildCard> = {}
   cpuPlayerIds: Set<PlayerId> = new Set()
   intelPhaseTimer: ReturnType<typeof setTimeout> | null = null
   intelPhaseEndsAt: number = 0
   beginnerMode: boolean = false
+  pveMode: boolean = false
+  bossId: PlayerId | null = null
   readyStartPlayers: Set<PlayerId> = new Set()
   readyNextPlayers: Set<PlayerId> = new Set()
 
@@ -120,6 +132,7 @@ export class RoomManager {
       case 'HOST_START_GAME':
         if (playerId !== 'A') return
         this.beginnerMode = !!msg.beginnerMode
+        this.pveMode = !!msg.pveMode
         // 不再直接开始游戏，改为通过 READY_START 投票系统
         break
       case 'HOST_SKIP_INTEL':
@@ -149,7 +162,199 @@ export class RoomManager {
       case 'READY_NEXT_ROUND':
         this.handleReadyNextRound(playerId)
         break
+      case 'REACTION':
+        this.handleReaction(playerId, msg.emoji, msg.phrase)
+        break
+      case 'CHAT':
+        this.handleChat(playerId, msg.text)
+        break
+      case 'PROPOSE_PACT':
+        this.handleProposePact(playerId, msg.targetId, msg.action)
+        break
+      case 'RESPOND_PACT':
+        this.handleRespondPact(playerId, msg.pactId, msg.accept)
+        break
+      case 'LIST_INTEL':
+        this.handleListIntel(playerId, msg.price)
+        break
+      case 'UNLIST_INTEL':
+        this.handleUnlistIntel(playerId)
+        break
+      case 'BUY_INTEL':
+        this.handleBuyIntel(playerId, msg.listingId)
+        break
     }
+  }
+
+  // ── 情报市场：挂牌 ──
+  handleListIntel(sellerId: PlayerId, price: number) {
+    if (this.phase !== 'INTEL_PHASE' && this.phase !== 'SUBMITTING') return
+    if (price < 10_000 || price > 500_000) return
+    // 已挂牌过的不能再挂
+    if (this.intelListings.find(l => l.sellerId === sellerId && !l.soldTo)) return
+
+    const intelList = this.privateIntel[sellerId]
+    if (!intelList) return
+    const intel = intelList.find(i => i.round === this.global.roundNumber)
+    if (!intel) return
+
+    const sellerName = this.playerNames.get(sellerId) ?? `玩家${sellerId}`
+    const listing: IntelListing = {
+      id: makeListingId(),
+      sellerId,
+      sellerName,
+      round: this.global.roundNumber,
+      price,
+      source: intel.source,
+      reliability: intel.reliability,
+      hintAction: intel.hintAction,
+      stance: intel.stance,
+    }
+    this.intelListings.push(listing)
+    this.broadcastMarketUpdate()
+  }
+
+  // ── 情报市场：撤回 ──
+  handleUnlistIntel(sellerId: PlayerId) {
+    const before = this.intelListings.length
+    this.intelListings = this.intelListings.filter(l => !(l.sellerId === sellerId && !l.soldTo))
+    if (this.intelListings.length !== before) this.broadcastMarketUpdate()
+  }
+
+  // ── 情报市场：购买 ──
+  handleBuyIntel(buyerId: PlayerId, listingId: string) {
+    const listing = this.intelListings.find(l => l.id === listingId)
+    if (!listing || listing.soldTo) return
+    if (listing.sellerId === buyerId) return  // 不能买自己的
+
+    const intelList = this.privateIntel[listing.sellerId]
+    const intel = intelList?.find(i => i.round === listing.round)
+    if (!intel) return
+
+    // 转账
+    const buyer = this.players.find(p => p.id === buyerId)
+    const seller = this.players.find(p => p.id === listing.sellerId)
+    if (!buyer || !seller) return
+    buyer.cumulativeProfit -= listing.price
+    seller.cumulativeProfit += listing.price
+
+    listing.soldTo = buyerId
+
+    // 私聊买家：完整情报
+    const buyerWs = this.connections.get(buyerId)
+    if (buyerWs) {
+      this.sendTo(buyerWs, {
+        type: 'INTEL_PURCHASED',
+        intel,
+        from: listing.sellerId,
+        price: listing.price,
+      })
+    }
+
+    // 私聊卖家：被买了
+    const sellerWs = this.connections.get(listing.sellerId)
+    if (sellerWs) {
+      const buyerName = this.playerNames.get(buyerId) ?? `玩家${buyerId}`
+      this.sendTo(sellerWs, { type: 'INTEL_SOLD', price: listing.price, toName: buyerName })
+    }
+
+    this.broadcastMarketUpdate()
+  }
+
+  private broadcastMarketUpdate() {
+    this.broadcast({ type: 'INTEL_MARKET', listings: this.intelListings })
+  }
+
+  // ── 公开聊天 ──
+  handleChat(playerId: PlayerId, text: string) {
+    const now = Date.now()
+    const last = this.chatCooldowns.get(playerId) ?? 0
+    if (now - last < 1500) return  // 1.5 秒冷却
+    this.chatCooldowns.set(playerId, now)
+    // 阶段限制：只在情报/出牌/结算阶段允许
+    if (this.phase === 'LOBBY') return
+    const safeText = (text || '').trim().slice(0, 40)
+    if (!safeText) return
+    const name = this.playerNames.get(playerId) ?? `玩家${playerId}`
+    this.broadcast({
+      type: 'CHAT',
+      fromId: playerId,
+      fromName: name,
+      text: safeText,
+      ts: now,
+    })
+  }
+
+  // ── 提议契约 ──
+  handleProposePact(proposerId: PlayerId, targetId: PlayerId, action: BaseAction) {
+    if (this.phase !== 'INTEL_PHASE' && this.phase !== 'SUBMITTING') return
+    if (proposerId === targetId) return
+    if (!this.activePlayerIds.includes(targetId)) return
+    if (this.cpuPlayerIds.has(targetId)) return  // 不能跟 CPU 立约
+
+    // 每人每回合最多发起 1 个 pending 契约
+    const existing = this.pacts.find(p => p.proposerId === proposerId && p.status === 'pending')
+    if (existing) return
+
+    const pact: Pact = {
+      id: makePactId(),
+      round: this.global.roundNumber,
+      proposerId,
+      targetId,
+      action,
+      status: 'pending',
+      proposedAt: Date.now(),
+    }
+    this.pacts.push(pact)
+
+    // 通知双方
+    const proposerName = this.playerNames.get(proposerId) ?? `玩家${proposerId}`
+    const targetName = this.playerNames.get(targetId) ?? `玩家${targetId}`
+    const proposerWs = this.connections.get(proposerId)
+    const targetWs = this.connections.get(targetId)
+    if (proposerWs) this.sendTo(proposerWs, { type: 'PACT_PROPOSAL', pact, proposerName, targetName })
+    if (targetWs) this.sendTo(targetWs, { type: 'PACT_PROPOSAL', pact, proposerName, targetName })
+  }
+
+  // ── 接受/拒绝契约 ──
+  handleRespondPact(playerId: PlayerId, pactId: string, accept: boolean) {
+    const pact = this.pacts.find(p => p.id === pactId)
+    if (!pact || pact.status !== 'pending') return
+    if (pact.targetId !== playerId) return  // 只有目标方可以响应
+    pact.status = accept ? 'accepted' : 'declined'
+
+    // 通知双方
+    const proposerWs = this.connections.get(pact.proposerId)
+    const targetWs = this.connections.get(pact.targetId)
+    const update: ServerMessage = { type: 'PACT_UPDATE', pact }
+    if (proposerWs) this.sendTo(proposerWs, update)
+    if (targetWs) this.sendTo(targetWs, update)
+  }
+
+  // ── 表情反应广播 ──
+  private reactionCooldowns: Map<PlayerId, number> = new Map()
+
+  handleReaction(playerId: PlayerId, emoji: string, phrase?: string) {
+    // 限制：每人 800ms 冷却防刷屏
+    const now = Date.now()
+    const last = this.reactionCooldowns.get(playerId) ?? 0
+    if (now - last < 800) return
+    this.reactionCooldowns.set(playerId, now)
+
+    // 安全性：限制长度
+    const safeEmoji = (emoji || '').slice(0, 8)
+    const safePhrase = phrase ? phrase.slice(0, 20) : undefined
+    if (!safeEmoji && !safePhrase) return
+
+    const name = this.playerNames.get(playerId) ?? `玩家${playerId}`
+    this.broadcast({
+      type: 'REACTION',
+      fromId: playerId,
+      fromName: name,
+      emoji: safeEmoji,
+      phrase: safePhrase,
+      ts: now,
+    })
   }
 
   // ── 加入房间 ──
@@ -234,14 +439,35 @@ export class RoomManager {
     const playerCount = this.activePlayerIds.length
 
     this.global = { ...INITIAL_GLOBAL_STATE, eventQueue: this.theme.events }
+
+    // PvE 模式：选第一个 CPU 作为 Boss，初始份额加倍
+    this.bossId = null
+    if (this.pveMode) {
+      const firstCpu = [...this.cpuPlayerIds][0] ?? null
+      this.bossId = firstCpu
+    }
+
     this.players = createInitialPlayerStates(playerCount).map(p => {
       const isCpu = this.cpuPlayerIds.has(p.id)
+      const isBoss = this.pveMode && p.id === this.bossId
       const themeName = this.theme!.playerNames?.[p.id] ?? p.name
+      const name = isBoss
+        ? `🦖 巨头 ${themeName}`
+        : isCpu
+          ? `${themeName}🤖`
+          : (this.playerNames.get(p.id) ?? themeName)
       return {
         ...p,
-        name: isCpu
-          ? `${themeName}🤖`
-          : (this.playerNames.get(p.id) ?? themeName),
+        name,
+        // Boss 享受 40% 起始份额，其余玩家分剩下 60%
+        marketShare: isBoss
+          ? 0.40
+          : (this.pveMode && this.bossId
+              ? 0.60 / (playerCount - 1)
+              : p.marketShare),
+        // Boss 还附带初始品牌热度和动量
+        brandHeat: isBoss ? 50 : p.brandHeat,
+        marketMomentum: isBoss ? 1.5 : p.marketMomentum,
       }
     })
     this.resetPendingInputs()
@@ -263,6 +489,13 @@ export class RoomManager {
     // 分配暗牌
     this.wildCards = this.distributeWildCards(playerCount)
 
+    // 分配秘密目标（每人一张）
+    this.objectives = assignObjectives(this.activePlayerIds)
+    this.pledgesHistory = []
+
+    // 生成差异化私有情报
+    this.privateIntel = generatePrivateIntel(this.activePlayerIds, INITIAL_GLOBAL_STATE.maxRounds)
+
     this.broadcast({
       type: 'GAME_START',
       themeId: this.themeId,
@@ -273,7 +506,17 @@ export class RoomManager {
       intelTruth: this.intelTruth,
       wildCards: this.wildCards,
       beginnerMode: this.beginnerMode,
+      pveMode: this.pveMode,
+      bossId: this.bossId,
     })
+
+    // 私聊：给每个真人玩家发他的秘密目标
+    for (const [playerId, ws] of this.connections.entries()) {
+      const objective = this.objectives[playerId]
+      if (objective) {
+        this.sendTo(ws, { type: 'OBJECTIVE_ASSIGNED', objective })
+      }
+    }
 
     // 进入情报讨论阶段
     this.startIntelPhase()
@@ -375,6 +618,24 @@ export class RoomManager {
     this.players = newPlayers
     this.auditLogs.push(auditLog)
     this.roundNarrations.push(narration)
+    this.pledgesHistory.push([...this.pledges])
+
+    // ── 评估本回合的契约（已接受的）──
+    const actualActions: Record<string, BaseAction> = {}
+    for (const p of auditLog.players) {
+      actualActions[p.id] = p.action
+    }
+    const acceptedPacts = this.pacts.filter(p => p.status === 'accepted')
+    const pactResults: PactResult[] = []
+    for (const pact of acceptedPacts) {
+      const result = evaluatePact(pact, actualActions as Record<PlayerId, BaseAction>)
+      pactResults.push(result)
+      // 把奖励/惩罚加到玩家累计利润上
+      const proposer = this.players.find(p => p.id === pact.proposerId)
+      const target = this.players.find(p => p.id === pact.targetId)
+      if (proposer) proposer.cumulativeProfit += result.proposerDelta
+      if (target) target.cumulativeProfit += result.targetDelta
+    }
 
     const isGameOver = auditLog.round >= INITIAL_GLOBAL_STATE.maxRounds
 
@@ -384,13 +645,30 @@ export class RoomManager {
 
     if (isGameOver) {
       this.phase = 'GAME_OVER'
+
+      // 评估每个人的秘密目标 + 把奖励加到 cumulativeProfit
+      const objectiveResults: Record<string, ObjectiveResult> = {}
+      for (const id of this.activePlayerIds) {
+        const obj = this.objectives[id]
+        if (!obj) continue
+        const result = evaluateObjective(id, obj, this.players, this.auditLogs, this.pledgesHistory)
+        objectiveResults[id] = result
+        if (result.achieved) {
+          const player = this.players.find(p => p.id === id)
+          if (player) player.cumulativeProfit += obj.bonus
+        }
+      }
+
       const gameNarration = generateGameNarration(this.players, this.auditLogs, this.theme)
       this.broadcast({
         type: 'GAME_OVER',
         players: this.players,
         auditLogs: this.auditLogs,
         gameNarration,
+        pledgesHistory: this.pledgesHistory,
       })
+      // 单独广播目标结果（公开所有人的目标，强化"原来他是这么想的"恍然大悟感）
+      this.broadcast({ type: 'OBJECTIVE_RESULTS', results: objectiveResults })
     } else {
       this.phase = 'ROUND_RESULT'
       this.broadcast({
@@ -403,6 +681,15 @@ export class RoomManager {
         pledges: roundPledges,
       })
     }
+
+    // 广播契约结果（如果有）
+    if (pactResults.length > 0) {
+      this.broadcast({ type: 'PACT_RESULTS', results: pactResults })
+    }
+    // 清空本回合的契约和情报市场
+    this.pacts = []
+    this.intelListings = []
+    this.broadcastMarketUpdate()
   }
 
   // ── 下一回合 ─��
@@ -459,6 +746,21 @@ export class RoomManager {
       pledges: this.pledges,
       endsAt: this.intelPhaseEndsAt,
     })
+    // 私聊：每人发自己本回合的私有情报
+    this.sendPrivateIntelForCurrentRound()
+  }
+
+  // 私聊每人本回合的私有情报
+  private sendPrivateIntelForCurrentRound() {
+    const round = this.global.roundNumber
+    for (const [playerId, ws] of this.connections.entries()) {
+      const intelList = this.privateIntel[playerId]
+      if (!intelList) continue
+      const intel = intelList.find(i => i.round === round)
+      if (intel) {
+        this.sendTo(ws, { type: 'PRIVATE_INTEL', intel })
+      }
+    }
   }
 
   // ── 重置游戏 ──
@@ -473,9 +775,16 @@ export class RoomManager {
     this.intelTruth = {}
     this.generatedForecasts = []
     this.pledges = []
+    this.pledgesHistory = []
+    this.objectives = {}
+    this.privateIntel = {}
+    this.pacts = []
+    this.intelListings = []
     this.wildCards = {}
     this.cpuPlayerIds = new Set()
     this.beginnerMode = false
+    this.pveMode = false
+    this.bossId = null
     this.readyStartPlayers.clear()
     this.readyNextPlayers.clear()
     this.broadcast({ type: 'LOBBY_UPDATE', players: this.getPlayerSlots() })
@@ -557,7 +866,22 @@ export class RoomManager {
       intelTruth: this.intelTruth,
       wildCards: this.wildCards,
       beginnerMode: this.beginnerMode,
+      pveMode: this.pveMode,
+      bossId: this.bossId,
     })
+
+    // 重发秘密目标
+    const objective = this.objectives[playerId]
+    if (objective) {
+      this.sendTo(ws, { type: 'OBJECTIVE_ASSIGNED', objective })
+    }
+
+    // 重发当前回合的私有情报（如果游戏已开始）
+    const intelList = this.privateIntel[playerId]
+    const currentIntel = intelList?.find(i => i.round === this.global.roundNumber)
+    if (currentIntel) {
+      this.sendTo(ws, { type: 'PRIVATE_INTEL', intel: currentIntel })
+    }
 
     // 再发当前阶段
     if (this.phase === 'INTEL_PHASE') {

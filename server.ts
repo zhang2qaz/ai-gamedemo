@@ -18,7 +18,7 @@ import { WebSocketServer } from 'ws'
 import { networkInterfaces } from 'os'
 import { RoomManager } from './lib/multiplayer/roomManager'
 
-const dev = false  // 始终用 production 模式，避免 HMR cross-origin 问题
+const dev = process.env.DEV_MODE === '1'  // 默认 production；DEV_MODE=1 启用 HMR + 详细错误
 const listenHost = '0.0.0.0'
 const port = parseInt(process.env.PORT || '3000', 10)
 

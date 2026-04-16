@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import { useMultiplayerStore } from '@/store/multiplayerStore'
 import { useGameStore } from '@/store/gameStore'
+import AchievementWall from './AchievementWall'
 
 export default function ModeSelect() {
   const [view, setView] = useState<'main' | 'host' | 'join'>('main')
+  const [showAchievements, setShowAchievements] = useState(false)
   const [playerName, setPlayerName] = useState('')
   const [roomCode, setRoomCode] = useState('')
   const error = useMultiplayerStore(s => s.error)
@@ -212,9 +214,19 @@ export default function ModeSelect() {
         ))}
       </div>
 
-      <div className="mt-10 text-center text-stone-700 text-xs relative z-10">
+      {/* 成就墙入口 */}
+      <button
+        onClick={() => setShowAchievements(true)}
+        className="mt-6 text-stone-500 hover:text-amber-400 text-xs transition-colors relative z-10"
+      >
+        🏆 我的成就墙
+      </button>
+
+      <div className="mt-4 text-center text-stone-700 text-xs relative z-10">
         <p className="text-emboss">联机模式需要所有设备在同一局域网/WiFi下</p>
       </div>
+
+      {showAchievements && <AchievementWall onClose={() => setShowAchievements(false)} />}
     </div>
   )
 }

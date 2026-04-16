@@ -27,6 +27,22 @@ export type PlayerStats = {
   favoriteTheme: string
   favoriteAction: string
   achievements: string[]
+  // 新机制追踪（可选字段，向后兼容）
+  objectivesAchieved?: number
+  pactsKept?: number
+  pactsBroken?: number
+  intelSold?: number
+  intelBought?: number
+  pveWins?: number
+  shapeshifterCount?: number
+  skillSnapshot?: {
+    priceWar: number
+    rdTiming: number
+    marketingRhythm: number
+    defensivePatience: number
+    forecastReading: number
+    intelDiscernment: number
+  }
 }
 
 export type GameHistoryData = {
@@ -94,6 +110,22 @@ const ACHIEVEMENTS: { id: string; name: string; emoji: string; desc: string; che
   { id: 'big_game', name: '大场面', emoji: '🎪', desc: '完成一局8人游戏', check: h => h.records.some(r => r.playerCount >= 8) },
   { id: 'profit_2m', name: '财团掌门', emoji: '💎', desc: '单局利润超过200万', check: h => h.stats.bestProfit >= 2000000 },
   { id: 'fifty_games', name: '游戏大师', emoji: '🏅', desc: '完成50场比赛', check: h => h.stats.totalGames >= 50 },
+  // 新机制相关成就
+  { id: 'objective_keeper', name: '使命必达', emoji: '🎭', desc: '达成 5 次秘密目标', check: h => (h.stats.objectivesAchieved ?? 0) >= 5 },
+  { id: 'pact_master', name: '契约大师', emoji: '🤝', desc: '完成 10 次守约', check: h => (h.stats.pactsKept ?? 0) >= 10 },
+  { id: 'pact_breaker', name: '背刺艺术家', emoji: '🔪', desc: '背刺成功获利 3 次', check: h => (h.stats.pactsBroken ?? 0) >= 3 },
+  { id: 'intel_dealer', name: '情报贩子', emoji: '📰', desc: '卖出 5 份情报', check: h => (h.stats.intelSold ?? 0) >= 5 },
+  { id: 'intel_buyer', name: '消息灵通', emoji: '🔍', desc: '买到 5 份情报', check: h => (h.stats.intelBought ?? 0) >= 5 },
+  { id: 'pve_victor', name: '巨头终结者', emoji: '🦖', desc: '在 PvE 模式中战胜巨头', check: h => (h.stats.pveWins ?? 0) >= 1 },
+  { id: 'pve_three', name: '联军统帅', emoji: '⚔️', desc: '在 PvE 模式中战胜巨头 3 次', check: h => (h.stats.pveWins ?? 0) >= 3 },
+  { id: 'skill_master', name: '六边形战士', emoji: '🛡️', desc: '任意 4 项技能达到 70+', check: h => {
+    const s = h.stats.skillSnapshot
+    if (!s) return false
+    const high = Object.values(s).filter(v => v >= 70).length
+    return high >= 4
+  }},
+  { id: 'forecast_oracle', name: '预言家', emoji: '🔮', desc: '风向判断技能达 85+', check: h => (h.stats.skillSnapshot?.forecastReading ?? 0) >= 85 },
+  { id: 'shapeshifter_ach', name: '变形金刚 (成就)', emoji: '🔄', desc: '一局内使用全部 4 种动作', check: h => (h.stats.shapeshifterCount ?? 0) >= 1 },
 ]
 
 // ── Season System ──
@@ -176,4 +208,35 @@ export function getAllAchievements() {
 export function clearHistory() {
   if (typeof window === 'undefined') return
   localStorage.removeItem(STORAGE_KEY)
+}
+
+/**
+ * 增量更新统计计数 + 重新检查成就
+ */
+export function incrementStat(
+  field: 'objectivesAchieved' | 'pactsKept' | 'pactsBroken' | 'intelSold' | 'intelBought' | 'pveWins' | 'shapeshifterCount',
+  by = 1,
+): GameHistoryData {
+  const history = loadHistory()
+  history.stats[field] = (history.stats[field] ?? 0) + by
+  // 重新检查成就
+  for (const ach of ACHIEVEMENTS) {
+    if (!history.stats.achievements.includes(ach.id) && ach.check(history)) {
+      history.stats.achievements.push(ach.id)
+    }
+  }
+  saveHistory(history)
+  return history
+}
+
+export function updateSkillSnapshot(snapshot: NonNullable<PlayerStats['skillSnapshot']>): GameHistoryData {
+  const history = loadHistory()
+  history.stats.skillSnapshot = snapshot
+  for (const ach of ACHIEVEMENTS) {
+    if (!history.stats.achievements.includes(ach.id) && ach.check(history)) {
+      history.stats.achievements.push(ach.id)
+    }
+  }
+  saveHistory(history)
+  return history
 }

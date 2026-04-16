@@ -17,6 +17,8 @@ export default function LobbyScreen() {
   const backToModeSelect = useMultiplayerStore(s => s.backToModeSelect)
   const beginnerMode = useMultiplayerStore(s => s.beginnerMode)
   const setBeginnerMode = useMultiplayerStore(s => s.setBeginnerMode)
+  const pveMode = useMultiplayerStore(s => s.pveMode)
+  const setPveMode = useMultiplayerStore(s => s.setPveMode)
   const readyStart = useMultiplayerStore(s => s.readyStart)
   const readyPlayers = useMultiplayerStore(s => s.readyPlayers)
   const readyTotal = useMultiplayerStore(s => s.readyTotal)
@@ -136,9 +138,10 @@ export default function LobbyScreen() {
           ) : null
         })()}
 
-        {/* 新手模式（仅房主） */}
+        {/* 新手模式 + PvE 模式（仅房主） */}
         {isHost && (
-          <div className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+          <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+            {/* 新手模式 */}
             <button
               onClick={() => setBeginnerMode(!beginnerMode)}
               className={`w-full flex items-center justify-between rounded-xl px-4 py-3 transition-all duration-300 ${
@@ -164,6 +167,34 @@ export default function LobbyScreen() {
                 <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-300 ${
                   beginnerMode ? 'left-5.5' : 'left-0.5'
                 }`} style={{ left: beginnerMode ? '22px' : '2px' }} />
+              </div>
+            </button>
+
+            {/* PvE 巨头模式 */}
+            <button
+              onClick={() => setPveMode(!pveMode)}
+              className={`w-full flex items-center justify-between rounded-xl px-4 py-3 transition-all duration-300 ${
+                pveMode
+                  ? 'glass-card border-red-700/50 bg-red-950/20'
+                  : 'glass-card border-stone-700/40'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">{pveMode ? '🦖' : '⚔️'}</span>
+                <div className="text-left">
+                  <div className={`font-bold text-sm ${pveMode ? 'text-red-400' : 'text-stone-300'}`}>
+                    {pveMode ? 'PvE 巨头 · 已开启' : 'PvP 对抗模式'}
+                  </div>
+                  <div className="text-stone-500 text-xs">
+                    {pveMode ? '所有玩家联手对抗一个 40% 起手份额的巨头' : '玩家之间互相竞争'}
+                  </div>
+                </div>
+              </div>
+              <div className={`w-10 h-5 rounded-full transition-all duration-300 relative ${
+                pveMode ? 'bg-red-600' : 'bg-stone-700'
+              }`}>
+                <div className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-300"
+                  style={{ left: pveMode ? '22px' : '2px' }} />
               </div>
             </button>
           </div>
