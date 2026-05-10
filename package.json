@@ -2,10 +2,14 @@
   "name": "yizhan-demo",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
-    "start": "next start",
+    "start": "tsx server.ts",
+    "start:next": "next start",
     "start:mp": "next build && tsx server.ts",
     "lint": "eslint"
   },
@@ -13,6 +17,8 @@
     "next": "16.2.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.21.0",
     "ws": "^8.20.0",
     "zustand": "^5.0.12"
   },
@@ -38,8 +44,6 @@
     "jest": "^30.3.0",
     "tailwindcss": "^4",
     "ts-jest": "^29.4.6",
-    "tsconfig-paths": "^4.2.0",
-    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

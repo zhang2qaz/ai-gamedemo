@@ -54,7 +54,7 @@ export default function LobbyScreen() {
 
         {isHost && hostIp && (
           <div className="text-stone-500 text-sm">
-            其他玩家访问 <span className="text-stone-300 font-mono glass-panel rounded-lg px-2 py-0.5 text-xs">http://{hostIp}:3000</span>
+            其他玩家访问 <span className="text-stone-300 font-mono glass-panel rounded-lg px-2 py-0.5 text-xs break-all">{hostIp}</span>
           </div>
         )}
       </div>

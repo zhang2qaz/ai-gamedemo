@@ -16,7 +16,12 @@ class WsClient {
   get connected() { return this._connected }
 
   connect(host: string, port: number): Promise<void> {
-    this.url = `ws://${host}:${port}/ws`
+    // 自动选择 ws/wss：HTTPS 页面必须用 wss
+    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:'
+    const proto = isHttps ? 'wss' : 'ws'
+    // HTTPS 默认 443、HTTP 默认 80 — 都不需要写在 URL 里
+    const portStr = (isHttps && port === 443) || (!isHttps && port === 80) ? '' : `:${port}`
+    this.url = `${proto}://${host}${portStr}/ws`
     return new Promise((resolve, reject) => {
       try {
         this.ws = new WebSocket(this.url)
@@ -74,10 +79,10 @@ class WsClient {
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null
       if (!this._connected && this.url) {
-        this.connect(
-          new URL(this.url).hostname,
-          parseInt(new URL(this.url).port)
-        ).catch(() => { /* 静默重试 */ })
+        const u = new URL(this.url)
+        const isWss = u.protocol === 'wss:'
+        const port = u.port ? parseInt(u.port) : (isWss ? 443 : 80)
+        this.connect(u.hostname, port).catch(() => { /* 静默重试 */ })
       }
     }, 3000)
   }

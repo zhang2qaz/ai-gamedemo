@@ -85,22 +85,7 @@ export default function GameBoard() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [phase])
 
-  // ── 主题选择页 ──
-  if (phase === 'THEME_SELECT') {
-    return <ThemeSelect onSelect={selectTheme} />
-  }
-
-  const isFinalRound = global.roundNumber === global.maxRounds
-  const isIntelPhase = phase === 'INTEL_PHASE'
-  const isSubmitting = phase === 'SUBMITTING'
-  const isRoundResult = phase === 'ROUND_RESULT'
-  const isGameOver = phase === 'GAME_OVER'
-
-  const playerIds = players.map(p => p.id)
-  const allSubmitted = playerIds.every(id => pendingInputs[id]?.action !== null)
-  const submittedCount = playerIds.filter(id => pendingInputs[id]?.action !== null).length
-
-  // 当前正在选牌玩家的决策预测
+  // 当前正在选牌玩家的决策预测（必须在所有早期 return 之前，保证 hook 顺序一致）
   const activePrediction = useMemo(() => {
     if (!activeInput || !theme || !global) return null
     const input = pendingInputs[activeInput]
@@ -116,9 +101,24 @@ export default function GameBoard() {
       myWildCard: useWild ? wc.type : null,
       forecast: currentForecast,
       pledges: useGameStore.getState().pledges,
-      configOverrides: theme.configOverrides,
+      configOverrides: theme?.configOverrides,
     })
   }, [activeInput, pendingInputs, global, players, wildCards, currentForecast, theme])
+
+  // ── 主题选择页 ──
+  if (phase === 'THEME_SELECT') {
+    return <ThemeSelect onSelect={selectTheme} />
+  }
+
+  const isFinalRound = global.roundNumber === global.maxRounds
+  const isIntelPhase = phase === 'INTEL_PHASE'
+  const isSubmitting = phase === 'SUBMITTING'
+  const isRoundResult = phase === 'ROUND_RESULT'
+  const isGameOver = phase === 'GAME_OVER'
+
+  const playerIds = players.map(p => p.id)
+  const allSubmitted = playerIds.every(id => pendingInputs[id]?.action !== null)
+  const submittedCount = playerIds.filter(id => pendingInputs[id]?.action !== null).length
 
   const currentNarration = roundNarrations[roundNarrations.length - 1] ?? ''
   const rankingOrder = getFinalRanking(players)

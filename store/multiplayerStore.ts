@@ -208,12 +208,15 @@ export const useMultiplayerStore = create<MultiplayerStore>((set, get) => ({
 
   hostGame: async (playerName) => {
     try {
-      // 获取网络信息
+      // 获取房间号
       const res = await fetch('/api/network-info')
       const info = await res.json()
 
-      // 连接自己的 WebSocket
-      await wsClient.connect(window.location.hostname, info.port)
+      // 连接自己的 WebSocket（用浏览器实际 host，部署/局域网都正确）
+      const port = window.location.port
+        ? parseInt(window.location.port)
+        : (window.location.protocol === 'https:' ? 443 : 80)
+      await wsClient.connect(window.location.hostname, port)
 
       // 监听消息
       wsClient.onMessage((msg) => get().handleServerMessage(msg))
@@ -221,11 +224,14 @@ export const useMultiplayerStore = create<MultiplayerStore>((set, get) => ({
       // 加入房间
       wsClient.send({ type: 'JOIN', playerName, roomCode: info.roomCode })
 
+      // 显示用的 host：浏览器看到的 origin（部署到 Railway 时自动是公网域名）
+      const displayHost = window.location.origin
+
       set({
         mode: 'host',
         phase: 'LOBBY',
         roomCode: info.roomCode,
-        hostIp: info.ip,
+        hostIp: displayHost,
         connected: true,
         error: null,
       })
