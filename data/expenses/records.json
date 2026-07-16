@@ -1210,7 +1210,7 @@
       "reimburse": "pending",
       "notes": "患者 YUYANG ZHANG，Patient# 29304264，付款凭据打印于 07/09 16:01；如需保险理赔可用此凭据",
       "recordedAt": "2026-07-15T23:53:00Z",
-      "bankNote": "⚠️ 已对账但发现异常：07-10 入账出现两笔相同的 ¥1,701.00（$250）扣款，疑似重复扣款——建议联系 CityMD 或银行核实，必要时申请退款/拒付",
+      "bankNote": "已对账：流水 ¥1,701.00（07-10 入账）；同日另一笔 ¥1,701.00 为 Linna 的就诊费，已单独入账（20260709-008），非重复扣款",
       "bankVerified": true
     },
     {
@@ -2418,6 +2418,26 @@
       "cardLast4": "0873",
       "location": "纽约",
       "bankNote": "流水补录：¥330.49（07-14 入账），按当日核对汇率≈6.78 折算；Uber 部分行程与小费分笔入账，实际乘车日约早 1–2 天，以美元账单为准"
+    },
+    {
+      "id": "20260709-008",
+      "date": "2026-07-09",
+      "merchant": "CityMD West Harlem (Summit Health)",
+      "merchantNote": "CityMD 急诊诊所（356 W 125th St）",
+      "category": "medical",
+      "description": "门诊自费就诊费（Linna，Self Pay）",
+      "amount": 250,
+      "currency": "USD",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 曼哈顿",
+      "receipts": [],
+      "reimburse": "personal",
+      "reimburseNote": "家人（Linna）就诊费用，按要求不参与报销",
+      "source": "bank",
+      "bankVerified": true,
+      "bankNote": "流水补录：¥1,701.00（07-10 入账），与本人就诊（20260709-004）同日两笔之一",
+      "recordedAt": "2026-07-16T01:20:00Z"
     }
   ]
 }
