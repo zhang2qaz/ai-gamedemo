@@ -107,4 +107,17 @@ describe('summarize', () => {
     expect(s.count).toBe(0)
     expect(s.totals).toEqual([])
   })
+
+  it('主币种按笔数判定，不被大数值外币挤掉', () => {
+    // 2 笔 USD + 1 笔大额 KRW：主币种应是 USD，排在 totals 首位
+    const s = summarize([
+      record({ id: '20260701-001', date: '2026-07-01', amount: 10, currency: 'USD' }),
+      record({ id: '20260701-002', date: '2026-07-01', amount: 20, currency: 'USD' }),
+      record({ id: '20260701-003', date: '2026-07-01', amount: 92550, currency: 'KRW', category: 'shopping' }),
+    ])
+    expect(s.totals[0]).toEqual({ currency: 'USD', amount: 30 })
+    expect(s.totals[1]).toEqual({ currency: 'KRW', amount: 92550 })
+    // 分类排序按主币种金额：dining($30) 在 shopping($0) 前面
+    expect(s.byCategory[0].category).toBe('dining')
+  })
 })

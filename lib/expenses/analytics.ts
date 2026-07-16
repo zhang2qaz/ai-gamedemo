@@ -70,10 +70,15 @@ function addTotal(totals: Map<string, number>, r: ExpenseRecord) {
   totals.set(r.currency, (totals.get(r.currency) ?? 0) + Math.round(r.amount * 100))
 }
 
-function toCurrencyTotals(totals: Map<string, number>): CurrencyTotal[] {
+function toCurrencyTotals(totals: Map<string, number>, mainCurrency?: string): CurrencyTotal[] {
   return [...totals.entries()]
     .map(([currency, cents]) => ({ currency, amount: cents / 100 }))
-    .sort((a, b) => b.amount - a.amount)
+    .sort((a, b) => {
+      // 主币种永远排第一，跨币种金额数值没有可比性（如 ₩92,550 vs $2,268）
+      if (a.currency === mainCurrency && b.currency !== mainCurrency) return -1
+      if (b.currency === mainCurrency && a.currency !== mainCurrency) return 1
+      return b.amount - a.amount
+    })
 }
 
 export function summarize(records: ExpenseRecord[]): ExpenseSummary {
@@ -101,16 +106,24 @@ export function summarize(records: ExpenseRecord[]): ExpenseSummary {
     byStatus.set(r.reimburse, st)
   }
 
+  // 主币种 = 记录笔数最多的币种，笔数相同取合计金额大者
+  const currencyCounts = new Map<string, number>()
+  for (const r of records) currencyCounts.set(r.currency, (currencyCounts.get(r.currency) ?? 0) + 1)
+  const mainCurrency = [...currencyCounts.entries()].sort(
+    (a, b) => b[1] - a[1] || (totals.get(b[0]) ?? 0) - (totals.get(a[0]) ?? 0)
+  )[0]?.[0]
+  const mainAmount = (m: Map<string, number>) => (mainCurrency ? (m.get(mainCurrency) ?? 0) : 0)
+
   return {
     count: records.length,
-    totals: toCurrencyTotals(totals),
+    totals: toCurrencyTotals(totals, mainCurrency),
     byCategory: [...byCategory.entries()]
-      .map(([category, v]) => ({ category, count: v.count, totals: toCurrencyTotals(v.totals) }))
-      .sort((a, b) => (b.totals[0]?.amount ?? 0) - (a.totals[0]?.amount ?? 0)),
+      .sort((a, b) => mainAmount(b[1].totals) - mainAmount(a[1].totals))
+      .map(([category, v]) => ({ category, count: v.count, totals: toCurrencyTotals(v.totals, mainCurrency) })),
     byDate: [...byDate.entries()]
-      .map(([date, v]) => ({ date, count: v.count, totals: toCurrencyTotals(v.totals) }))
+      .map(([date, v]) => ({ date, count: v.count, totals: toCurrencyTotals(v.totals, mainCurrency) }))
       .sort((a, b) => a.date.localeCompare(b.date)),
     byStatus: [...byStatus.entries()]
-      .map(([status, v]) => ({ status, count: v.count, totals: toCurrencyTotals(v.totals) })),
+      .map(([status, v]) => ({ status, count: v.count, totals: toCurrencyTotals(v.totals, mainCurrency) })),
   }
 }
