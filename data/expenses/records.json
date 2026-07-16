@@ -2500,6 +2500,54 @@
       "bankNote": "支付宝账单详情：-¥2,917.33（07-15 19:18），收款方 *强(个人)，备注\"Jude冰箱面板物流运输费\"",
       "notes": "收款方为物流个人收款码；7/10 借记卡收到宁波吉德电器汇入 ¥2,429.07 为相关往来",
       "recordedAt": "2026-07-16T01:55:00Z"
+    },
+    {
+      "id": "20260716-001",
+      "date": "2026-07-16",
+      "time": "09:47",
+      "merchant": "H Mart (2828 Broadway)",
+      "merchantNote": "韩国超市（曼哈顿上西区）",
+      "category": "shopping",
+      "description": "H Mart 买菜：猪肉水饺、咖喱块、杏鲍菇、有机猪肉糜、葱油饼等 6 项",
+      "items": [
+        {
+          "name": "味芳中式猪肉水饺 24 只",
+          "amount": 9.99
+        },
+        {
+          "name": "S&B 金牌咖喱（微辣）8.4oz（促销省 $1.50）",
+          "amount": 5.99
+        },
+        {
+          "name": "GUANS 杏鲍菇 300g",
+          "amount": 3.99
+        },
+        {
+          "name": "白土豆 1.41lb @ $2.79/lb",
+          "amount": 3.93
+        },
+        {
+          "name": "Austin Black 有机猪肉糜 16oz",
+          "amount": 8.99
+        },
+        {
+          "name": "义美葱油饼 525g",
+          "amount": 3.99
+        }
+      ],
+      "amount": 36.88,
+      "currency": "USD",
+      "subtotal": 36.88,
+      "tax": 0,
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 曼哈顿",
+      "receipts": [
+        "/receipts/20260716-001.jpg"
+      ],
+      "reimburse": "pending",
+      "bankNote": "待对账：预计 07-17 前后入账（约 ¥250）",
+      "recordedAt": "2026-07-16T02:45:00Z"
     }
   ]
 }
