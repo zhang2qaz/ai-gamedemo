@@ -919,7 +919,7 @@
       ],
       "reimburse": "pending",
       "notes": "客户名 YUYANG ZHANG；省 $87.50",
-      "bankNote": "已对账：流水 ¥595.57（07-08 入账，支付宝挂招行 Amex 尾号0873）",
+      "bankNote": "已对账：流水 ¥595.57（07-08 入账，支付宝挂招行 Amex 尾号0873）；支付宝账单详情确认 $87.50 按铂金会员汇率 6.806557 折算，商品说明含 Coach 门店号 05056-003",
       "recordedAt": "2026-07-15T23:53:00Z",
       "cardLast4": "0873",
       "bankVerified": true
@@ -1681,9 +1681,9 @@
     {
       "id": "20260702-001",
       "date": "2026-07-02",
-      "merchant": "中国移动国际 CMI（支付宝）",
+      "merchant": "香港中国移动通讯旗舰店（支付宝）",
       "category": "telecom",
-      "description": "出行前购买的国际流量/漫游包（内容待确认）",
+      "description": "韩国高速本地流量包/免换电话卡（首尔中转用）",
       "amount": 9,
       "currency": "CNY",
       "receipts": [],
@@ -1693,8 +1693,8 @@
       "recordedAt": "2026-07-16T00:48:00Z",
       "paymentMethod": "支付宝（挂招行 Amex 尾号0873）",
       "cardLast4": "0873",
-      "bankNote": "流水补录：¥9.00（07-02 入账）",
-      "notes": "是否计入行程开销待确认"
+      "bankNote": "已对账：支付宝账单详情 -¥9.00（07-02 22:09，招行信用卡0873），商品说明确认为韩国本地流量包",
+      "notes": "出发前为首尔中转购买，行程相关已确认"
     },
     {
       "id": "20260703-005",
@@ -2457,6 +2457,48 @@
       "bankNote": "流水补录：¥1,701.00（07-10 入账），与本人就诊（20260709-004）同日两笔之一",
       "recordedAt": "2026-07-16T01:20:00Z",
       "reimburseRisk": "家人（Linna）医疗费用，已标个人支出、不参与报销"
+    },
+    {
+      "id": "20260623-001",
+      "date": "2026-06-23",
+      "time": "18:15",
+      "merchant": "携程旅行网 · HOMESTAY G Valley Gasan",
+      "merchantNote": "首尔加山民宿（衿川区 G Valley，携程自动扣款）",
+      "category": "lodging",
+      "description": "首尔中转住宿预订（HOMESStay Gvalley Gasan）",
+      "amount": 619.92,
+      "currency": "CNY",
+      "paymentMethod": "花呗（支付宝信贷，携程授权扣款）",
+      "location": "首尔 衿川区 加山",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "bankNote": "支付宝账单详情：-¥619.92（2026-06-23 18:15 自动扣款成功）；招行借记卡 7/9 支付宝信贷还款 ¥2,903.84 或含此笔",
+      "notes": "出发前预订，入住约 7/2–7/3（与 7/3 首尔衿川区오천집用餐位置吻合）",
+      "recordedAt": "2026-07-16T01:55:00Z"
+    },
+    {
+      "id": "20260715-002",
+      "date": "2026-07-15",
+      "time": "19:18",
+      "merchant": "云子陈（个人收钱码）",
+      "category": "other",
+      "description": "Jude（吉德）冰箱面板物流运输费",
+      "amount": 2917.33,
+      "currency": "CNY",
+      "paymentMethod": "支付宝收钱码转账（招行储蓄卡尾号7869）",
+      "cardLast4": "7869",
+      "location": "国内",
+      "receipts": [],
+      "reimburse": "personal",
+      "source": "bank",
+      "bankVerified": true,
+      "reimburseRisk": "国内个人收款码转账、与纽约行程无关，不宜列入差旅报销",
+      "reimburseNote": "家庭事项支出，列个人支出",
+      "bankNote": "支付宝账单详情：-¥2,917.33（07-15 19:18），收款方 *强(个人)，备注\"Jude冰箱面板物流运输费\"",
+      "notes": "7/10 借记卡曾收到宁波吉德电器汇入 ¥2,429.07，疑与冰箱售后相关",
+      "recordedAt": "2026-07-16T01:55:00Z"
     }
   ]
 }
