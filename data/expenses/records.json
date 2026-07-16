@@ -2548,6 +2548,42 @@
       "reimburse": "pending",
       "bankNote": "待对账：预计 07-17 前后入账（约 ¥250）",
       "recordedAt": "2026-07-16T02:45:00Z"
+    },
+    {
+      "id": "20260716-002",
+      "date": "2026-07-16",
+      "time": "15:19",
+      "merchant": "Lincoln Market (233 St. Nicholas Ave)",
+      "merchantNote": "社区超市（哈莱姆区）",
+      "category": "shopping",
+      "description": "超市采购：西冷牛排两块、熟食热餐",
+      "items": [
+        {
+          "name": "Beef Sirloin Palomilla Steak 西冷牛排",
+          "amount": 6.31
+        },
+        {
+          "name": "Beef Sirloin Palomilla Steak 西冷牛排（第二块）",
+          "amount": 7.03
+        },
+        {
+          "name": "Deli Hot Bar 熟食热餐",
+          "amount": 6.99
+        }
+      ],
+      "amount": 20.95,
+      "currency": "USD",
+      "subtotal": 20.33,
+      "tax": 0.62,
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 曼哈顿",
+      "receipts": [
+        "/receipts/20260716-002.jpg"
+      ],
+      "reimburse": "pending",
+      "bankNote": "待对账：预计 07-17 前后入账（约 ¥142）",
+      "recordedAt": "2026-07-16T03:05:00Z"
     }
   ]
 }
