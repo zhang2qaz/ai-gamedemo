@@ -80,6 +80,15 @@ export default async function ExpenseDetailPage({
           />
           <Field label="报销备注" value={record.reimburseNote} />
           <Field label="备注" value={record.notes} />
+          <Field
+            label="记录来源"
+            value={record.source === 'bank' ? '银行流水补录（无小票）' : undefined}
+          />
+          <Field
+            label="对账状态"
+            value={record.bankVerified ? '✓ 已与银行流水核对一致' : '未与银行流水核对'}
+          />
+          <Field label="对账备注" value={record.bankNote} />
           <Field label="录入时间" value={record.recordedAt.replace('T', ' ').slice(0, 16)} />
         </div>
       </section>

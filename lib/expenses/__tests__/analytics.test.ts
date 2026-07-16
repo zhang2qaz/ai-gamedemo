@@ -72,6 +72,17 @@ describe('filterExpenses', () => {
     expect(filterExpenses(records, { q: '交通' })).toHaveLength(1)
     expect(filterExpenses(records, { q: '不存在' })).toHaveLength(0)
   })
+
+  it('关键词匹配对账状态与流水补录', () => {
+    const mixed = [
+      record({ id: '20260714-001', date: '2026-07-14', bankVerified: true }),
+      record({ id: '20260714-002', date: '2026-07-14', source: 'bank' }),
+      record({ id: '20260714-003', date: '2026-07-14' }),
+    ]
+    expect(filterExpenses(mixed, { q: '已对账' }).map(r => r.id)).toEqual(['20260714-001'])
+    expect(filterExpenses(mixed, { q: '未对账' })).toHaveLength(2)
+    expect(filterExpenses(mixed, { q: '流水补录' }).map(r => r.id)).toEqual(['20260714-002'])
+  })
 })
 
 describe('summarize', () => {

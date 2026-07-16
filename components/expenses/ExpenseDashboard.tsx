@@ -94,6 +94,25 @@ function CategoryBadge({ category }: { category: CategoryKey }) {
   )
 }
 
+function BankBadge({ record }: { record: ExpenseRecord }) {
+  if (record.bankVerified) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-stone-400">
+        <span style={{ color: '#0ca30c' }} aria-hidden>✓</span>
+        已对账
+      </span>
+    )
+  }
+  if (record.source === 'bank') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-stone-800/80 px-2 py-0.5 text-xs text-stone-400">
+        🏦 流水补录
+      </span>
+    )
+  }
+  return null
+}
+
 export default function ExpenseDashboard({ records }: { records: ExpenseRecord[] }) {
   const [q, setQ] = useState('')
   const [category, setCategory] = useState<CategoryKey | ''>('')
@@ -229,7 +248,7 @@ export default function ExpenseDashboard({ records }: { records: ExpenseRecord[]
             )}
           </section>
 
-          <section className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <section className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatTile label="票据笔数" value={`${summary.count} 笔`} />
             <StatTile
               label="待报销"
@@ -240,6 +259,11 @@ export default function ExpenseDashboard({ records }: { records: ExpenseRecord[]
               label="已报销"
               value={totalsText(reimbursedTotals?.totals ?? [])}
               sub={reimbursedTotals ? `${reimbursedTotals.count} 笔` : '暂无'}
+            />
+            <StatTile
+              label="已对账"
+              value={`${filtered.filter(r => r.bankVerified).length} / ${filtered.length} 笔`}
+              sub="与银行流水核对一致"
             />
           </section>
 
@@ -301,6 +325,7 @@ export default function ExpenseDashboard({ records }: { records: ExpenseRecord[]
                           <span className="font-medium text-stone-100">{r.merchant}</span>
                           <CategoryBadge category={r.category} />
                           <StatusBadge status={r.reimburse} />
+                          <BankBadge record={r} />
                         </div>
                         <div className="mt-0.5 truncate text-xs text-stone-400">
                           {r.date}

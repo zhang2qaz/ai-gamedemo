@@ -32,6 +32,9 @@ export type ReimburseStatus = keyof typeof REIMBURSE_STATUS
 
 export const REIMBURSE_KEYS = Object.keys(REIMBURSE_STATUS) as ReimburseStatus[]
 
+/** 记录来源：小票拍照识别 / 银行流水补录（线上消费等无小票场景） */
+export type RecordSource = 'receipt' | 'bank'
+
 /** 票据上的单个明细行 */
 export interface ExpenseItem {
   name: string
@@ -73,6 +76,12 @@ export interface ExpenseRecord {
   reimburse: ReimburseStatus
   reimburseNote?: string
   notes?: string
+  /** 记录来源，缺省视为 'receipt'（小票拍照） */
+  source?: RecordSource
+  /** 已与银行流水核对一致 */
+  bankVerified?: boolean
+  /** 对账备注：待核对重点、金额出入的更正说明等 */
+  bankNote?: string
   /** 录入时间 ISO 8601 */
   recordedAt: string
 }
