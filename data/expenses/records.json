@@ -642,7 +642,7 @@
         "/receipts/IMG_3980.jpeg"
       ],
       "reimburse": "pending",
-      "notes": "司机行程凭条（Driver Trip Voucher），Ride ID 747118915；小费如在 App 内支付则未体现",
+      "notes": "司机行程凭条（Driver Trip Voucher）已归档，Ride ID 747118915；待后续流水入账后销账",
       "bankNote": "待对账：Curb App 支付，本期账单未见对应单笔（约 ¥160），可能走其他渠道或与小费合并入账，待查",
       "recordedAt": "2026-07-15T23:53:00Z"
     },
@@ -1674,7 +1674,7 @@
         "/receipts/IMG_3977.jpeg"
       ],
       "reimburse": "pending",
-      "notes": "车费 $12.10 + 拥堵费 $2.50 + 州附加 $0.50 + 改善费 $1.00 + 小费 $3.22",
+      "notes": "车费 $12.10 + 拥堵费 $2.50 + 州附加 $0.50 + 改善费 $1.00 + 小费 $3.22；小票已归档，待流水入账后销账",
       "recordedAt": "2026-07-15T23:53:00Z",
       "bankNote": "待对账：Apple Pay 5254 → 招行 Visa 尾号1980，预计 07-16 后入账（约 ¥131）"
     },
@@ -1790,7 +1790,7 @@
       "id": "20260705-006",
       "date": "2026-07-05",
       "merchant": "Uber One",
-      "category": "fees",
+      "category": "dining",
       "description": "Uber One 会员月费",
       "amount": 9.99,
       "currency": "USD",
@@ -1802,7 +1802,7 @@
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "bankNote": "流水补录：¥67.77（07-05 入账），按当日核对汇率≈6.784 折算，以美元账单为准",
-      "notes": "订阅费用，是否计入行程开销待确认"
+      "notes": "经确认按餐费计入行程报销"
     },
     {
       "id": "20260705-007",
@@ -2219,19 +2219,22 @@
       "id": "20260711-008",
       "date": "2026-07-11",
       "merchant": "Agoda（支付宝）",
-      "category": "transport",
-      "description": "Agoda 平台预订（银行归类交通出行，具体项目待确认）",
+      "category": "entertainment",
+      "description": "自然历史博物馆门票（Agoda 平台预订）",
       "amount": 203.27,
       "currency": "CNY",
       "receipts": [],
-      "reimburse": "pending",
+      "reimburse": "personal",
       "source": "bank",
       "bankVerified": true,
       "recordedAt": "2026-07-16T00:48:00Z",
       "paymentMethod": "支付宝（挂招行 Amex 尾号0873）",
       "cardLast4": "0873",
       "bankNote": "流水补录：¥203.27（07-11 入账），账单以人民币计",
-      "notes": "预订内容待确认"
+      "notes": "经用户确认预订内容为自然历史博物馆",
+      "merchantNote": "经用户确认为自然历史博物馆（AMNH）门票预订",
+      "reimburseRisk": "亲子属性场馆门票（与 20260706-005 同场馆，Agoda 预订）（风险较低）",
+      "reimburseNote": "整单关联：与其他亲子门票统一列为个人支出"
     },
     {
       "id": "20260711-009",
