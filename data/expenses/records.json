@@ -10,26 +10,66 @@
       "category": "shopping",
       "description": "首尔便利店采购：矿泉水、酸奶、香蕉牛奶、蟹肉棒、牙膏、烤鱿鱼等",
       "items": [
-        { "name": "济州三多水矿泉水 2.0L", "amount": 1950 },
-        { "name": "宾格瑞草莓酸奶 180g", "amount": 2200 },
-        { "name": "宾格瑞草莓牛奶 240ml", "amount": 1800 },
-        { "name": "宾格瑞香蕉牛奶 240ml", "quantity": 2, "amount": 3600 },
-        { "name": "韩城蟹肉棒 140g", "amount": 4900 },
-        { "name": "虾仁蛋黄酱三角饭团", "amount": 1500 },
-        { "name": "爱茉莉 median 牙膏 93%", "quantity": 2, "amount": 10800 },
-        { "name": "麦饭石烤鱿鱼 45g", "amount": 6900 },
-        { "name": "烤鱿鱼腿 50g", "amount": 6900 },
-        { "name": "环保购物袋", "amount": 200 },
-        { "name": "促销优惠", "amount": -5400 }
+        {
+          "name": "济州三多水矿泉水 2.0L",
+          "amount": 1950
+        },
+        {
+          "name": "宾格瑞草莓酸奶 180g",
+          "amount": 2200
+        },
+        {
+          "name": "宾格瑞草莓牛奶 240ml",
+          "amount": 1800
+        },
+        {
+          "name": "宾格瑞香蕉牛奶 240ml",
+          "quantity": 2,
+          "amount": 3600
+        },
+        {
+          "name": "韩城蟹肉棒 140g",
+          "amount": 4900
+        },
+        {
+          "name": "虾仁蛋黄酱三角饭团",
+          "amount": 1500
+        },
+        {
+          "name": "爱茉莉 median 牙膏 93%",
+          "quantity": 2,
+          "amount": 10800
+        },
+        {
+          "name": "麦饭石烤鱿鱼 45g",
+          "amount": 6900
+        },
+        {
+          "name": "烤鱿鱼腿 50g",
+          "amount": 6900
+        },
+        {
+          "name": "环保购物袋",
+          "amount": 200
+        },
+        {
+          "name": "促销优惠",
+          "amount": -5400
+        }
       ],
       "amount": 35350,
       "currency": "KRW",
-      "paymentMethod": "Visa 信用卡（海外卡）",
+      "paymentMethod": "Visa 信用卡（招行尾号1980）",
       "location": "首尔 江南区",
-      "receipts": ["/receipts/IMG_3984.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3984.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "启程当天凌晨在首尔便利店购物，승인번호 330154",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥155.70（07-03，招行 Visa 尾号1980）",
+      "cardLast4": "1980",
+      "bankVerified": true
     },
     {
       "id": "20260703-002",
@@ -40,17 +80,28 @@
       "category": "shopping",
       "description": "首尔便利店加购：香蕉牛奶、烤鸡腿",
       "items": [
-        { "name": "宾格瑞香蕉牛奶 240ml", "amount": 1800 },
-        { "name": "点心（점보통다리 烤鸡腿）", "amount": 4900 }
+        {
+          "name": "宾格瑞香蕉牛奶 240ml",
+          "amount": 1800
+        },
+        {
+          "name": "点心（점보통다리 烤鸡腿）",
+          "amount": 4900
+        }
       ],
       "amount": 6700,
       "currency": "KRW",
-      "paymentMethod": "Visa 信用卡（海外卡）",
+      "paymentMethod": "Visa 信用卡（招行尾号1980）",
       "location": "首尔 江南区",
-      "receipts": ["/receipts/IMG_3984.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3984.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "与前一单同店，间隔 2 分钟的第二笔，승인번호 431641",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥29.53（07-03，招行 Visa 尾号1980）",
+      "cardLast4": "1980",
+      "bankVerified": true
     },
     {
       "id": "20260703-003",
@@ -61,22 +112,48 @@
       "category": "dining",
       "description": "首尔午餐：汤汁炒年糕、白灼鱿鱼、石锅拌饭、米酒等",
       "items": [
-        { "name": "국물떡볶이 汤汁炒年糕", "amount": 8000 },
-        { "name": "오징어숙회 白灼鱿鱼", "amount": 16000 },
-        { "name": "돌솥비빔밥 石锅拌饭", "amount": 8500 },
-        { "name": "묵사발 凉粉碗", "amount": 7000 },
-        { "name": "장수막걸리 长寿米酒", "amount": 4000 },
-        { "name": "可乐", "amount": 2000 },
-        { "name": "Terra 啤酒", "amount": 5000 }
+        {
+          "name": "국물떡볶이 汤汁炒年糕",
+          "amount": 8000
+        },
+        {
+          "name": "오징어숙회 白灼鱿鱼",
+          "amount": 16000
+        },
+        {
+          "name": "돌솥비빔밥 石锅拌饭",
+          "amount": 8500
+        },
+        {
+          "name": "묵사발 凉粉碗",
+          "amount": 7000
+        },
+        {
+          "name": "장수막걸리 长寿米酒",
+          "amount": 4000
+        },
+        {
+          "name": "可乐",
+          "amount": 2000
+        },
+        {
+          "name": "Terra 啤酒",
+          "amount": 5000
+        }
       ],
       "amount": 50500,
       "currency": "KRW",
-      "paymentMethod": "刷卡（卡种未打印）",
+      "paymentMethod": "支付宝（挂招行 Amex 尾号0873）",
       "location": "首尔 衿川区",
-      "receipts": ["/receipts/IMG_3984.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3984.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "含增值税 ₩4,592；桌号 12",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥221.45（07-03，支付宝挂招行 Amex 尾号0873）",
+      "cardLast4": "0873",
+      "bankVerified": true
     },
     {
       "id": "20260703-004",
@@ -87,8 +164,14 @@
       "category": "dining",
       "description": "LAX 转机午餐：炸鸡柳薯条、菠萝汁",
       "items": [
-        { "name": "Chicken Tenders & Fries（配 Ranch 酱）", "amount": 24.0 },
-        { "name": "Pineapple Juice 菠萝汁", "amount": 6.5 }
+        {
+          "name": "Chicken Tenders & Fries（配 Ranch 酱）",
+          "amount": 24
+        },
+        {
+          "name": "Pineapple Juice 菠萝汁",
+          "amount": 6.5
+        }
       ],
       "amount": 38.96,
       "currency": "USD",
@@ -98,10 +181,14 @@
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "洛杉矶机场 LAX T1",
-      "receipts": ["/receipts/IMG_3985.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3985.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "3 人用餐，Table 37，12:15 PM 结账",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥264.30（07-04 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260704-001",
@@ -117,10 +204,14 @@
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约 JFK → 曼哈顿",
-      "receipts": ["/receipts/IMG_3986.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3986.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "车费 $87.00 + 附加 $1.00 + 中城隧道通行费 $7.46 = 小计 $95.46；另州附加 $0.50、改善费 $1.00、拥堵费 $2.50、机场费 $2.00；01:29–02:21",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥823.21（07-05 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260704-002",
@@ -131,46 +222,135 @@
       "category": "shopping",
       "description": "H Mart 大采购：肥牛、猪肋排、水饺、免洗米 15 磅、鸡蛋、蔬菜等 28 项",
       "items": [
-        { "name": "Domino 超细白糖 12oz", "amount": 3.99 },
-        { "name": "农心虾条（原味）", "amount": 12.99 },
-        { "name": "乌江涪陵榨菜 80g", "quantity": 5, "amount": 7.45 },
-        { "name": "益母食品山楂条", "amount": 3.49 },
-        { "name": "韭菜花", "amount": 4.35 },
-        { "name": "Shirakiku 蟹柳 Gold", "amount": 5.99 },
-        { "name": "Myriad 熟牛肉丸 11oz", "amount": 9.99 },
-        { "name": "新鲜水牛城鸡翅", "amount": 7.67 },
-        { "name": "肥牛肋眼切片 1.2LB", "amount": 13.25 },
-        { "name": "无骨鸡爪 0.6LB", "amount": 12.14 },
-        { "name": "恒顺镇江香醋", "amount": 3.99 },
-        { "name": "上海青苗", "amount": 5.27 },
-        { "name": "Shirakiku 蟹柳 Gold（第二份）", "amount": 5.99 },
-        { "name": "韩国杏鲍菇 300g", "amount": 4.49 },
-        { "name": "新鲜水牛城鸡翅（第二份）", "amount": 7.19 },
-        { "name": "涮涮锅肥牛肋眼", "amount": 17.5 },
-        { "name": "Cisco 巧克力牛奶 8 连包", "amount": 3.99 },
-        { "name": "新鲜大蒜", "amount": 3.99 },
-        { "name": "Myriad 熟牛筋丸 11oz", "amount": 9.99 },
-        { "name": "菜心", "amount": 4.67 },
-        { "name": "Pulmuone 有机老豆腐 2 连包", "amount": 2.99 },
-        { "name": "猪肋排 1.5LB", "amount": 11.28 },
-        { "name": "Havista 山西刀削面 1100g", "amount": 11.49 },
-        { "name": "Sunshine Farm 有机鸡蛋 M", "amount": 5.99 },
-        { "name": "Sunshine Farm 大白蛋", "amount": 4.99 },
-        { "name": "Cascadian Farm 有机葡萄干", "amount": 9.99 },
-        { "name": "锦字 Nishiki 免洗米 15LB", "amount": 30.99 },
-        { "name": "白虾 30/41", "amount": 7.35 }
+        {
+          "name": "Domino 超细白糖 12oz",
+          "amount": 3.99
+        },
+        {
+          "name": "农心虾条（原味）",
+          "amount": 12.99
+        },
+        {
+          "name": "乌江涪陵榨菜 80g",
+          "quantity": 5,
+          "amount": 7.45
+        },
+        {
+          "name": "益母食品山楂条",
+          "amount": 3.49
+        },
+        {
+          "name": "韭菜花",
+          "amount": 4.35
+        },
+        {
+          "name": "Shirakiku 蟹柳 Gold",
+          "amount": 5.99
+        },
+        {
+          "name": "Myriad 熟牛肉丸 11oz",
+          "amount": 9.99
+        },
+        {
+          "name": "新鲜水牛城鸡翅",
+          "amount": 7.67
+        },
+        {
+          "name": "肥牛肋眼切片 1.2LB",
+          "amount": 13.25
+        },
+        {
+          "name": "无骨鸡爪 0.6LB",
+          "amount": 12.14
+        },
+        {
+          "name": "恒顺镇江香醋",
+          "amount": 3.99
+        },
+        {
+          "name": "上海青苗",
+          "amount": 5.27
+        },
+        {
+          "name": "Shirakiku 蟹柳 Gold（第二份）",
+          "amount": 5.99
+        },
+        {
+          "name": "韩国杏鲍菇 300g",
+          "amount": 4.49
+        },
+        {
+          "name": "新鲜水牛城鸡翅（第二份）",
+          "amount": 7.19
+        },
+        {
+          "name": "涮涮锅肥牛肋眼",
+          "amount": 17.5
+        },
+        {
+          "name": "Cisco 巧克力牛奶 8 连包",
+          "amount": 3.99
+        },
+        {
+          "name": "新鲜大蒜",
+          "amount": 3.99
+        },
+        {
+          "name": "Myriad 熟牛筋丸 11oz",
+          "amount": 9.99
+        },
+        {
+          "name": "菜心",
+          "amount": 4.67
+        },
+        {
+          "name": "Pulmuone 有机老豆腐 2 连包",
+          "amount": 2.99
+        },
+        {
+          "name": "猪肋排 1.5LB",
+          "amount": 11.28
+        },
+        {
+          "name": "Havista 山西刀削面 1100g",
+          "amount": 11.49
+        },
+        {
+          "name": "Sunshine Farm 有机鸡蛋 M",
+          "amount": 5.99
+        },
+        {
+          "name": "Sunshine Farm 大白蛋",
+          "amount": 4.99
+        },
+        {
+          "name": "Cascadian Farm 有机葡萄干",
+          "amount": 9.99
+        },
+        {
+          "name": "锦字 Nishiki 免洗米 15LB",
+          "amount": 30.99
+        },
+        {
+          "name": "白虾 30/41",
+          "amount": 7.35
+        }
       ],
       "amount": 233.8,
       "currency": "USD",
       "subtotal": 233.45,
       "tax": 0.35,
-      "paymentMethod": "银联信用卡（Discover 通道）",
-      "cardLast4": "8443",
+      "paymentMethod": "Apple Pay 银联（设备卡号8443，招行卡尾号4833）",
+      "cardLast4": "4833",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3987.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3987.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "明细合计与票面小计核对一致",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥1,590.63（07-07 入账）；小票上的 8443 为 Apple Pay 设备卡号，实际扣款卡为招行卡尾号4833",
+      "bankVerified": true
     },
     {
       "id": "20260704-003",
@@ -186,9 +366,13 @@
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3986.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3986.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥65.12（07-05 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260704-004",
@@ -204,9 +388,13 @@
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3985.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3985.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥133.91（07-05 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260704-005",
@@ -217,20 +405,33 @@
       "category": "dining",
       "description": "国庆夜宵：6 块炸鸡桶、大薯条、菠萝饮",
       "items": [
-        { "name": "6pc Chickenjoy Bucket Half & Half（含肉汁）", "amount": 19.99 },
-        { "name": "Crispy Fries Large 大薯条", "amount": 5.29 },
-        { "name": "Pineapple Quencher 菠萝饮", "amount": 4.29 }
+        {
+          "name": "6pc Chickenjoy Bucket Half & Half（含肉汁）",
+          "amount": 19.99
+        },
+        {
+          "name": "Crispy Fries Large 大薯条",
+          "amount": 5.29
+        },
+        {
+          "name": "Pineapple Quencher 菠萝饮",
+          "amount": 4.29
+        }
       ],
       "amount": 32.19,
       "currency": "USD",
       "subtotal": 29.57,
       "tax": 2.62,
-      "paymentMethod": "自助点餐机（卡种未打印）",
+      "paymentMethod": "Amex 信用卡（自助点餐机）",
       "location": "纽约 时报广场",
-      "receipts": ["/receipts/IMG_3987.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3987.jpeg"
+      ],
       "reimburse": "pending",
-      "bankNote": "重点核对：自助机支付小票未打印卡种，需从流水确认扣款卡",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "bankNote": "已对账：流水 ¥218.37（07-05 入账），扣款卡确认为 Amex 尾号0873",
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "cardLast4": "0873",
+      "bankVerified": true
     },
     {
       "id": "20260704-006",
@@ -240,7 +441,12 @@
       "merchantNote": "快乐蜂快餐（时报广场）",
       "category": "dining",
       "description": "加购一份土豆泥",
-      "items": [{ "name": "Mashed Potatoes 土豆泥", "amount": 3.79 }],
+      "items": [
+        {
+          "name": "Mashed Potatoes 土豆泥",
+          "amount": 3.79
+        }
+      ],
       "amount": 4.13,
       "currency": "USD",
       "subtotal": 3.79,
@@ -248,9 +454,13 @@
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约 时报广场",
-      "receipts": ["/receipts/IMG_3986.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3986.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥28.02（07-05 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260704-007",
@@ -266,9 +476,13 @@
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3985.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3985.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥207.99（07-05 入账，商户 TJ Cab Management）",
+      "bankVerified": true
     },
     {
       "id": "20260705-001",
@@ -279,10 +493,22 @@
       "category": "shopping",
       "description": "超市采购：熟食、香肠、苹果、番茄",
       "items": [
-        { "name": "自选熟食 0.72lb @ $7.99/lb", "amount": 5.73 },
-        { "name": "Aidells 烤蒜味香肠", "amount": 8.99 },
-        { "name": "Gala 苹果 1.51lb", "amount": 3.0 },
-        { "name": "藤番茄 3.22lb", "amount": 6.41 }
+        {
+          "name": "自选熟食 0.72lb @ $7.99/lb",
+          "amount": 5.73
+        },
+        {
+          "name": "Aidells 烤蒜味香肠",
+          "amount": 8.99
+        },
+        {
+          "name": "Gala 苹果 1.51lb",
+          "amount": 3
+        },
+        {
+          "name": "藤番茄 3.22lb",
+          "amount": 6.41
+        }
       ],
       "amount": 24.64,
       "currency": "USD",
@@ -291,9 +517,13 @@
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3982.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3982.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥167.15（07-06 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260705-002",
@@ -304,14 +534,38 @@
       "category": "shopping",
       "description": "H Mart 补货：白虾、杏鲍菇、番茄、老抽、有机奶等 8 项",
       "items": [
-        { "name": "白虾 30/41 0.98lb", "amount": 7.83 },
-        { "name": "韩国杏鲍菇 300g", "amount": 4.49 },
-        { "name": "牛排番茄 1.33lb", "amount": 3.31 },
-        { "name": "Morton 低钠盐 11oz", "amount": 3.79 },
-        { "name": "李锦记草菇老抽 500ml", "amount": 4.49 },
-        { "name": "猪肉炒片", "amount": 8.35 },
-        { "name": "Horizon 有机 DHA 全脂奶 64oz", "amount": 8.49 },
-        { "name": "白土豆 1.22lb", "amount": 3.4 }
+        {
+          "name": "白虾 30/41 0.98lb",
+          "amount": 7.83
+        },
+        {
+          "name": "韩国杏鲍菇 300g",
+          "amount": 4.49
+        },
+        {
+          "name": "牛排番茄 1.33lb",
+          "amount": 3.31
+        },
+        {
+          "name": "Morton 低钠盐 11oz",
+          "amount": 3.79
+        },
+        {
+          "name": "李锦记草菇老抽 500ml",
+          "amount": 4.49
+        },
+        {
+          "name": "猪肉炒片",
+          "amount": 8.35
+        },
+        {
+          "name": "Horizon 有机 DHA 全脂奶 64oz",
+          "amount": 8.49
+        },
+        {
+          "name": "白土豆 1.22lb",
+          "amount": 3.4
+        }
       ],
       "amount": 44.15,
       "currency": "USD",
@@ -320,9 +574,12 @@
       "paymentMethod": "银联信用卡（Discover 通道）",
       "cardLast4": "6102",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3984.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3984.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "待对账：卡尾号6102 不在已收到的招行账单内，需该卡对应账单"
     },
     {
       "id": "20260706-001",
@@ -333,23 +590,39 @@
       "category": "dining",
       "description": "博物馆午餐：汉堡×2、儿童芝士堡、儿童鸡柳、火鸡三明治",
       "items": [
-        { "name": "Kids Cheeseburger 儿童芝士堡", "amount": 20.0 },
-        { "name": "Kids Chicken Tenders 儿童鸡柳", "amount": 21.0 },
-        { "name": "Burger 汉堡", "amount": 26.0 },
-        { "name": "Garden Turkey Club 火鸡三明治", "amount": 26.0 }
+        {
+          "name": "Kids Cheeseburger 儿童芝士堡",
+          "amount": 20
+        },
+        {
+          "name": "Kids Chicken Tenders 儿童鸡柳",
+          "amount": 21
+        },
+        {
+          "name": "Burger 汉堡",
+          "amount": 26
+        },
+        {
+          "name": "Garden Turkey Club 火鸡三明治",
+          "amount": 26
+        }
       ],
-      "amount": 101.26,
+      "amount": 119.95,
       "currency": "USD",
-      "subtotal": 93.0,
+      "subtotal": 93,
       "tax": 8.26,
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约 曼哈顿（中央公园西侧）",
-      "receipts": ["/receipts/IMG_3977.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3977.jpeg"
+      ],
       "reimburse": "pending",
-      "notes": "4 人用餐；顾客联小费栏空白，按票面 $101.26 入账",
-      "bankNote": "重点核对：如商家联填写了小费，Amex 0873 流水金额会高于 $101.26",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "notes": "4 人用餐；顾客联小费栏空白，流水确认实付含小费 $18.69",
+      "bankNote": "已对账并按流水更正：流水 ¥815.65（07-08 入账）≈ $119.95，较小票 $101.26 多出 $18.69，为商家联小费",
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "tip": 18.69,
+      "bankVerified": true
     },
     {
       "id": "20260706-002",
@@ -363,10 +636,12 @@
       "subtotal": 19.59,
       "paymentMethod": "Curb App 支付（CURBPY）",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3980.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3980.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "司机行程凭条（Driver Trip Voucher），Ride ID 747118915；小费如在 App 内支付则未体现",
-      "bankNote": "重点核对：Curb App 支付，如在 App 内加了小费，流水金额会高于 $23.59",
+      "bankNote": "待对账：Curb App 支付，本期账单未见对应单笔（约 ¥160），可能走其他渠道或与小费合并入账，待查",
       "recordedAt": "2026-07-15T23:53:00Z"
     },
     {
@@ -378,33 +653,82 @@
       "category": "shopping",
       "description": "Costco 大采购：海鲈鱼、罗非鱼、Cetaphil 乳液、牛油果酱、水果等 15 项",
       "items": [
-        { "name": "西瓜", "amount": 7.99 },
-        { "name": "罗非鱼片", "amount": 18.03 },
-        { "name": "马铃薯面包卷", "amount": 6.89 },
-        { "name": "海鲈鱼", "amount": 39.59 },
-        { "name": "有机蓝莓（折后）", "amount": 6.49 },
-        { "name": "KS 烘干纸", "amount": 9.99 },
-        { "name": "Cetaphil 润肤乳（折后）", "amount": 14.99 },
-        { "name": "牛油果酱", "amount": 12.99 },
-        { "name": "Special K 蛋白棒", "amount": 12.29 },
-        { "name": "有机菠菜", "amount": 4.69 },
-        { "name": "全脂牛奶", "amount": 4.09 },
-        { "name": "菠萝", "amount": 3.49 },
-        { "name": "绿葡萄", "amount": 8.99 },
-        { "name": "Carne Frita 炸牛肉", "amount": 14.62 },
-        { "name": "Dole 菠萝罐头（折后）", "amount": 13.39 }
+        {
+          "name": "西瓜",
+          "amount": 7.99
+        },
+        {
+          "name": "罗非鱼片",
+          "amount": 18.03
+        },
+        {
+          "name": "马铃薯面包卷",
+          "amount": 6.89
+        },
+        {
+          "name": "海鲈鱼",
+          "amount": 39.59
+        },
+        {
+          "name": "有机蓝莓（折后）",
+          "amount": 6.49
+        },
+        {
+          "name": "KS 烘干纸",
+          "amount": 9.99
+        },
+        {
+          "name": "Cetaphil 润肤乳（折后）",
+          "amount": 14.99
+        },
+        {
+          "name": "牛油果酱",
+          "amount": 12.99
+        },
+        {
+          "name": "Special K 蛋白棒",
+          "amount": 12.29
+        },
+        {
+          "name": "有机菠菜",
+          "amount": 4.69
+        },
+        {
+          "name": "全脂牛奶",
+          "amount": 4.09
+        },
+        {
+          "name": "菠萝",
+          "amount": 3.49
+        },
+        {
+          "name": "绿葡萄",
+          "amount": 8.99
+        },
+        {
+          "name": "Carne Frita 炸牛肉",
+          "amount": 14.62
+        },
+        {
+          "name": "Dole 菠萝罐头（折后）",
+          "amount": 13.39
+        }
       ],
       "amount": 181.18,
       "currency": "USD",
       "subtotal": 178.52,
       "tax": 2.66,
-      "paymentMethod": "Visa 信用卡",
-      "cardLast4": "5254",
+      "paymentMethod": "Visa 信用卡（Apple Pay 设备卡号5254，招行卡尾号1980）",
+      "cardLast4": "1980",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3982.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3982.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "当次立省 $10.00；折扣已并入对应单项",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥1,235.25（07-06 入账）；小票上的 Visa 5254 为 Apple Pay 设备卡号，实际扣款卡为招行 Visa 尾号1980",
+      "bankVerified": true
     },
     {
       "id": "20260707-001",
@@ -415,19 +739,29 @@
       "category": "shopping",
       "description": "图书馆礼品店：NYC 贴纸书、幼儿单词书",
       "items": [
-        { "name": "500 Stickers NYC 贴纸书", "amount": 10.99 },
-        { "name": "First 100 Words 幼儿硬板书", "amount": 5.99 }
+        {
+          "name": "500 Stickers NYC 贴纸书",
+          "amount": 10.99
+        },
+        {
+          "name": "First 100 Words 幼儿硬板书",
+          "amount": 5.99
+        }
       ],
       "amount": 18.48,
       "currency": "USD",
       "subtotal": 16.98,
       "tax": 1.5,
-      "paymentMethod": "Visa 信用卡",
-      "cardLast4": "5254",
+      "paymentMethod": "Visa 信用卡（Apple Pay 设备卡号5254，招行卡尾号1980）",
+      "cardLast4": "1980",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3983.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3983.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥125.66（07-07 入账，Apple Pay 5254 → 招行 Visa 尾号1980）",
+      "bankVerified": true
     },
     {
       "id": "20260707-002",
@@ -437,17 +771,26 @@
       "merchantNote": "纽约公共图书馆礼品店（第五大道 42 街）",
       "category": "shopping",
       "description": "图书馆礼品店：《New York, New York!》绘本",
-      "items": [{ "name": "New York, New York! 绘本（Harper）", "amount": 11.99 }],
+      "items": [
+        {
+          "name": "New York, New York! 绘本（Harper）",
+          "amount": 11.99
+        }
+      ],
       "amount": 13.05,
       "currency": "USD",
       "subtotal": 11.99,
       "tax": 1.06,
-      "paymentMethod": "Visa 信用卡",
-      "cardLast4": "5254",
+      "paymentMethod": "Visa 信用卡（Apple Pay 设备卡号5254，招行卡尾号1980）",
+      "cardLast4": "1980",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3983.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3983.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥88.74（07-07 入账，Apple Pay 5254 → 招行 Visa 尾号1980）",
+      "bankVerified": true
     },
     {
       "id": "20260707-003",
@@ -464,9 +807,13 @@
       "paymentMethod": "Amex 信用卡（手输卡号）",
       "cardLast4": "0873",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3981.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3981.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥404.61（07-09 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260707-004",
@@ -476,16 +823,26 @@
       "merchantNote": "新泽西公交（曼哈顿港务局巴士总站 PABT 发车）",
       "category": "transport",
       "description": "大巴去新泽西奥特莱斯：成人单程 ×2",
-      "items": [{ "name": "成人单程票 @$8.45", "quantity": 2, "amount": 16.9 }],
+      "items": [
+        {
+          "name": "成人单程票 @$8.45",
+          "quantity": 2,
+          "amount": 16.9
+        }
+      ],
       "amount": 16.9,
       "currency": "USD",
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约 → 新泽西",
-      "receipts": ["/receipts/IMG_3981.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3981.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "持卡人 ZHANG YUYANG，Auth 129518",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥114.87（07-08 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260707-005",
@@ -496,10 +853,22 @@
       "category": "shopping",
       "description": "折扣店购物：女士跑鞋、抓绒连帽衫、儿童套装、薯片",
       "items": [
-        { "name": "Ladies Auth Running 女士跑鞋", "amount": 39.99 },
-        { "name": "抓绒连帽衫 白色 L", "amount": 21.99 },
-        { "name": "2 件套连帽慢跑套装 藏青", "amount": 14.99 },
-        { "name": "Q Chips 薯片", "amount": 2.99 }
+        {
+          "name": "Ladies Auth Running 女士跑鞋",
+          "amount": 39.99
+        },
+        {
+          "name": "抓绒连帽衫 白色 L",
+          "amount": 21.99
+        },
+        {
+          "name": "2 件套连帽慢跑套装 藏青",
+          "amount": 14.99
+        },
+        {
+          "name": "Q Chips 薯片",
+          "amount": 2.99
+        }
       ],
       "amount": 79.96,
       "currency": "USD",
@@ -508,10 +877,14 @@
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "新泽西 Elizabeth（Jersey Gardens 奥特莱斯）",
-      "receipts": ["/receipts/IMG_3983.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3983.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "新泽西服装免税；可退换至 08/06/26",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥543.74（07-08 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260707-006",
@@ -521,28 +894,42 @@
       "merchantNote": "蔻驰奥特莱斯男装店（新泽西 Elizabeth）",
       "category": "shopping",
       "description": "Coach 运动鞋一双（5 折）",
-      "items": [{ "name": "SOHO Sneaker 运动鞋（原价 $175，折后）", "amount": 87.5 }],
+      "items": [
+        {
+          "name": "SOHO Sneaker 运动鞋（原价 $175，折后）",
+          "amount": 87.5
+        }
+      ],
       "amount": 87.5,
       "currency": "USD",
       "subtotal": 87.5,
       "tax": 0,
-      "paymentMethod": "支付宝 Alipay",
+      "paymentMethod": "支付宝（挂招行 Amex 尾号0873）",
       "location": "新泽西 Elizabeth（Jersey Gardens 奥特莱斯）",
-      "receipts": ["/receipts/IMG_3982.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3982.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "客户名 YUYANG ZHANG；省 $87.50",
-      "bankNote": "招行借记卡 7/9 有一笔支付宝信贷还款 ¥2,903.84，此笔消费可能含在其中；待支付宝账单明细核对",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "bankNote": "已对账：流水 ¥595.57（07-08 入账，支付宝挂招行 Amex 尾号0873）",
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "cardLast4": "0873",
+      "bankVerified": true
     },
     {
       "id": "20260707-007",
       "date": "2026-07-07",
       "time": "19:57",
-      "merchant": "奥特莱斯门店 Store #1718（票头缺失）",
-      "merchantNote": "疑似迪士尼奥特莱斯（新泽西，票面仅存店号）",
+      "merchant": "Famous Footwear #1718 (Jersey Gardens)",
+      "merchantNote": "鞋类连锁折扣店（新泽西 Jersey Gardens 奥特莱斯）",
       "category": "shopping",
-      "description": "《冰雪奇缘》发光玩偶 Frozen Lighted",
-      "items": [{ "name": "Frozen Lighted 发光玩偶 #470543100077", "amount": 39.99 }],
+      "description": "冰雪奇缘发光童鞋 Frozen Lighted",
+      "items": [
+        {
+          "name": "Frozen Lighted 冰雪奇缘发光童鞋 #470543100077",
+          "amount": 39.99
+        }
+      ],
       "amount": 39.99,
       "currency": "USD",
       "subtotal": 39.99,
@@ -550,10 +937,14 @@
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "新泽西 Elizabeth（Jersey Gardens 奥特莱斯）",
-      "receipts": ["/receipts/IMG_3983.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3983.jpeg"
+      ],
       "reimburse": "pending",
-      "notes": "小票上沿撕缺、店名无法辨认，按 NJ 免税与时间线归入奥特莱斯行程",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "notes": "小票票头缺失，经流水确认商户为 Famous Footwear（原猜测迪士尼门店有误）",
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥271.94（07-08 入账），商户确认为 Famous Footwear #1718",
+      "bankVerified": true
     },
     {
       "id": "20260708-001",
@@ -569,9 +960,13 @@
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3980.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3980.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥149.01（07-09 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260708-002",
@@ -582,14 +977,18 @@
       "description": "市内打车 2.80 英里（12:22–12:37）",
       "amount": 26.1,
       "currency": "USD",
-      "subtotal": 17.0,
+      "subtotal": 17,
       "tip": 4.35,
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3981.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3981.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥177.58（07-09 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260708-003",
@@ -601,13 +1000,17 @@
       "amount": 59.35,
       "currency": "USD",
       "subtotal": 49.6,
-      "tip": 5.0,
+      "tip": 5,
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约",
-      "receipts": ["/receipts/IMG_3980.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3980.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥403.82（07-09 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260709-001",
@@ -618,30 +1021,103 @@
       "category": "shopping",
       "description": "H Mart 大采购：牛排、和牛切片、水饺、橄榄油、日用品等 25 项",
       "items": [
-        { "name": "LALASWEET 葡萄零糖冰棒", "amount": 9.99 },
-        { "name": "宾格瑞 Melona 甜瓜雪糕 8 支", "amount": 7.49 },
-        { "name": "Pasco 超熟吐司 6 片", "amount": 7.99 },
-        { "name": "Kleenex 面巾纸 200 抽", "amount": 4.99 },
-        { "name": "红梗甜菜叶", "amount": 2.99 },
-        { "name": "Hansang 切片年糕 2.2LB", "amount": 5.99 },
-        { "name": "味全猪肉蔬菜海鲜水饺", "amount": 8.49 },
-        { "name": "黄豆芽", "amount": 2.79 },
-        { "name": "味芳中式猪肉水饺 24 只", "amount": 9.99 },
-        { "name": "猪肋排 1.5LB", "amount": 10.63 },
-        { "name": "绿叶生菜", "amount": 2.99 },
-        { "name": "肋眼牛排 0.5LB", "amount": 11.44 },
-        { "name": "和牛西冷切片", "amount": 12.96 },
-        { "name": "新鲜水牛城鸡翅", "amount": 6.65 },
-        { "name": "白虾 30/41", "amount": 9.11 },
-        { "name": "白土豆 1.23lb", "amount": 3.43 },
-        { "name": "Horizon 有机全脂奶 64oz", "amount": 7.99 },
-        { "name": "味芳广式甜香肠 10oz", "amount": 9.99 },
-        { "name": "青椒", "amount": 6.35 },
-        { "name": "Atlas 有机特级初榨橄榄油", "amount": 24.99 },
-        { "name": "汰渍洗衣液 32oz", "amount": 5.99 },
-        { "name": "Bouncia 沐浴露 460ml", "amount": 8.99 },
-        { "name": "Sodae 洗发水", "amount": 9.99 },
-        { "name": "纸袋", "quantity": 2, "amount": 0.1 }
+        {
+          "name": "LALASWEET 葡萄零糖冰棒",
+          "amount": 9.99
+        },
+        {
+          "name": "宾格瑞 Melona 甜瓜雪糕 8 支",
+          "amount": 7.49
+        },
+        {
+          "name": "Pasco 超熟吐司 6 片",
+          "amount": 7.99
+        },
+        {
+          "name": "Kleenex 面巾纸 200 抽",
+          "amount": 4.99
+        },
+        {
+          "name": "红梗甜菜叶",
+          "amount": 2.99
+        },
+        {
+          "name": "Hansang 切片年糕 2.2LB",
+          "amount": 5.99
+        },
+        {
+          "name": "味全猪肉蔬菜海鲜水饺",
+          "amount": 8.49
+        },
+        {
+          "name": "黄豆芽",
+          "amount": 2.79
+        },
+        {
+          "name": "味芳中式猪肉水饺 24 只",
+          "amount": 9.99
+        },
+        {
+          "name": "猪肋排 1.5LB",
+          "amount": 10.63
+        },
+        {
+          "name": "绿叶生菜",
+          "amount": 2.99
+        },
+        {
+          "name": "肋眼牛排 0.5LB",
+          "amount": 11.44
+        },
+        {
+          "name": "和牛西冷切片",
+          "amount": 12.96
+        },
+        {
+          "name": "新鲜水牛城鸡翅",
+          "amount": 6.65
+        },
+        {
+          "name": "白虾 30/41",
+          "amount": 9.11
+        },
+        {
+          "name": "白土豆 1.23lb",
+          "amount": 3.43
+        },
+        {
+          "name": "Horizon 有机全脂奶 64oz",
+          "amount": 7.99
+        },
+        {
+          "name": "味芳广式甜香肠 10oz",
+          "amount": 9.99
+        },
+        {
+          "name": "青椒",
+          "amount": 6.35
+        },
+        {
+          "name": "Atlas 有机特级初榨橄榄油",
+          "amount": 24.99
+        },
+        {
+          "name": "汰渍洗衣液 32oz",
+          "amount": 5.99
+        },
+        {
+          "name": "Bouncia 沐浴露 460ml",
+          "amount": 8.99
+        },
+        {
+          "name": "Sodae 洗发水",
+          "amount": 9.99
+        },
+        {
+          "name": "纸袋",
+          "quantity": 2,
+          "amount": 0.1
+        }
       ],
       "amount": 194.97,
       "currency": "USD",
@@ -650,10 +1126,14 @@
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3979.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3979.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "明细合计与票面小计核对一致",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥1,325.19（07-10 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260709-002",
@@ -662,16 +1142,20 @@
       "merchant": "Curb Mobility（NYC 出租车）",
       "category": "transport",
       "description": "市内短途打车 0.59 英里（11:35–11:39）",
-      "amount": 9.0,
+      "amount": 9,
       "currency": "USD",
       "subtotal": 6.5,
-      "tip": 1.0,
+      "tip": 1,
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3980.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3980.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥61.17（07-10 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260709-003",
@@ -682,20 +1166,30 @@
       "category": "medical",
       "description": "处方药 + 泰诺止痛片",
       "items": [
-        { "name": "处方药 RX ****9890000", "amount": 14.99 },
-        { "name": "泰诺 Extra Strength 500mg 50 粒", "amount": 9.49 }
+        {
+          "name": "处方药 RX ****9890000",
+          "amount": 14.99
+        },
+        {
+          "name": "泰诺 Extra Strength 500mg 50 粒",
+          "amount": 9.49
+        }
       ],
       "amount": 24.48,
       "currency": "USD",
       "subtotal": 24.48,
       "tax": 0,
-      "paymentMethod": "银联信用卡（PBOC Credit）",
-      "cardLast4": "8443",
+      "paymentMethod": "Apple Pay 银联（设备卡号8443，招行卡尾号4833）",
+      "cardLast4": "4833",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3988.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3988.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "小票注明 FSA 合规金额 $24.48（其中处方 $14.99），可用于医保/FSA 报销",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥166.64（07-13 入账，Apple Pay 8443 → 招行卡尾号4833）",
+      "bankVerified": true
     },
     {
       "id": "20260709-004",
@@ -705,15 +1199,19 @@
       "merchantNote": "CityMD 急诊诊所（356 W 125th St）",
       "category": "medical",
       "description": "门诊自费就诊费（Self Pay）",
-      "amount": 250.0,
+      "amount": 250,
       "currency": "USD",
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3988.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3988.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "患者 YUYANG ZHANG，Patient# 29304264，付款凭据打印于 07/09 16:01；如需保险理赔可用此凭据",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "⚠️ 已对账但发现异常：07-10 入账出现两笔相同的 ¥1,701.00（$250）扣款，疑似重复扣款——建议联系 CityMD 或银行核实，必要时申请退款/拒付",
+      "bankVerified": true
     },
     {
       "id": "20260710-001",
@@ -724,8 +1222,14 @@
       "category": "shopping",
       "description": "MoMA 礼品店：达利明信片、绘画教程书",
       "items": [
-        { "name": "达利《记忆的永恒》明信片", "amount": 2.0 },
-        { "name": "How to Draw Almost Everything", "amount": 19.99 }
+        {
+          "name": "达利《记忆的永恒》明信片",
+          "amount": 2
+        },
+        {
+          "name": "How to Draw Almost Everything",
+          "amount": 19.99
+        }
       ],
       "amount": 23.94,
       "currency": "USD",
@@ -734,9 +1238,12 @@
       "paymentMethod": "银联卡 China UnionPay",
       "cardLast4": "6102",
       "location": "纽约 曼哈顿（11 W 53rd St）",
-      "receipts": ["/receipts/IMG_3978.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3978.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "待对账：卡尾号6102 不在已收到的招行账单内，需该卡对应账单"
     },
     {
       "id": "20260710-002",
@@ -747,20 +1254,33 @@
       "category": "shopping",
       "description": "MoMA 礼品店：logo 铅笔两支",
       "items": [
-        { "name": "MoMA Logo 铅笔（白）", "amount": 2.0 },
-        { "name": "MoMA Logo 铅笔（黑）", "amount": 2.0 },
-        { "name": "纸袋费", "amount": 0.05 }
+        {
+          "name": "MoMA Logo 铅笔（白）",
+          "amount": 2
+        },
+        {
+          "name": "MoMA Logo 铅笔（黑）",
+          "amount": 2
+        },
+        {
+          "name": "纸袋费",
+          "amount": 0.05
+        }
       ],
       "amount": 4.41,
       "currency": "USD",
       "subtotal": 4.05,
       "tax": 0.36,
-      "paymentMethod": "银联卡 China UnionPay",
-      "cardLast4": "8443",
+      "paymentMethod": "Apple Pay 银联（设备卡号8443，招行卡尾号4833）",
+      "cardLast4": "4833",
       "location": "纽约 曼哈顿（11 W 53rd St）",
-      "receipts": ["/receipts/IMG_3979.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3979.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥30.02（07-10 入账，Apple Pay 8443 → 招行卡尾号4833）",
+      "bankVerified": true
     },
     {
       "id": "20260710-003",
@@ -771,24 +1291,44 @@
       "category": "dining",
       "description": "川菜晚餐：西湖牛肉羹、麻婆豆腐、蒜香肉丝、清炒芥兰",
       "items": [
-        { "name": "West Lake Beef Soup 西湖牛肉羹", "amount": 18.95 },
-        { "name": "Mapo Tofu w. Pork 麻婆豆腐", "amount": 19.95 },
-        { "name": "Garlic Sauce Pork 蒜香肉丝", "amount": 21.95 },
-        { "name": "白饭", "quantity": 3, "amount": 6.0 },
-        { "name": "Sauteed Chinese Broccoli 清炒芥兰（不辣）", "amount": 18.95 }
+        {
+          "name": "West Lake Beef Soup 西湖牛肉羹",
+          "amount": 18.95
+        },
+        {
+          "name": "Mapo Tofu w. Pork 麻婆豆腐",
+          "amount": 19.95
+        },
+        {
+          "name": "Garlic Sauce Pork 蒜香肉丝",
+          "amount": 21.95
+        },
+        {
+          "name": "白饭",
+          "quantity": 3,
+          "amount": 6
+        },
+        {
+          "name": "Sauteed Chinese Broccoli 清炒芥兰（不辣）",
+          "amount": 18.95
+        }
       ],
       "amount": 103.41,
       "currency": "USD",
       "subtotal": 85.8,
       "tax": 7.61,
-      "tip": 10.0,
+      "tip": 10,
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3978.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3978.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "4 人用餐",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥701.34（07-12 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260711-001",
@@ -799,9 +1339,19 @@
       "category": "shopping",
       "description": "超市采购：黑安格斯牛排、橘子、面巾纸",
       "items": [
-        { "name": "黑安格斯牛排 Tip Steak", "amount": 23.71 },
-        { "name": "橘子 Mandarins", "amount": 2.99 },
-        { "name": "面巾纸 160 抽", "quantity": 2, "amount": 2.98 }
+        {
+          "name": "黑安格斯牛排 Tip Steak",
+          "amount": 23.71
+        },
+        {
+          "name": "橘子 Mandarins",
+          "amount": 2.99
+        },
+        {
+          "name": "面巾纸 160 抽",
+          "quantity": 2,
+          "amount": 2.98
+        }
       ],
       "amount": 29.94,
       "currency": "USD",
@@ -810,9 +1360,13 @@
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3978.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3978.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥203.06（07-12 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260711-002",
@@ -823,24 +1377,79 @@
       "category": "shopping",
       "description": "Costco 大采购：墨西哥可乐、鳕鱼、菠菜、羽绒枕、牛奶等 19 项",
       "items": [
-        { "name": "墨西哥玻璃瓶可口可乐", "amount": 36.99 },
-        { "name": "NY 瓶罐押金", "amount": 1.2 },
-        { "name": "西瓜", "amount": 7.99 },
-        { "name": "全脂牛奶", "amount": 5.49 },
-        { "name": "富士苹果 4LB", "amount": 6.89 },
-        { "name": "马铃薯面包卷", "amount": 3.39 },
-        { "name": "KS 无笼散养鸡蛋", "amount": 6.99 },
-        { "name": "上海青", "amount": 3.99 },
-        { "name": "有机菠菜", "amount": 17.28 },
-        { "name": "Carne Frita 炸牛肉", "amount": 24.73 },
-        { "name": "大西洋鳕鱼", "amount": 10.99 },
-        { "name": "奥利奥", "amount": 6.89 },
-        { "name": "马铃薯面包卷（第二份）", "amount": 6.89 },
-        { "name": "KS 海苔", "amount": 9.99 },
-        { "name": "羽绒替代枕（折后）", "amount": 13.99 },
-        { "name": "全脂牛奶（小）", "quantity": 2, "amount": 6.26 },
-        { "name": "KS 杏仁巧克力棒", "amount": 10.59 },
-        { "name": "KS 无笼散养鸡蛋（第二份）", "amount": 3.39 }
+        {
+          "name": "墨西哥玻璃瓶可口可乐",
+          "amount": 36.99
+        },
+        {
+          "name": "NY 瓶罐押金",
+          "amount": 1.2
+        },
+        {
+          "name": "西瓜",
+          "amount": 7.99
+        },
+        {
+          "name": "全脂牛奶",
+          "amount": 5.49
+        },
+        {
+          "name": "富士苹果 4LB",
+          "amount": 6.89
+        },
+        {
+          "name": "马铃薯面包卷",
+          "amount": 3.39
+        },
+        {
+          "name": "KS 无笼散养鸡蛋",
+          "amount": 6.99
+        },
+        {
+          "name": "上海青",
+          "amount": 3.99
+        },
+        {
+          "name": "有机菠菜",
+          "amount": 17.28
+        },
+        {
+          "name": "Carne Frita 炸牛肉",
+          "amount": 24.73
+        },
+        {
+          "name": "大西洋鳕鱼",
+          "amount": 10.99
+        },
+        {
+          "name": "奥利奥",
+          "amount": 6.89
+        },
+        {
+          "name": "马铃薯面包卷（第二份）",
+          "amount": 6.89
+        },
+        {
+          "name": "KS 海苔",
+          "amount": 9.99
+        },
+        {
+          "name": "羽绒替代枕（折后）",
+          "amount": 13.99
+        },
+        {
+          "name": "全脂牛奶（小）",
+          "quantity": 2,
+          "amount": 6.26
+        },
+        {
+          "name": "KS 杏仁巧克力棒",
+          "amount": 10.59
+        },
+        {
+          "name": "KS 无笼散养鸡蛋（第二份）",
+          "amount": 3.39
+        }
       ],
       "amount": 192.03,
       "currency": "USD",
@@ -849,10 +1458,14 @@
       "paymentMethod": "Visa 信用卡",
       "cardLast4": "1980",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3977.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3977.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "票面有手写涂改痕迹，个别单项以票面为准，总额与刷卡金额一致；当次立省 $5.00",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥1,305.25（07-11 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260711-003",
@@ -862,7 +1475,12 @@
       "merchantNote": "开市客美食广场",
       "category": "dining",
       "description": "热狗+汽水套餐",
-      "items": [{ "name": "Hot Dog/Coke 套餐", "amount": 1.5 }],
+      "items": [
+        {
+          "name": "Hot Dog/Coke 套餐",
+          "amount": 1.5
+        }
+      ],
       "amount": 1.63,
       "currency": "USD",
       "subtotal": 1.5,
@@ -870,9 +1488,13 @@
       "paymentMethod": "Visa 信用卡",
       "cardLast4": "1980",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3981.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3981.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥11.08（07-11 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260712-001",
@@ -882,17 +1504,21 @@
       "merchantNote": "火锅店（法拉盛 37th Ave）",
       "category": "dining",
       "description": "法拉盛火锅晚餐（2 人）",
-      "amount": 51.11,
+      "amount": 59.56,
       "currency": "USD",
       "subtotal": 51.11,
       "paymentMethod": "Visa 信用卡",
       "cardLast4": "1980",
       "location": "纽约 法拉盛",
-      "receipts": ["/receipts/IMG_3978.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3978.jpeg"
+      ],
       "reimburse": "pending",
-      "notes": "顾客联仅显示小计 $51.11，手写小费金额未体现；持卡人 ZHANG YUYANG。如实际账单含小费请告知我更正",
-      "bankNote": "重点核对：小票未含手写小费，Visa 1980 流水金额可能高于 $51.11（票面建议小费档 $59.56/$60.50/$61.44）",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "notes": "顾客联仅小计 $51.11，流水确认实付 $59.56（小费 $8.45）；持卡人 ZHANG YUYANG",
+      "bankNote": "已对账并按流水更正：流水 ¥405.06（07-12 入账）= $59.56，确认按 18% 加小费 $8.45",
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "tip": 8.45,
+      "bankVerified": true
     },
     {
       "id": "20260712-002",
@@ -903,17 +1529,50 @@
       "category": "shopping",
       "description": "法拉盛买菜：豆腐、娃娃菜、竹丝鸡、莲藕、刀削面等 11 项",
       "items": [
-        { "name": "大田豆腐（老）", "amount": 1.99 },
-        { "name": "娃娃菜 1.61lb", "amount": 2.72 },
-        { "name": "青葱", "amount": 0.99 },
-        { "name": "上海苗 1.73lb", "amount": 1.71 },
-        { "name": "油豆角 1.32lb", "amount": 3.95 },
-        { "name": "AA 菜芯 1.91lb", "amount": 4.76 },
-        { "name": "莲藕 1.87lb", "amount": 4.66 },
-        { "name": "竹丝鸡（乌鸡）", "amount": 8.99 },
-        { "name": "红叶刀削面（促销省 $1.50）", "amount": 2.99 },
-        { "name": "红萝卜 1.45lb", "amount": 1.44 },
-        { "name": "新龙兴环保袋", "amount": 1.0 }
+        {
+          "name": "大田豆腐（老）",
+          "amount": 1.99
+        },
+        {
+          "name": "娃娃菜 1.61lb",
+          "amount": 2.72
+        },
+        {
+          "name": "青葱",
+          "amount": 0.99
+        },
+        {
+          "name": "上海苗 1.73lb",
+          "amount": 1.71
+        },
+        {
+          "name": "油豆角 1.32lb",
+          "amount": 3.95
+        },
+        {
+          "name": "AA 菜芯 1.91lb",
+          "amount": 4.76
+        },
+        {
+          "name": "莲藕 1.87lb",
+          "amount": 4.66
+        },
+        {
+          "name": "竹丝鸡（乌鸡）",
+          "amount": 8.99
+        },
+        {
+          "name": "红叶刀削面（促销省 $1.50）",
+          "amount": 2.99
+        },
+        {
+          "name": "红萝卜 1.45lb",
+          "amount": 1.44
+        },
+        {
+          "name": "新龙兴环保袋",
+          "amount": 1
+        }
       ],
       "amount": 35.2,
       "currency": "USD",
@@ -922,10 +1581,14 @@
       "paymentMethod": "Visa 信用卡",
       "cardLast4": "1980",
       "location": "纽约 法拉盛",
-      "receipts": ["/receipts/IMG_3978.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3978.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "促销价与票面小计存在 $1.50 口径差异，以刷卡总额 $35.20 为准；当次省 $1.50",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥239.39（07-12 入账）",
+      "bankVerified": true
     },
     {
       "id": "20260712-003",
@@ -941,9 +1604,14 @@
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约",
-      "receipts": ["/receipts/IMG_3978.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3978.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥230.73（07-13 入账，商户 White and Blue Group）",
+      "merchantNote": "出租车运营公司 White and Blue Group",
+      "bankVerified": true
     },
     {
       "id": "20260713-001",
@@ -954,8 +1622,14 @@
       "category": "shopping",
       "description": "零食补给：薯片两包",
       "items": [
-        { "name": "Hal's Kettle Chips 海盐味", "amount": 2.99 },
-        { "name": "Lay's XL 微盐薯片", "amount": 4.29 }
+        {
+          "name": "Hal's Kettle Chips 海盐味",
+          "amount": 2.99
+        },
+        {
+          "name": "Lay's XL 微盐薯片",
+          "amount": 4.29
+        }
       ],
       "amount": 7.28,
       "currency": "USD",
@@ -964,9 +1638,13 @@
       "paymentMethod": "Amex 信用卡",
       "cardLast4": "0873",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3977.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3977.jpeg"
+      ],
       "reimburse": "pending",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "已对账：流水 ¥49.39（07-15 入账中）",
+      "bankVerified": true
     },
     {
       "id": "20260715-001",
@@ -982,10 +1660,764 @@
       "paymentMethod": "Visa 信用卡",
       "cardLast4": "5254",
       "location": "纽约 曼哈顿",
-      "receipts": ["/receipts/IMG_3977.jpeg"],
+      "receipts": [
+        "/receipts/IMG_3977.jpeg"
+      ],
       "reimburse": "pending",
       "notes": "车费 $12.10 + 拥堵费 $2.50 + 州附加 $0.50 + 改善费 $1.00 + 小费 $3.22",
-      "recordedAt": "2026-07-15T23:53:00Z"
+      "recordedAt": "2026-07-15T23:53:00Z",
+      "bankNote": "待对账：Apple Pay 5254 → 招行 Visa 尾号1980，预计 07-16 后入账（约 ¥131）"
+    },
+    {
+      "id": "20260702-001",
+      "date": "2026-07-02",
+      "merchant": "中国移动国际 CMI（支付宝）",
+      "category": "telecom",
+      "description": "出行前购买的国际流量/漫游包（内容待确认）",
+      "amount": 9,
+      "currency": "CNY",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "支付宝（挂招行 Amex 尾号0873）",
+      "cardLast4": "0873",
+      "bankNote": "流水补录：¥9.00（07-02 入账）",
+      "notes": "是否计入行程开销待确认"
+    },
+    {
+      "id": "20260703-005",
+      "date": "2026-07-03",
+      "merchant": "Uber（首尔）",
+      "category": "transport",
+      "description": "首尔优步打车（无小票，流水补录）",
+      "amount": 126.74,
+      "currency": "CNY",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "首尔",
+      "bankNote": "流水补录：¥126.74（07-03 入账），账单以人民币计"
+    },
+    {
+      "id": "20260703-006",
+      "date": "2026-07-03",
+      "merchant": "Uber（首尔）",
+      "category": "transport",
+      "description": "首尔优步打车（无小票，流水补录）",
+      "amount": 163.89,
+      "currency": "CNY",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "首尔",
+      "bankNote": "流水补录：¥163.89（07-03 入账），账单以人民币计"
+    },
+    {
+      "id": "20260705-003",
+      "date": "2026-07-05",
+      "merchant": "First Class Vending（机场自动售货机）",
+      "category": "dining",
+      "description": "自动售货机小食（CTLP*FIRST CLASS VENDI）",
+      "amount": 4.2,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "bankNote": "流水补录：¥28.49（07-05 入账），按当日核对汇率≈6.784 折算，以美元账单为准",
+      "notes": "实际消费约 7/3–7/4 转机途中"
+    },
+    {
+      "id": "20260705-004",
+      "date": "2026-07-05",
+      "merchant": "JetBlue Gate Retail (T5)",
+      "category": "dining",
+      "description": "JetBlue 登机口零售（餐饮）",
+      "amount": 11,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "bankNote": "流水补录：¥74.62（07-05 入账），按当日核对汇率≈6.784 折算，以美元账单为准",
+      "notes": "实际消费约 7/3–7/4 航段途中"
+    },
+    {
+      "id": "20260705-005",
+      "date": "2026-07-05",
+      "merchant": "Uber Eats",
+      "category": "dining",
+      "description": "Uber Eats 外卖（无小票，流水补录）",
+      "amount": 120.02,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约",
+      "bankNote": "流水补录：¥814.19（07-05 入账），按当日核对汇率≈6.784 折算，以美元账单为准"
+    },
+    {
+      "id": "20260705-006",
+      "date": "2026-07-05",
+      "merchant": "Uber One",
+      "category": "fees",
+      "description": "Uber One 会员月费",
+      "amount": 9.99,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "bankNote": "流水补录：¥67.77（07-05 入账），按当日核对汇率≈6.784 折算，以美元账单为准",
+      "notes": "订阅费用，是否计入行程开销待确认"
+    },
+    {
+      "id": "20260705-007",
+      "date": "2026-07-05",
+      "merchant": "Amazon (VE4QE8I33)",
+      "category": "shopping",
+      "description": "Amazon 线上购物（明细待确认）",
+      "amount": 17.94,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "bankNote": "流水补录：¥121.70（07-05 入账），按当日核对汇率≈6.784 折算，以美元账单为准"
+    },
+    {
+      "id": "20260705-008",
+      "date": "2026-07-05",
+      "merchant": "Amazon (5W1N92RX3)",
+      "category": "shopping",
+      "description": "Amazon 线上购物（明细待确认）",
+      "amount": 121.93,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "bankNote": "流水补录：¥827.15（07-05 入账），按当日核对汇率≈6.784 折算，以美元账单为准"
+    },
+    {
+      "id": "20260705-009",
+      "date": "2026-07-05",
+      "merchant": "Amazon (BL8YY71Y3)",
+      "category": "shopping",
+      "description": "Amazon 线上购物（明细待确认）",
+      "amount": 7.39,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "bankNote": "流水补录：¥50.13（07-05 入账），按当日核对汇率≈6.784 折算，以美元账单为准"
+    },
+    {
+      "id": "20260705-010",
+      "date": "2026-07-05",
+      "merchant": "Amazon (LD1FR77T3)",
+      "category": "shopping",
+      "description": "Amazon 线上购物（明细待确认）",
+      "amount": 5.39,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "bankNote": "流水补录：¥36.56（07-05 入账），按当日核对汇率≈6.784 折算，以美元账单为准"
+    },
+    {
+      "id": "20260706-004",
+      "date": "2026-07-06",
+      "merchant": "Uber",
+      "category": "transport",
+      "description": "优步打车（无小票，流水补录）",
+      "amount": 43.93,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约",
+      "bankNote": "流水补录：¥298.01（07-06 入账），按当日核对汇率≈6.784 折算；Uber 部分行程与小费分笔入账，实际乘车日约早 1–2 天，以美元账单为准"
+    },
+    {
+      "id": "20260706-005",
+      "date": "2026-07-06",
+      "merchant": "AMNH 美国自然历史博物馆",
+      "category": "entertainment",
+      "description": "自然历史博物馆门票（当日在馆内 Gilder 餐厅用午餐）",
+      "amount": 69,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Visa 信用卡（招行尾号1980）",
+      "cardLast4": "1980",
+      "location": "纽约 曼哈顿",
+      "bankNote": "流水补录：¥470.43（07-06 入账），按当日核对汇率≈6.818 折算，以美元账单为准"
+    },
+    {
+      "id": "20260706-006",
+      "date": "2026-07-06",
+      "merchant": "Amazon MKTPL (0Z6706J53)",
+      "category": "shopping",
+      "description": "Amazon 线上购物（银行归类\"文化教育\"，或为图书）",
+      "amount": 43.54,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "bankNote": "流水补录：¥295.37（07-06 入账），按当日核对汇率≈6.784 折算，以美元账单为准"
+    },
+    {
+      "id": "20260706-007",
+      "date": "2026-07-06",
+      "merchant": "Amazon (WM32P3OB3)",
+      "category": "shopping",
+      "description": "Amazon 线上购物（明细待确认）",
+      "amount": 8.99,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "bankNote": "流水补录：¥60.99（07-06 入账），按当日核对汇率≈6.784 折算，以美元账单为准"
+    },
+    {
+      "id": "20260706-008",
+      "date": "2026-07-06",
+      "merchant": "Costco Wholesale #1062",
+      "category": "dining",
+      "description": "开市客当日小额消费（推测为美食广场）",
+      "amount": 4.34,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Visa 信用卡（招行尾号1980）",
+      "cardLast4": "1980",
+      "location": "纽约 曼哈顿",
+      "bankNote": "流水补录：¥29.59（07-06 入账），按当日核对汇率≈6.818 折算，以美元账单为准"
+    },
+    {
+      "id": "20260707-008",
+      "date": "2026-07-07",
+      "merchant": "Primark (Jersey Gardens)",
+      "category": "shopping",
+      "description": "Primark 服饰购物（无小票，流水补录）",
+      "amount": 16.04,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Visa 信用卡（招行尾号1980）",
+      "cardLast4": "1980",
+      "location": "新泽西 Elizabeth（Jersey Gardens 奥特莱斯）",
+      "bankNote": "流水补录：¥109.06（07-07 入账），按当日核对汇率≈6.80 折算，以美元账单为准"
+    },
+    {
+      "id": "20260707-009",
+      "date": "2026-07-07",
+      "merchant": "The Mills at Jersey Gardens（Square 商户）",
+      "category": "dining",
+      "description": "奥莱美食广场小吃（SQ *MILLS）",
+      "amount": 10.02,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Visa 信用卡（招行尾号1980）",
+      "cardLast4": "1980",
+      "location": "新泽西 Elizabeth（Jersey Gardens 奥特莱斯）",
+      "bankNote": "流水补录：¥68.16（07-07 入账），按当日核对汇率≈6.80 折算，以美元账单为准"
+    },
+    {
+      "id": "20260707-010",
+      "date": "2026-07-07",
+      "merchant": "Nour Kitchen（Square 商户）",
+      "category": "dining",
+      "description": "奥莱餐食（SQ *NOUR KITCHEN）",
+      "amount": 23.06,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Visa 信用卡（招行尾号1980）",
+      "cardLast4": "1980",
+      "location": "新泽西 Elizabeth（Jersey Gardens 奥特莱斯）",
+      "bankNote": "流水补录：¥156.77（07-07 入账），按当日核对汇率≈6.80 折算，以美元账单为准"
+    },
+    {
+      "id": "20260708-004",
+      "date": "2026-07-08",
+      "merchant": "Uber",
+      "category": "transport",
+      "description": "优步打车（无小票，流水补录）",
+      "amount": 16.4,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约",
+      "bankNote": "流水补录：¥111.54（07-08 入账），按当日核对汇率≈6.80 折算；Uber 部分行程与小费分笔入账，实际乘车日约早 1–2 天，以美元账单为准"
+    },
+    {
+      "id": "20260708-005",
+      "date": "2026-07-08",
+      "merchant": "Uber",
+      "category": "transport",
+      "description": "优步打车（无小票，流水补录）",
+      "amount": 26.93,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约",
+      "bankNote": "流水补录：¥183.11（07-08 入账），按当日核对汇率≈6.80 折算；Uber 部分行程与小费分笔入账，实际乘车日约早 1–2 天，以美元账单为准"
+    },
+    {
+      "id": "20260709-005",
+      "date": "2026-07-09",
+      "merchant": "Statue Cruises",
+      "category": "entertainment",
+      "description": "自由女神游船票（无小票，流水补录）",
+      "amount": 69.01,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约/泽西城",
+      "bankNote": "流水补录：¥469.48（07-09 入账），按当日核对汇率≈6.804 折算，以美元账单为准",
+      "notes": "实际出游日约 7/8"
+    },
+    {
+      "id": "20260709-006",
+      "date": "2026-07-09",
+      "merchant": "Foot Locker #06959",
+      "category": "shopping",
+      "description": "Foot Locker 购鞋（无小票，流水补录）",
+      "amount": 129.92,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "bankNote": "流水补录：¥883.94（07-09 入账），按当日核对汇率≈6.804 折算，以美元账单为准",
+      "notes": "实际消费日约 7/8"
+    },
+    {
+      "id": "20260709-007",
+      "date": "2026-07-09",
+      "merchant": "MTA 纽约地铁（PayGo）",
+      "category": "transport",
+      "description": "地铁刷卡乘车",
+      "amount": 3,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Apple Pay 银联（设备卡号8443，招行卡尾号4833）",
+      "cardLast4": "4833",
+      "location": "纽约",
+      "bankNote": "流水补录：¥20.46（07-09 入账），PayGo 按日汇总扣款，乘车日约早 1 天"
+    },
+    {
+      "id": "20260710-004",
+      "date": "2026-07-10",
+      "merchant": "MTA 纽约地铁（PayGo）",
+      "category": "transport",
+      "description": "地铁刷卡乘车",
+      "amount": 3,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Apple Pay 银联（设备卡号8443，招行卡尾号4833）",
+      "cardLast4": "4833",
+      "location": "纽约",
+      "bankNote": "流水补录：¥20.46（07-10 入账），乘车日约早 1 天"
+    },
+    {
+      "id": "20260710-005",
+      "date": "2026-07-10",
+      "merchant": "Johnny Rockets",
+      "category": "dining",
+      "description": "快餐小食（SNACK* JOHNNY ROCKET，无小票）",
+      "amount": 11.85,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Apple Pay 银联（设备卡号8443，招行卡尾号4833）",
+      "cardLast4": "4833",
+      "bankNote": "流水补录：¥80.60（07-10 入账），按当日核对汇率≈6.80 折算，以美元账单为准"
+    },
+    {
+      "id": "20260711-004",
+      "date": "2026-07-11",
+      "merchant": "Amazon MKTPL (A54CK2OQ)",
+      "category": "shopping",
+      "description": "Amazon 线上大额购物（明细待确认）",
+      "amount": 271.1,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "bankNote": "流水补录：¥1,842.64（07-11 入账），按当日核对汇率≈6.797 折算，以美元账单为准"
+    },
+    {
+      "id": "20260711-005",
+      "date": "2026-07-11",
+      "merchant": "Too Good To Go",
+      "category": "dining",
+      "description": "Too Good To Go 剩余美食盲盒",
+      "amount": 7.99,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约",
+      "bankNote": "流水补录：¥54.31（07-11 入账），按当日核对汇率≈6.797 折算，以美元账单为准"
+    },
+    {
+      "id": "20260711-006",
+      "date": "2026-07-11",
+      "merchant": "Uber",
+      "category": "transport",
+      "description": "优步打车/小费（无小票，流水补录）",
+      "amount": 5.58,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约",
+      "bankNote": "流水补录：¥37.93（07-11 入账），按当日核对汇率≈6.797 折算；Uber 部分行程与小费分笔入账，实际乘车日约早 1–2 天，以美元账单为准"
+    },
+    {
+      "id": "20260711-007",
+      "date": "2026-07-11",
+      "merchant": "Uber",
+      "category": "transport",
+      "description": "优步打车/小费（无小票，流水补录）",
+      "amount": 3.26,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约",
+      "bankNote": "流水补录：¥22.16（07-11 入账），按当日核对汇率≈6.797 折算；Uber 部分行程与小费分笔入账，实际乘车日约早 1–2 天，以美元账单为准"
+    },
+    {
+      "id": "20260711-008",
+      "date": "2026-07-11",
+      "merchant": "Agoda（支付宝）",
+      "category": "transport",
+      "description": "Agoda 平台预订（银行归类交通出行，具体项目待确认）",
+      "amount": 203.27,
+      "currency": "CNY",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "支付宝（挂招行 Amex 尾号0873）",
+      "cardLast4": "0873",
+      "bankNote": "流水补录：¥203.27（07-11 入账），账单以人民币计",
+      "notes": "预订内容待确认"
+    },
+    {
+      "id": "20260711-009",
+      "date": "2026-07-11",
+      "merchant": "MTA 纽约地铁（PayGo）",
+      "category": "transport",
+      "description": "地铁刷卡乘车",
+      "amount": 3,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Apple Pay 银联（设备卡号8443，招行卡尾号4833）",
+      "cardLast4": "4833",
+      "location": "纽约",
+      "bankNote": "流水补录：¥20.42（07-11 入账），乘车日约早 1 天"
+    },
+    {
+      "id": "20260712-004",
+      "date": "2026-07-12",
+      "merchant": "Bank Street College of Education",
+      "category": "other",
+      "description": "教育缴费（Bank Street College，内容待确认）",
+      "amount": 588.14,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 曼哈顿",
+      "bankNote": "流水补录：¥3,988.76（07-12 入账），按当日核对汇率≈6.782 折算，以美元账单为准",
+      "notes": "大额教育类支出，具体项目（如夏令营/课程）待确认"
+    },
+    {
+      "id": "20260712-005",
+      "date": "2026-07-12",
+      "merchant": "New York Hall of Science",
+      "category": "entertainment",
+      "description": "纽约科学馆门票（无小票，流水补录）",
+      "amount": 41.01,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Visa 信用卡（招行尾号1980）",
+      "cardLast4": "1980",
+      "location": "纽约 皇后区",
+      "bankNote": "流水补录：¥278.15（07-12 入账），按当日核对汇率≈6.782 折算，以美元账单为准",
+      "notes": "实际游玩日约 7/11"
+    },
+    {
+      "id": "20260712-006",
+      "date": "2026-07-12",
+      "merchant": "Uber",
+      "category": "transport",
+      "description": "优步打车（无小票，流水补录）",
+      "amount": 27.19,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约",
+      "bankNote": "流水补录：¥184.41（07-12 入账），按当日核对汇率≈6.782 折算；Uber 部分行程与小费分笔入账，实际乘车日约早 1–2 天，以美元账单为准"
+    },
+    {
+      "id": "20260712-007",
+      "date": "2026-07-12",
+      "merchant": "MTA 纽约地铁（PayGo）",
+      "category": "transport",
+      "description": "地铁刷卡乘车",
+      "amount": 3,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Apple Pay 银联（设备卡号8443，招行卡尾号4833）",
+      "cardLast4": "4833",
+      "location": "纽约",
+      "bankNote": "流水补录：¥20.42（07-12 入账），乘车日约早 1 天"
+    },
+    {
+      "id": "20260713-002",
+      "date": "2026-07-13",
+      "merchant": "Uber",
+      "category": "transport",
+      "description": "优步打车/小费（无小票，流水补录）",
+      "amount": 11.81,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约",
+      "bankNote": "流水补录：¥80.10（07-13 入账），按当日核对汇率≈6.782 折算；Uber 部分行程与小费分笔入账，实际乘车日约早 1–2 天，以美元账单为准"
+    },
+    {
+      "id": "20260713-003",
+      "date": "2026-07-13",
+      "merchant": "MTA 纽约地铁（PayGo）",
+      "category": "transport",
+      "description": "地铁刷卡乘车",
+      "amount": 3,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约",
+      "bankNote": "流水补录：¥20.35（07-13 入账，直接刷 Amex 实体卡）"
+    },
+    {
+      "id": "20260714-001",
+      "date": "2026-07-14",
+      "merchant": "MTA 纽约地铁（PayGo）",
+      "category": "transport",
+      "description": "地铁刷卡乘车",
+      "amount": 3,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Apple Pay 银联（设备卡号8443，招行卡尾号4833）",
+      "cardLast4": "4833",
+      "location": "纽约",
+      "bankNote": "流水补录：¥20.40（07-14 入账），乘车日约早 1 天"
+    },
+    {
+      "id": "20260714-002",
+      "date": "2026-07-14",
+      "merchant": "MTA 纽约地铁（PayGo）",
+      "category": "transport",
+      "description": "地铁刷卡乘车",
+      "amount": 3,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Apple Pay 银联（设备卡号8443，招行卡尾号4833）",
+      "cardLast4": "4833",
+      "location": "纽约",
+      "bankNote": "流水补录：¥20.40（07-14 入账），乘车日约早 1 天"
+    },
+    {
+      "id": "20260714-003",
+      "date": "2026-07-14",
+      "merchant": "Uber",
+      "category": "transport",
+      "description": "优步打车（无小票，流水补录）",
+      "amount": 41.47,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约",
+      "bankNote": "流水补录：¥281.19（07-14 入账），按当日核对汇率≈6.78 折算；Uber 部分行程与小费分笔入账，实际乘车日约早 1–2 天，以美元账单为准"
+    },
+    {
+      "id": "20260714-004",
+      "date": "2026-07-14",
+      "merchant": "Uber",
+      "category": "transport",
+      "description": "优步打车（无小票，流水补录）",
+      "amount": 48.75,
+      "currency": "USD",
+      "receipts": [],
+      "reimburse": "pending",
+      "source": "bank",
+      "bankVerified": true,
+      "recordedAt": "2026-07-16T00:48:00Z",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约",
+      "bankNote": "流水补录：¥330.49（07-14 入账），按当日核对汇率≈6.78 折算；Uber 部分行程与小费分笔入账，实际乘车日约早 1–2 天，以美元账单为准"
     }
   ]
 }
