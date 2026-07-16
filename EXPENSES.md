@@ -37,6 +37,7 @@
 | --- | --- |
 | `data/expenses/records.json` | 台账本体（结构见 `lib/expenses/types.ts` 的 `ExpenseLedger`） |
 | `public/receipts/` | 票据照片原件。单票单拍命名 `<记录编号>.jpg`；一张照片拍多张小票时按批次原名归档（如 `IMG_3977.jpeg`），由多条记录共同引用 |
+| `data/expenses/statements/` | 银行流水/账单归档与对账进展（`README.md`）。不在 `public/` 下，网页不对外提供 |
 
 ## 录入规范（Claude 入账时遵守）
 
