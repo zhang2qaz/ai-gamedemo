@@ -63,9 +63,9 @@ function BarRow({
           }}
         />
       </div>
-      {/* 金额固定放右列，保证最长的柱也不会挤掉数值 */}
+      {/* 金额列固定宽度：既不被长柱挤掉，也保证各行柱条轨道等长、跨行可比 */}
       <div
-        className="shrink-0 whitespace-nowrap text-right text-xs text-stone-300"
+        className="w-28 shrink-0 break-words text-right text-xs leading-tight text-stone-300"
         style={{ fontVariantNumeric: 'tabular-nums' }}
       >
         {amountText}
