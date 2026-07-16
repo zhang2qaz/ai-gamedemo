@@ -56,6 +56,14 @@ export default async function ExpenseDetailPage({
           </span>
         </div>
         <p className="mt-1 text-sm text-stone-400">{record.description}</p>
+        {record.reimburseRisk && (
+          <p
+            className="mt-2 rounded-lg border px-3 py-2 text-sm"
+            style={{ color: '#e66767', borderColor: '#e66767' }}
+          >
+            ⚠️ 报销风险：{record.reimburseRisk}
+          </p>
+        )}
       </header>
 
       <section className="mb-4 rounded-xl border border-white/10 bg-stone-900/75 px-5 py-4">

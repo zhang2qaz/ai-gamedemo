@@ -94,6 +94,22 @@ function CategoryBadge({ category }: { category: CategoryKey }) {
   )
 }
 
+// 报销风险红（深色面板校验值，与状态色区分）
+const RISK_RED = '#e66767'
+
+function RiskBadge({ record }: { record: ExpenseRecord }) {
+  if (!record.reimburseRisk) return null
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium"
+      style={{ color: RISK_RED, borderColor: RISK_RED }}
+      title={record.reimburseRisk}
+    >
+      ⚠️ 报销风险
+    </span>
+  )
+}
+
 function BankBadge({ record }: { record: ExpenseRecord }) {
   if (record.bankVerified) {
     return (
@@ -319,12 +335,14 @@ export default function ExpenseDashboard({ records }: { records: ExpenseRecord[]
                     <Link
                       href={`/expenses/${r.id}`}
                       className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-stone-800/60"
+                      style={r.reimburseRisk ? { boxShadow: `inset 3px 0 0 ${RISK_RED}` } : undefined}
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-medium text-stone-100">{r.merchant}</span>
                           <CategoryBadge category={r.category} />
                           <StatusBadge status={r.reimburse} />
+                          <RiskBadge record={r} />
                           <BankBadge record={r} />
                         </div>
                         <div className="mt-0.5 truncate text-xs text-stone-400">

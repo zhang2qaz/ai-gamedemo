@@ -622,7 +622,8 @@
       "bankNote": "已对账并按流水更正：流水 ¥815.65（07-08 入账）≈ $119.95，较小票 $101.26 多出 $18.69，为商家联小费",
       "recordedAt": "2026-07-15T23:53:00Z",
       "tip": 18.69,
-      "bankVerified": true
+      "bankVerified": true,
+      "reimburseRisk": "小票印有 Kids Cheeseburger / Kids Chicken Tenders 两道儿童餐，提交原件会暴露随行儿童"
     },
     {
       "id": "20260706-002",
@@ -761,7 +762,8 @@
       "reimburse": "pending",
       "recordedAt": "2026-07-15T23:53:00Z",
       "bankNote": "已对账：流水 ¥125.66（07-07 入账，Apple Pay 5254 → 招行 Visa 尾号1980）",
-      "bankVerified": true
+      "bankVerified": true,
+      "reimburseRisk": "含 First 100 Words 幼儿硬板书，票面暴露儿童用品"
     },
     {
       "id": "20260707-002",
@@ -790,7 +792,8 @@
       "reimburse": "pending",
       "recordedAt": "2026-07-15T23:53:00Z",
       "bankNote": "已对账：流水 ¥88.74（07-07 入账，Apple Pay 5254 → 招行 Visa 尾号1980）",
-      "bankVerified": true
+      "bankVerified": true,
+      "reimburseRisk": "儿童绘本《New York, New York!》，票面暴露儿童用品"
     },
     {
       "id": "20260707-003",
@@ -884,7 +887,8 @@
       "notes": "新泽西服装免税；可退换至 08/06/26",
       "recordedAt": "2026-07-15T23:53:00Z",
       "bankNote": "已对账：流水 ¥543.74（07-08 入账）",
-      "bankVerified": true
+      "bankVerified": true,
+      "reimburseRisk": "含 2 件套儿童慢跑套装（$14.99 项），票面暴露儿童服饰"
     },
     {
       "id": "20260707-006",
@@ -944,7 +948,8 @@
       "notes": "小票票头缺失，经流水确认商户为 Famous Footwear（原猜测迪士尼门店有误）",
       "recordedAt": "2026-07-15T23:53:00Z",
       "bankNote": "已对账：流水 ¥271.94（07-08 入账），商户确认为 Famous Footwear #1718",
-      "bankVerified": true
+      "bankVerified": true,
+      "reimburseRisk": "儿童商品：票面商品名 FROZEN LIGHTED 即冰雪奇缘发光童鞋"
     },
     {
       "id": "20260708-001",
@@ -1896,7 +1901,8 @@
       "paymentMethod": "Visa 信用卡（招行尾号1980）",
       "cardLast4": "1980",
       "location": "纽约 曼哈顿",
-      "bankNote": "流水补录：¥470.43（07-06 入账），按当日核对汇率≈6.818 折算，以美元账单为准"
+      "bankNote": "流水补录：¥470.43（07-06 入账），按当日核对汇率≈6.818 折算，以美元账单为准",
+      "reimburseRisk": "亲子属性场馆门票，如需提交票面可能显示多人/儿童票（风险较低）"
     },
     {
       "id": "20260706-006",
@@ -2057,7 +2063,8 @@
       "cardLast4": "0873",
       "location": "纽约/泽西城",
       "bankNote": "流水补录：¥469.48（07-09 入账），按当日核对汇率≈6.804 折算，以美元账单为准",
-      "notes": "实际出游日约 7/8"
+      "notes": "实际出游日约 7/8",
+      "reimburseRisk": "家庭出游船票，多人票价构成可能引起询问（风险较低）"
     },
     {
       "id": "20260709-006",
@@ -2254,7 +2261,8 @@
       "cardLast4": "0873",
       "location": "纽约 曼哈顿",
       "bankNote": "流水补录：¥3,988.76（07-12 入账），按当日核对汇率≈6.782 折算，以美元账单为准",
-      "notes": "大额教育类支出，具体项目（如夏令营/课程）待确认"
+      "notes": "大额教育类支出，具体项目（如夏令营/课程）待确认",
+      "reimburseRisk": "幼教机构（Bank Street College）缴费，商户名即暴露儿童教育支出，且教育费用一般不属差旅报销范围"
     },
     {
       "id": "20260712-005",
@@ -2273,7 +2281,8 @@
       "cardLast4": "1980",
       "location": "纽约 皇后区",
       "bankNote": "流水补录：¥278.15（07-12 入账），按当日核对汇率≈6.782 折算，以美元账单为准",
-      "notes": "实际游玩日约 7/11"
+      "notes": "实际游玩日约 7/11",
+      "reimburseRisk": "儿童向科学馆门票，场馆性质偏亲子（风险较低）"
     },
     {
       "id": "20260712-006",
@@ -2437,7 +2446,8 @@
       "source": "bank",
       "bankVerified": true,
       "bankNote": "流水补录：¥1,701.00（07-10 入账），与本人就诊（20260709-004）同日两笔之一",
-      "recordedAt": "2026-07-16T01:20:00Z"
+      "recordedAt": "2026-07-16T01:20:00Z",
+      "reimburseRisk": "家人（Linna）医疗费用，已标个人支出、不参与报销"
     }
   ]
 }

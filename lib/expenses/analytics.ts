@@ -45,6 +45,8 @@ function recordHaystack(r: ExpenseRecord): string {
     r.notes,
     r.reimburseNote,
     r.bankNote,
+    r.reimburseRisk,
+    r.reimburseRisk ? '报销风险' : '',
     r.source === 'bank' ? '银行流水补录' : '',
     r.bankVerified ? '已对账' : '未对账',
     CATEGORIES[r.category]?.label,

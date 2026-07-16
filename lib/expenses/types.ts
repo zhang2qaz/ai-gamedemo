@@ -76,6 +76,8 @@ export interface ExpenseRecord {
   reimburse: ReimburseStatus
   reimburseNote?: string
   notes?: string
+  /** 报销风险说明：票面暴露儿童/家庭信息等不宜提交报销的原因；非空即视为风险项 */
+  reimburseRisk?: string
   /** 记录来源，缺省视为 'receipt'（小票拍照） */
   source?: RecordSource
   /** 已与银行流水核对一致 */
