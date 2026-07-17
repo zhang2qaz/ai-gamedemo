@@ -2620,6 +2620,41 @@
       "reimburse": "pending",
       "bankNote": "现金支付，无银行流水可对账，以小票为唯一凭据",
       "recordedAt": "2026-07-16T03:20:00Z"
+    },
+    {
+      "id": "20260717-002",
+      "date": "2026-07-17",
+      "time": "15:30",
+      "merchant": "Mama's TOO! Upper West Side",
+      "merchantNote": "披萨店（2750 Broadway，上西区）",
+      "category": "dining",
+      "description": "披萨午后简餐：招牌切片、水牛芝士、Cacio e Pepe",
+      "items": [
+        {
+          "name": "House Slice 招牌切片",
+          "amount": 5
+        },
+        {
+          "name": "Bufalina 水牛芝士披萨",
+          "amount": 9.5
+        },
+        {
+          "name": "Cacio e Pepe 黑椒芝士披萨",
+          "amount": 8
+        }
+      ],
+      "amount": 22.5,
+      "currency": "USD",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 曼哈顿",
+      "receipts": [
+        "/receipts/20260717-002.jpg"
+      ],
+      "reimburse": "pending",
+      "bankNote": "待对账：预计 07-18 前后入账（约 ¥153）",
+      "notes": "堂食（FOR HERE），票面总额与单项合计一致",
+      "recordedAt": "2026-07-16T03:35:00Z"
     }
   ]
 }
