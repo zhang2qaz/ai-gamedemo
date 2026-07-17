@@ -2584,6 +2584,42 @@
       "reimburse": "pending",
       "bankNote": "待对账：预计 07-17 前后入账（约 ¥142）",
       "recordedAt": "2026-07-16T03:05:00Z"
+    },
+    {
+      "id": "20260717-001",
+      "date": "2026-07-17",
+      "time": "08:43",
+      "merchant": "Westside Market NYC (2840 Broadway)",
+      "merchantNote": "社区超市（曼哈顿上西区）",
+      "category": "shopping",
+      "description": "超市采购：玉米罐头、甜玉米、香蕉",
+      "items": [
+        {
+          "name": "Del Monte 无盐玉米粒罐头",
+          "amount": 3.29
+        },
+        {
+          "name": "甜黄玉米 4 根 @ $1.25",
+          "quantity": 4,
+          "amount": 5
+        },
+        {
+          "name": "香蕉 2.31lb @ $0.69/lb",
+          "amount": 1.59
+        }
+      ],
+      "amount": 9.88,
+      "currency": "USD",
+      "subtotal": 9.88,
+      "tax": 0,
+      "paymentMethod": "现金（付 $10.00 找零 $0.12）",
+      "location": "纽约 曼哈顿",
+      "receipts": [
+        "/receipts/20260717-001.jpg"
+      ],
+      "reimburse": "pending",
+      "bankNote": "现金支付，无银行流水可对账，以小票为唯一凭据",
+      "recordedAt": "2026-07-16T03:20:00Z"
     }
   ]
 }
