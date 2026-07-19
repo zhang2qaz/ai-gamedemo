@@ -2655,6 +2655,141 @@
       "bankNote": "待对账：预计 07-18 前后入账（约 ¥153）",
       "notes": "堂食（FOR HERE），票面总额与单项合计一致",
       "recordedAt": "2026-07-16T03:35:00Z"
+    },
+    {
+      "id": "20260719-001",
+      "date": "2026-07-19",
+      "time": "12:13",
+      "merchant": "Costco Wholesale #1062",
+      "merchantNote": "开市客（曼哈顿东哈莱姆店）",
+      "category": "shopping",
+      "description": "Costco 大采购：龙虾尾、鳕鱼、牛肉、可乐、水果及 Carter’s 婴童套装等 19 项",
+      "items": [
+        {
+          "name": "墨西哥玻璃瓶可口可乐",
+          "amount": 36.99
+        },
+        {
+          "name": "NY 瓶罐押金",
+          "amount": 1.2
+        },
+        {
+          "name": "全脂牛奶",
+          "amount": 3.13
+        },
+        {
+          "name": "西瓜",
+          "amount": 8.99
+        },
+        {
+          "name": "Bare 无骨鸡胸",
+          "amount": 17.99
+        },
+        {
+          "name": "Wonder 白吐司",
+          "amount": 4.99
+        },
+        {
+          "name": "上海青",
+          "amount": 6.99
+        },
+        {
+          "name": "KS 有机鸡蛋",
+          "amount": 7.69
+        },
+        {
+          "name": "Carter’s 婴童三件套",
+          "amount": 15.99
+        },
+        {
+          "name": "猫咪口袋 T 恤",
+          "amount": 10.99
+        },
+        {
+          "name": "Cosmic 苹果 4LB",
+          "amount": 9.99
+        },
+        {
+          "name": "绿葡萄",
+          "amount": 8.99
+        },
+        {
+          "name": "果珍 Tang 冲饮粉",
+          "amount": 9.79
+        },
+        {
+          "name": "KS 有机特级初榨橄榄油",
+          "amount": 16.89
+        },
+        {
+          "name": "有机香蕉",
+          "amount": 2.49
+        },
+        {
+          "name": "牛眼圆烤肉 Eye Round Roast",
+          "amount": 44.26
+        },
+        {
+          "name": "大西洋鳕鱼",
+          "amount": 33.13
+        },
+        {
+          "name": "龙虾尾",
+          "amount": 58.03
+        },
+        {
+          "name": "鲜虾冷盘",
+          "amount": 17.58
+        }
+      ],
+      "amount": 320.25,
+      "currency": "USD",
+      "subtotal": 316.1,
+      "tax": 4.15,
+      "paymentMethod": "Visa 信用卡（招行尾号1980）",
+      "cardLast4": "1980",
+      "location": "纽约 曼哈顿",
+      "receipts": [
+        "/receipts/20260719-001.jpg"
+      ],
+      "reimburse": "personal",
+      "reimburseRisk": "含 Carter’s 婴童三件套（$15.99）与儿童口袋T恤（$10.99），票面暴露儿童用品",
+      "reimburseNote": "整单关联：票面含儿童用品，按整单不可报销原则统一列为个人支出",
+      "bankNote": "待对账：预计 07-20 前后入账（约 ¥2,180）",
+      "notes": "19 项明细与票面小计核对一致（316.10+4.15=320.25）",
+      "recordedAt": "2026-07-19T16:20:00Z"
+    },
+    {
+      "id": "20260719-002",
+      "date": "2026-07-19",
+      "time": "12:14",
+      "merchant": "Costco Food Court #1062",
+      "merchantNote": "开市客美食广场",
+      "category": "dining",
+      "description": "美食广场：热狗汽水套餐、意式辣肠披萨",
+      "items": [
+        {
+          "name": "Hot Dog/Coke 套餐",
+          "amount": 1.5
+        },
+        {
+          "name": "Pepperoni 披萨切片",
+          "amount": 1.99
+        }
+      ],
+      "amount": 3.8,
+      "currency": "USD",
+      "subtotal": 3.49,
+      "tax": 0.31,
+      "paymentMethod": "Visa 信用卡（招行尾号1980）",
+      "cardLast4": "1980",
+      "location": "纽约 曼哈顿",
+      "receipts": [
+        "/receipts/20260719-001.jpg"
+      ],
+      "reimburse": "pending",
+      "bankNote": "待对账：预计 07-20 前后入账（约 ¥26）",
+      "recordedAt": "2026-07-19T16:20:00Z"
     }
   ]
 }
