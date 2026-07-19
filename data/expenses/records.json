@@ -2790,6 +2790,43 @@
       "reimburse": "pending",
       "bankNote": "待对账：预计 07-20 前后入账（约 ¥26）",
       "recordedAt": "2026-07-19T16:20:00Z"
+    },
+    {
+      "id": "20260719-003",
+      "date": "2026-07-19",
+      "time": "12:14",
+      "merchant": "ALDI Store #2 (517 E 117th St)",
+      "merchantNote": "奥乐齐超市（东哈莱姆，与 Costco 同购物中心）",
+      "category": "shopping",
+      "description": "超市补货：低脂酸奶、有机番茄酱、厨房纸",
+      "items": [
+        {
+          "name": "低脂酸奶（草莓/草莓香蕉）4 杯 @ $0.55",
+          "quantity": 4,
+          "amount": 2.2
+        },
+        {
+          "name": "有机番茄酱",
+          "amount": 2.39
+        },
+        {
+          "name": "厨房纸 6 卷装",
+          "amount": 5.59
+        }
+      ],
+      "amount": 10.68,
+      "currency": "USD",
+      "subtotal": 10.18,
+      "tax": 0.5,
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 曼哈顿",
+      "receipts": [
+        "/receipts/20260719-003.jpg"
+      ],
+      "reimburse": "pending",
+      "bankNote": "待对账：预计 07-20 前后入账（约 ¥73）",
+      "recordedAt": "2026-07-19T16:35:00Z"
     }
   ]
 }
