@@ -2752,9 +2752,9 @@
       "receipts": [
         "/receipts/20260719-001.jpg"
       ],
-      "reimburse": "personal",
+      "reimburse": "pending",
       "reimburseRisk": "含 Carter’s 婴童三件套（$15.99）与儿童口袋T恤（$10.99），票面暴露儿童用品",
-      "reimburseNote": "整单关联：票面含儿童用品，按整单不可报销原则统一列为个人支出",
+      "reimburseNote": "经用户确认列入报销；票面含 Carter’s 婴童三件套与儿童T恤两项，报销时请留意公司口径",
       "bankNote": "待对账：预计 07-20 前后入账（约 ¥2,180）",
       "notes": "19 项明细与票面小计核对一致（316.10+4.15=320.25）",
       "recordedAt": "2026-07-19T16:20:00Z"
