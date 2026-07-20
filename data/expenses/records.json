@@ -2827,6 +2827,55 @@
       "reimburse": "pending",
       "bankNote": "待对账：预计 07-20 前后入账（约 ¥73）",
       "recordedAt": "2026-07-19T16:35:00Z"
+    },
+    {
+      "id": "20260719-004",
+      "date": "2026-07-19",
+      "time": "17:02",
+      "merchant": "Harlem Tavern",
+      "merchantNote": "美式酒馆餐厅（2153 Frederick Douglass Blvd，哈莱姆区）",
+      "category": "dining",
+      "description": "晚餐（5 人，露台座）：迷你汉堡、牛排薯条、橙汁与啤酒",
+      "items": [
+        {
+          "name": "Three Sliders 迷你汉堡三只（HT Classic 五分熟）",
+          "amount": 15
+        },
+        {
+          "name": "Steak Frites 牛排薯条（五分熟）",
+          "amount": 32
+        },
+        {
+          "name": "鲜橙汁",
+          "quantity": 2,
+          "amount": 6
+        },
+        {
+          "name": "Stella Artois 啤酒",
+          "quantity": 2,
+          "amount": 16
+        },
+        {
+          "name": "Corona 啤酒",
+          "quantity": 4,
+          "amount": 28
+        }
+      ],
+      "amount": 123.07,
+      "currency": "USD",
+      "subtotal": 97,
+      "tax": 8.61,
+      "tip": 17.46,
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 曼哈顿",
+      "receipts": [
+        "/receipts/20260719-004.jpg"
+      ],
+      "reimburse": "pending",
+      "bankNote": "待对账：预计 07-20 前后入账（约 ¥838）",
+      "notes": "5 人用餐，Table P15；18% 服务费 $17.46 已含在总额中；含酒水 $44（Stella×2、Corona×4），如公司报销不含酒水请告知我拆分",
+      "recordedAt": "2026-07-19T22:15:00Z"
     }
   ]
 }
