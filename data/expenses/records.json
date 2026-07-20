@@ -2876,6 +2876,119 @@
       "bankNote": "待对账：预计 07-20 前后入账（约 ¥838）",
       "notes": "5 人用餐，Table P15；18% 服务费 $17.46 已含在总额中；含酒水 $44（Stella×2、Corona×4），如公司报销不含酒水请告知我拆分",
       "recordedAt": "2026-07-19T22:15:00Z"
+    },
+    {
+      "id": "20260718-001",
+      "date": "2026-07-18",
+      "time": "13:47",
+      "merchant": "Applebee's (139 Flatbush Ave)",
+      "merchantNote": "连锁美式餐厅（布鲁克林 Barclays Center 附近）",
+      "category": "dining",
+      "description": "布鲁克林午餐（刷卡凭条，无菜品明细）",
+      "amount": 88.7,
+      "currency": "USD",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 布鲁克林",
+      "receipts": [
+        "/receipts/20260718-001.jpg"
+      ],
+      "reimburse": "pending",
+      "bankNote": "重点核对：凭条小费栏空白（Amount $88.70），如手写了小费实际扣款会更高，待流水确认",
+      "notes": "仅有刷卡凭条，Check #7672-315651，服务员 KHAMANI G",
+      "recordedAt": "2026-07-20T13:57:00Z"
+    },
+    {
+      "id": "20260718-002",
+      "date": "2026-07-18",
+      "time": "16:37",
+      "merchant": "Devine'r (38 Washington St)",
+      "merchantNote": "咖啡店（布鲁克林 DUMBO）",
+      "category": "dining",
+      "description": "DUMBO 咖啡：美式、拿铁、草莓抹茶云",
+      "items": [
+        {
+          "name": "Americano 美式",
+          "amount": 5.5
+        },
+        {
+          "name": "Latte 拿铁",
+          "amount": 6.8
+        },
+        {
+          "name": "Strawberry Matcha Cloud 草莓抹茶云",
+          "amount": 8.5
+        }
+      ],
+      "amount": 22.65,
+      "currency": "USD",
+      "subtotal": 20.8,
+      "tax": 1.85,
+      "paymentMethod": "Apple Pay 银联（设备卡号8443，招行卡尾号4833）",
+      "cardLast4": "4833",
+      "location": "纽约 布鲁克林",
+      "receipts": [
+        "/receipts/20260718-002.jpg"
+      ],
+      "reimburse": "pending",
+      "bankNote": "待对账：预计 07-19 前后入账（约 ¥154，尾号4833）",
+      "recordedAt": "2026-07-20T13:57:00Z"
+    },
+    {
+      "id": "20260719-005",
+      "date": "2026-07-19",
+      "time": "18:15",
+      "merchant": "Levain Bakery - Harlem",
+      "merchantNote": "网红曲奇烘焙店（2167 Frederick Douglass Blvd）",
+      "category": "dining",
+      "description": "Levain 招牌双巧曲奇",
+      "items": [
+        {
+          "name": "Two Chip Chocolate Chip Cookie",
+          "amount": 5.75
+        }
+      ],
+      "amount": 6.33,
+      "currency": "USD",
+      "subtotal": 5.75,
+      "tip": 0.58,
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 曼哈顿",
+      "receipts": [
+        "/receipts/20260719-005.jpg"
+      ],
+      "reimburse": "pending",
+      "bankNote": "待对账：预计 07-20 前后入账（约 ¥43）",
+      "recordedAt": "2026-07-20T13:57:00Z"
+    },
+    {
+      "id": "20260720-001",
+      "date": "2026-07-20",
+      "time": "08:45",
+      "merchant": "Westside Market NYC (2840 Broadway)",
+      "merchantNote": "社区超市（曼哈顿上西区）",
+      "category": "shopping",
+      "description": "早市买菜：甜玉米",
+      "items": [
+        {
+          "name": "甜玉米 0.833lb @ $5.99/lb",
+          "amount": 4.99
+        }
+      ],
+      "amount": 4.99,
+      "currency": "USD",
+      "subtotal": 4.99,
+      "tax": 0,
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 曼哈顿",
+      "receipts": [
+        "/receipts/20260720-001.jpg"
+      ],
+      "reimburse": "pending",
+      "bankNote": "待对账：预计 07-21 前后入账（约 ¥34）",
+      "recordedAt": "2026-07-20T13:57:00Z"
     }
   ]
 }
