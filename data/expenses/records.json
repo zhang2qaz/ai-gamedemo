@@ -2989,6 +2989,91 @@
       "reimburse": "pending",
       "bankNote": "待对账：预计 07-21 前后入账（约 ¥34）",
       "recordedAt": "2026-07-20T13:57:00Z"
+    },
+    {
+      "id": "20260721-001",
+      "date": "2026-07-21",
+      "time": "09:00",
+      "merchant": "Westside Market NYC (2840 Broadway)",
+      "merchantNote": "社区超市（曼哈顿上西区）",
+      "category": "shopping",
+      "description": "早市：花园沙拉",
+      "items": [
+        {
+          "name": "MHM Garden Salad 花园沙拉",
+          "amount": 11.99
+        }
+      ],
+      "amount": 13.05,
+      "currency": "USD",
+      "subtotal": 11.99,
+      "tax": 1.06,
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 曼哈顿",
+      "receipts": [
+        "/receipts/20260721-001.jpg"
+      ],
+      "reimburse": "pending",
+      "bankNote": "待对账：预计 07-22 前后入账（约 ¥89）",
+      "recordedAt": "2026-07-21T13:30:00Z"
+    },
+    {
+      "id": "20260721-002",
+      "date": "2026-07-21",
+      "time": "09:01",
+      "merchant": "H Mart (2828 Broadway)",
+      "merchantNote": "韩国超市（曼哈顿上西区，与 Westside 相邻）",
+      "category": "shopping",
+      "description": "H Mart 买菜：鸡胸肉、西兰花、杏鲍菇、咖喱块、姜、胡萝卜、土豆等 9 项",
+      "items": [
+        {
+          "name": "GUANS 杏鲍菇 300g",
+          "amount": 3.99
+        },
+        {
+          "name": "S&B 金牌咖喱（微辣）8.4oz（促销省 $1.50）",
+          "amount": 5.99
+        },
+        {
+          "name": "鸡胸肉排",
+          "amount": 7.97
+        },
+        {
+          "name": "西兰花 0.78lb @ $3.99/lb",
+          "amount": 3.11
+        },
+        {
+          "name": "生姜",
+          "amount": 2.43
+        },
+        {
+          "name": "散装胡萝卜 0.49lb @ $2.49/lb",
+          "amount": 1.22
+        },
+        {
+          "name": "白土豆 1.07lb @ $2.79/lb",
+          "amount": 2.99
+        },
+        {
+          "name": "纸袋",
+          "quantity": 2,
+          "amount": 0.1
+        }
+      ],
+      "amount": 27.8,
+      "currency": "USD",
+      "subtotal": 27.8,
+      "tax": 0,
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 曼哈顿",
+      "receipts": [
+        "/receipts/20260721-002.jpg"
+      ],
+      "reimburse": "pending",
+      "bankNote": "待对账：预计 07-22 前后入账（约 ¥189）",
+      "recordedAt": "2026-07-21T13:30:00Z"
     }
   ]
 }
