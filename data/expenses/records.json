@@ -3129,6 +3129,39 @@
       "bankNote": "待对账：预计 07-24 前后入账（约 ¥737）",
       "notes": "桌号 D2，2 人；小费 20% 已含并签字，Order H1YNP7",
       "recordedAt": "2026-07-23T17:10:00Z"
+    },
+    {
+      "id": "20260723-002",
+      "date": "2026-07-23",
+      "time": "15:04",
+      "merchant": "Shake Shack (LaGuardia Airport)",
+      "merchantNote": "汉堡奶昔连锁（拉瓜迪亚机场店，HMSHost 运营）",
+      "category": "dining",
+      "description": "机场外带：草莓奶昔",
+      "items": [
+        {
+          "name": "Strawberry Shake 草莓奶昔",
+          "amount": 7.45
+        },
+        {
+          "name": "3% 员工福利附加费",
+          "amount": 0.22
+        }
+      ],
+      "amount": 8.35,
+      "currency": "USD",
+      "subtotal": 7.67,
+      "tax": 0.68,
+      "paymentMethod": "Apple Pay 银联（设备卡号8443，招行卡尾号4833）",
+      "cardLast4": "4833",
+      "location": "纽约 拉瓜迪亚机场",
+      "receipts": [
+        "/receipts/20260723-002.jpg"
+      ],
+      "reimburse": "pending",
+      "bankNote": "待对账：预计 07-24 前后入账（约 ¥57，尾号4833）",
+      "notes": "To Go 外带，CHK 9407；机场消费",
+      "recordedAt": "2026-07-23T19:35:00Z"
     }
   ]
 }
