@@ -3074,6 +3074,61 @@
       "reimburse": "pending",
       "bankNote": "待对账：预计 07-22 前后入账（约 ¥189）",
       "recordedAt": "2026-07-21T13:30:00Z"
+    },
+    {
+      "id": "20260723-001",
+      "date": "2026-07-23",
+      "time": "11:55",
+      "merchant": "Mountain House 山中 (Flushing)",
+      "merchantNote": "川菜馆（法拉盛 Prince St）",
+      "category": "dining",
+      "description": "法拉盛午餐（2 人）：麻婆豆腐、菠萝炒饭、老妈蹄花汤、手撕包菜、冰粉",
+      "items": [
+        {
+          "name": "Steamed Egg 儿童辅食（赠送）",
+          "amount": 0
+        },
+        {
+          "name": "Ma-po Tofu 麻婆豆腐",
+          "amount": 14.95
+        },
+        {
+          "name": "Pineapple Fried Rice 菠萝炒饭（不辣）",
+          "amount": 18.95
+        },
+        {
+          "name": "老妈蹄花汤（带骨）",
+          "amount": 21.95
+        },
+        {
+          "name": "干锅手撕包菜（不辣）",
+          "amount": 16.95
+        },
+        {
+          "name": "花田醉冰粉（素）",
+          "amount": 8.95
+        },
+        {
+          "name": "可乐",
+          "amount": 2.5
+        }
+      ],
+      "amount": 108.58,
+      "currency": "USD",
+      "subtotal": 84.25,
+      "tax": 7.48,
+      "tip": 16.85,
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 法拉盛",
+      "receipts": [
+        "/receipts/20260723-001.jpg"
+      ],
+      "reimburse": "pending",
+      "reimburseRisk": "票面含\"儿童辅食 $0.00\"赠送行，字样暴露随行儿童（参照 7/19 Costco 先例保留待报销，如需剔除请告知）",
+      "bankNote": "待对账：预计 07-24 前后入账（约 ¥737）",
+      "notes": "桌号 D2，2 人；小费 20% 已含并签字，Order H1YNP7",
+      "recordedAt": "2026-07-23T17:10:00Z"
     }
   ]
 }
