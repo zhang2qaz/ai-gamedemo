@@ -4016,6 +4016,373 @@
       "receipts": [],
       "reimburse": "pending",
       "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260723-003",
+      "date": "2026-07-23",
+      "time": "13:54",
+      "merchant": "CoCo 都可奶茶（法拉盛 Main St）",
+      "category": "dining",
+      "description": "奶茶 2 杯",
+      "items": [
+        {
+          "name": "饮品 2 件",
+          "quantity": 2,
+          "amount": 14.7
+        },
+        {
+          "name": "管理费",
+          "amount": 0.5
+        }
+      ],
+      "amount": 16.5,
+      "currency": "USD",
+      "tax": 1.3,
+      "paymentMethod": "刷卡（卡种未打印）",
+      "location": "纽约 法拉盛",
+      "bankNote": "待对账：票面仅注明 Card，需流水确认扣款卡",
+      "notes": "票据以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T05:05:00Z"
+    },
+    {
+      "id": "20260723-004",
+      "date": "2026-07-23",
+      "time": "15:47",
+      "merchant": "H Mart (2828 Broadway)",
+      "category": "shopping",
+      "description": "小额采购：胡萝卜、土豆、味觉糖",
+      "items": [
+        {
+          "name": "散装胡萝卜 0.45lb",
+          "amount": 1.12
+        },
+        {
+          "name": "爱达荷土豆 1.09lb",
+          "amount": 1.08
+        },
+        {
+          "name": "E-MA 味觉糖 葡萄味",
+          "amount": 4.99
+        }
+      ],
+      "amount": 7.63,
+      "currency": "USD",
+      "subtotal": 7.19,
+      "tax": 0.44,
+      "paymentMethod": "银联信用卡（PBOC Credit，尾号6102）",
+      "cardLast4": "6102",
+      "location": "纽约 曼哈顿",
+      "bankNote": "待对账：尾号6102 卡账单仍未提供",
+      "notes": "票据以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T05:05:00Z"
+    },
+    {
+      "id": "20260724-005",
+      "date": "2026-07-24",
+      "time": "22:02",
+      "merchant": "Curb Mobility（NYC 出租车）",
+      "category": "transport",
+      "description": "夜间机场线打车 6.66 英里（含 RFK 大桥费与机场费，22:02–22:21）",
+      "amount": 55.47,
+      "currency": "USD",
+      "subtotal": 43.06,
+      "tip": 8.91,
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 → 拉瓜迪亚机场",
+      "bankNote": "补录小票（7/24），待与流水核对",
+      "notes": "车费 $29.60+附加 $6.00+RFK 桥费 $7.46=小计 $43.06；州附加 $0.50、改善费 $1.00、机场费 $2.00；票据以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T05:05:00Z"
+    },
+    {
+      "id": "20260725-001",
+      "date": "2026-07-25",
+      "time": "07:25",
+      "merchant": "Starbucks（Moynihan Train Hall）",
+      "merchantNote": "星巴克（宾州车站莫伊尼汉大厅）",
+      "category": "dining",
+      "description": "赴 DC 火车前早餐：拿铁、牛奶、黑巧杏仁",
+      "items": [
+        {
+          "name": "黑巧克力杏仁",
+          "amount": 2.95
+        },
+        {
+          "name": "Horizon 低脂牛奶",
+          "amount": 3.75
+        },
+        {
+          "name": "大杯拿铁（去香草糖浆）",
+          "amount": 5.65
+        }
+      ],
+      "amount": 13.11,
+      "currency": "USD",
+      "subtotal": 12.35,
+      "tax": 0.76,
+      "paymentMethod": "银联信用卡（PBOC Credit，尾号6102）",
+      "cardLast4": "6102",
+      "location": "纽约 宾州车站",
+      "bankNote": "待对账：尾号6102 卡账单仍未提供",
+      "notes": "当日乘 Amtrak 赴华盛顿；票据以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T05:05:00Z"
+    },
+    {
+      "id": "20260725-002",
+      "date": "2026-07-25",
+      "time": "13:30",
+      "merchant": "华盛顿特区出租车（手写凭条）",
+      "category": "transport",
+      "description": "DC 打车（手写车费凭条，杰斐逊纪念堂徽标格式）",
+      "amount": 71.13,
+      "currency": "USD",
+      "paymentMethod": "待确认（手写凭条未注明）",
+      "location": "华盛顿特区",
+      "bankNote": "待确认：手写凭条无卡号，如现金支付则无流水；金额较大请留意流水中有无对应笔",
+      "notes": "票据以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T05:05:00Z"
+    },
+    {
+      "id": "20260725-003",
+      "date": "2026-07-25",
+      "time": "17:27",
+      "merchant": "Transco Inc（DC 出租车）",
+      "category": "transport",
+      "description": "DC 打车 5.11 英里（17:27–17:43）",
+      "amount": 24.77,
+      "currency": "USD",
+      "subtotal": 20.04,
+      "tip": 3.23,
+      "paymentMethod": "Visa 信用卡（Apple Pay 设备卡号5254，招行卡尾号1980）",
+      "cardLast4": "1980",
+      "location": "华盛顿特区",
+      "bankNote": "补录小票（7/25），待与流水核对",
+      "notes": "车费 $19.04+多人附加 $1.00+附加费 $1.50；票据以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T05:05:00Z"
+    },
+    {
+      "id": "20260725-004",
+      "date": "2026-07-25",
+      "time": "19:30",
+      "merchant": "Supreme Hot Pot (Arlington, VA)",
+      "merchantNote": "自助火锅（弗吉尼亚州阿灵顿 Columbia Pike）",
+      "category": "dining",
+      "description": "DC 行晚餐：成人自助火锅 ×2",
+      "items": [
+        {
+          "name": "AYCE Adult 成人自助",
+          "quantity": 2,
+          "amount": 79.98
+        },
+        {
+          "name": "刷卡附加费 1.5%",
+          "amount": 1.48
+        }
+      ],
+      "amount": 106.51,
+      "currency": "USD",
+      "tip": 16.25,
+      "paymentMethod": "Apple Pay 银联（设备卡号8443，招行卡尾号4833）",
+      "cardLast4": "4833",
+      "location": "弗吉尼亚 阿灵顿",
+      "bankNote": "待对账：尾号4833（Apple Pay 8443）",
+      "notes": "票面构成：小计 79.98+税 8.80+附加费 1.48+小费 16.25=106.51；票据以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T05:05:00Z"
+    },
+    {
+      "id": "20260726-002",
+      "date": "2026-07-26",
+      "merchant": "Philadelphia Parking Authority（Market Street East）",
+      "category": "transport",
+      "description": "费城 Market Street East 停车费（手写收据）",
+      "amount": 10,
+      "currency": "USD",
+      "paymentMethod": "待确认（手写收据，或现金）",
+      "location": "费城",
+      "bankNote": "待确认：手写收据 Received the Sum of $10.00，如现金则无流水",
+      "notes": "DC 取车赴费城途中停车；票据以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T05:05:00Z"
+    },
+    {
+      "id": "20260726-003",
+      "date": "2026-07-26",
+      "time": "20:01",
+      "merchant": "Ting Wong 天旺（费城中国城）",
+      "category": "dining",
+      "description": "费城晚餐：叉烧饭、蚝油牛肉饭、番茄牛肉饭、北京鸭卷、豉汁凤爪",
+      "items": [
+        {
+          "name": "叉烧饭",
+          "amount": 9
+        },
+        {
+          "name": "蚝油牛肉饭（小）",
+          "amount": 9.5
+        },
+        {
+          "name": "番茄牛肉饭（小）",
+          "amount": 9.5
+        },
+        {
+          "name": "北京鸭卷 ×2",
+          "quantity": 2,
+          "amount": 7.5
+        },
+        {
+          "name": "豉汁凤爪",
+          "amount": 8
+        },
+        {
+          "name": "刷卡价差（Card Price - Cash Price）",
+          "amount": 1.41
+        }
+      ],
+      "amount": 57.1,
+      "currency": "USD",
+      "tip": 8.71,
+      "paymentMethod": "Amex 信用卡（手输卡号）",
+      "cardLast4": "0873",
+      "location": "费城",
+      "bankNote": "待对账：商家联 Total $57.10（小费 18% $8.71）",
+      "notes": "票面构成：菜品 43.50+税 3.48+刷卡价差=刷卡价 48.39，另小费 8.71；票据以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T05:05:00Z"
+    },
+    {
+      "id": "20260727-004",
+      "date": "2026-07-27",
+      "time": "12:27",
+      "merchant": "Amaze Meat Market（曼哈顿华埠 Elizabeth St）",
+      "category": "shopping",
+      "description": "唐人街肉铺采购（仅刷卡凭条，无品项明细）",
+      "amount": 20,
+      "currency": "USD",
+      "paymentMethod": "Visa 信用卡（招行尾号1980，插卡）",
+      "cardLast4": "1980",
+      "location": "纽约 曼哈顿",
+      "bankNote": "补录小票（7/27），待与流水核对",
+      "notes": "票据以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T05:05:00Z"
+    },
+    {
+      "id": "20260727-005",
+      "date": "2026-07-27",
+      "time": "13:13",
+      "merchant": "Shell (1855 First Ave)",
+      "category": "transport",
+      "description": "Avis 还车前加油：7.108 加仑 @ $4.549",
+      "items": [
+        {
+          "name": "Unleaded 汽油 7.108 gal",
+          "amount": 32.33
+        }
+      ],
+      "amount": 32.33,
+      "currency": "USD",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 曼哈顿",
+      "bankNote": "补录小票（7/27），待与流水核对",
+      "notes": "13:13 加油，14:05 还车，时间线吻合；票据以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T05:05:00Z"
+    },
+    {
+      "id": "20260727-006",
+      "date": "2026-07-27",
+      "time": "13:14",
+      "merchant": "Shell 便利店 (1855 First Ave)",
+      "category": "shopping",
+      "description": "加油站零食：曼妥思、士力架、Twix、M&M",
+      "items": [
+        {
+          "name": "Mentos 青苹果",
+          "amount": 1.83
+        },
+        {
+          "name": "KS Snickers Xtreme",
+          "amount": 2.76
+        },
+        {
+          "name": "Twix Bits King Size",
+          "amount": 2.75
+        },
+        {
+          "name": "M&M 牛奶巧克力",
+          "amount": 1.61
+        }
+      ],
+      "amount": 9.74,
+      "currency": "USD",
+      "subtotal": 8.95,
+      "tax": 0.79,
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 曼哈顿",
+      "bankNote": "补录小票（7/27），待与流水核对",
+      "notes": "票据以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T05:05:00Z"
+    },
+    {
+      "id": "20260727-007",
+      "date": "2026-07-27",
+      "time": "17:04",
+      "merchant": "Curb Mobility（NYC 出租车）",
+      "category": "transport",
+      "description": "市内打车 1.74 英里，3 人同乘（17:04–17:28）",
+      "amount": 34.98,
+      "currency": "USD",
+      "subtotal": 24.4,
+      "tip": 5.83,
+      "paymentMethod": "Visa 借记卡（尾号1571，归属待确认）",
+      "cardLast4": "1571",
+      "location": "纽约 曼哈顿",
+      "bankNote": "⚠️ 新卡：票面显示 VISA DEBIT 尾号1571，此前台账未出现过——请确认是哪张卡（谁的借记卡）",
+      "notes": "车费 $21.90+附加 $2.50+州附加 $0.50+改善费 $1.00+拥堵费 $2.50+过路 $0.75；票据以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T05:05:00Z"
+    },
+    {
+      "id": "20260727-008",
+      "date": "2026-07-27",
+      "time": "20:34",
+      "merchant": "BCD Tofu House (5 W 32nd St)",
+      "merchantNote": "北创豆腐煲（曼哈顿韩国城）",
+      "category": "dining",
+      "description": "K-town 晚餐：石锅豆腐煲套餐等",
+      "amount": 33.46,
+      "currency": "USD",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 曼哈顿",
+      "bankNote": "重点核对：票面打印偏淡、小费栏空白，实际扣款（含小费）以流水为准",
+      "notes": "票据以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T05:05:00Z"
     }
   ]
 }
