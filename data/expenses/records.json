@@ -2702,7 +2702,7 @@
           "amount": 15.99
         },
         {
-          "name": "猫咪口袋 T 恤",
+          "name": "CAT（卡特彼勒）工装口袋T恤",
           "amount": 10.99
         },
         {
@@ -2753,10 +2753,10 @@
         "/receipts/20260719-001.jpg"
       ],
       "reimburse": "pending",
-      "reimburseRisk": "含 Carter’s 婴童三件套（$15.99）与儿童口袋T恤（$10.99），票面暴露儿童用品",
+      "reimburseRisk": "含 Carter’s 婴童三件套（$15.99），票面暴露儿童用品",
       "reimburseNote": "经用户确认列入报销；票面含 Carter’s 婴童三件套与儿童T恤两项，报销时请留意公司口径",
       "bankNote": "待对账：预计 07-20 前后入账（约 ¥2,180）",
-      "notes": "19 项明细与票面小计核对一致（316.10+4.15=320.25）",
+      "notes": "19 项明细与票面小计核对一致（316.10+4.15=320.25）；更正：CAT PCKT TEE 经 7/28 同SKU复购比对为 Caterpillar 成人T恤，非儿童品",
       "recordedAt": "2026-07-19T16:20:00Z"
     },
     {
@@ -3162,6 +3162,860 @@
       "bankNote": "待对账：预计 07-24 前后入账（约 ¥57，尾号4833）",
       "notes": "To Go 外带，CHK 9407；机场消费",
       "recordedAt": "2026-07-23T19:35:00Z"
+    },
+    {
+      "id": "20260720-002",
+      "date": "2026-07-20",
+      "time": "12:03",
+      "merchant": "Trader Joe's (123 W 125th St)",
+      "merchantNote": "缺德舅超市（哈莱姆区）",
+      "category": "shopping",
+      "description": "超市采购：果汁、西瓜、蟹肉棒、燕麦奶精、护发油等 12 项",
+      "items": [
+        {
+          "name": "橘子汁 1QT",
+          "amount": 3.49
+        },
+        {
+          "name": "玉米棒 2 根",
+          "quantity": 2,
+          "amount": 1.38
+        },
+        {
+          "name": "无籽西瓜",
+          "amount": 5.99
+        },
+        {
+          "name": "芒果奶昔条",
+          "amount": 3.79
+        },
+        {
+          "name": "番石榴百香果条",
+          "amount": 2.99
+        },
+        {
+          "name": "仿蟹肉棒",
+          "amount": 3.99
+        },
+        {
+          "name": "燕麦红糖奶精",
+          "amount": 1.99
+        },
+        {
+          "name": "护发油",
+          "amount": 5.99
+        },
+        {
+          "name": "经典薯片 Ode to the Classic Potato",
+          "amount": 3.29
+        },
+        {
+          "name": "购物袋费",
+          "quantity": 2,
+          "amount": 0.1
+        }
+      ],
+      "amount": 33.53,
+      "currency": "USD",
+      "tax": 0.53,
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 曼哈顿",
+      "bankNote": "补录小票（7/20），待与流水核对",
+      "notes": "12 项，个别单价以票面为准；票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260724-001",
+      "date": "2026-07-24",
+      "time": "08:44",
+      "merchant": "Westside Market NYC (2840 Broadway)",
+      "category": "shopping",
+      "description": "果蔬一件",
+      "items": [
+        {
+          "name": "Produce 果蔬",
+          "amount": 3.99
+        }
+      ],
+      "amount": 3.99,
+      "currency": "USD",
+      "subtotal": 3.99,
+      "tax": 0,
+      "paymentMethod": "Visa 信用卡（招行尾号1980）",
+      "cardLast4": "1980",
+      "location": "纽约 曼哈顿",
+      "bankNote": "补录小票（7/24），待与流水核对",
+      "notes": "票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260724-002",
+      "date": "2026-07-24",
+      "time": "08:56",
+      "merchant": "CVS Pharmacy (2833 Broadway)",
+      "category": "shopping",
+      "description": "儿童迪士尼牙膏",
+      "items": [
+        {
+          "name": "Kids Disney 牙膏 4.2oz",
+          "amount": 3.29
+        }
+      ],
+      "amount": 3.58,
+      "currency": "USD",
+      "subtotal": 3.29,
+      "tax": 0.29,
+      "paymentMethod": "Visa 信用卡（招行尾号1980）",
+      "cardLast4": "1980",
+      "location": "纽约 曼哈顿",
+      "reimburseRisk": "票面商品名 KDS DSNY TP（儿童迪士尼牙膏），暴露儿童用品",
+      "bankNote": "补录小票（7/24），待与流水核对",
+      "notes": "票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260724-003",
+      "date": "2026-07-24",
+      "merchant": "USPS（哥伦比亚大学邮局）",
+      "category": "fees",
+      "description": "邮政邮资（2 件）",
+      "items": [
+        {
+          "name": "邮资/邮票",
+          "quantity": 2,
+          "amount": 21.02
+        }
+      ],
+      "amount": 21.02,
+      "currency": "USD",
+      "paymentMethod": "Visa 信用卡（招行尾号1980）",
+      "cardLast4": "1980",
+      "location": "纽约 曼哈顿",
+      "bankNote": "补录小票（7/24），待与流水核对",
+      "notes": "票面品名模糊，金额以刷卡合计 $21.02 为准；票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260724-004",
+      "date": "2026-07-24",
+      "time": "15:32",
+      "merchant": "CVS Pharmacy (2833 Broadway)",
+      "category": "office",
+      "description": "思高封箱胶带",
+      "items": [
+        {
+          "name": "Scotch 封箱胶带",
+          "amount": 5.69
+        }
+      ],
+      "amount": 6.19,
+      "currency": "USD",
+      "subtotal": 5.69,
+      "tax": 0.5,
+      "paymentMethod": "Visa 信用卡（招行尾号1980）",
+      "cardLast4": "1980",
+      "location": "纽约 曼哈顿",
+      "bankNote": "补录小票（7/24），待与流水核对",
+      "notes": "票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260726-001",
+      "date": "2026-07-26",
+      "time": "11:42",
+      "merchant": "华盛顿特区出租车（KGA-818）",
+      "category": "transport",
+      "description": "DC 打车：Hyatt Regency 酒店出发（手写凭条）",
+      "amount": 17.76,
+      "currency": "USD",
+      "paymentMethod": "待确认（手写凭条未注明）",
+      "location": "华盛顿特区",
+      "bankNote": "待确认：手写凭条无卡号，如现金支付则无流水",
+      "notes": "手写车费凭条，日期按 DC 行程段（7/25–26）推断；票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260727-001",
+      "date": "2026-07-27",
+      "time": "17:41",
+      "merchant": "The Best Sichuan (7 E 47th St)",
+      "merchantNote": "川菜馆 47 街分店（曼哈顿中城）",
+      "category": "dining",
+      "description": "川菜晚餐（3 人）：西湖牛肉羹、蒜香肉丝、小笼包、麻酱凉面",
+      "items": [
+        {
+          "name": "West Lake Beef Soup 西湖牛肉羹",
+          "amount": 18.95
+        },
+        {
+          "name": "Garlic Sauce Pork 蒜香肉丝",
+          "amount": 21.95
+        },
+        {
+          "name": "小笼包（猪肉 6 只）",
+          "amount": 12.95
+        },
+        {
+          "name": "白饭",
+          "quantity": 3,
+          "amount": 6
+        },
+        {
+          "name": "麻酱凉面",
+          "amount": 12.95
+        }
+      ],
+      "amount": 93.53,
+      "currency": "USD",
+      "subtotal": 72.8,
+      "tax": 6.46,
+      "tip": 14.27,
+      "paymentMethod": "待确认（票面为下单联，印有 Unpaid）",
+      "location": "纽约 曼哈顿",
+      "bankNote": "重点核对：票面未含支付信息，需流水确认扣款卡与金额",
+      "notes": "票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260727-002",
+      "date": "2026-07-27",
+      "time": "20:54",
+      "merchant": "Empire State Building Official Store",
+      "merchantNote": "帝国大厦官方纪念品店（Hudson 运营）",
+      "category": "shopping",
+      "description": "帝国大厦纪念水瓶（白色）",
+      "items": [
+        {
+          "name": "ESB 水瓶 白色",
+          "amount": 29.99
+        }
+      ],
+      "amount": 32.65,
+      "currency": "USD",
+      "subtotal": 29.99,
+      "tax": 2.66,
+      "paymentMethod": "Visa 信用卡（招行尾号1980）",
+      "cardLast4": "1980",
+      "location": "纽约 曼哈顿",
+      "bankNote": "补录小票（7/27），待与流水核对",
+      "notes": "当晚应为帝国大厦观光；票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260727-003",
+      "date": "2026-07-27",
+      "time": "14:05",
+      "merchant": "Avis 租车（DC → NYC 单程）",
+      "category": "transport",
+      "description": "华盛顿取车开回纽约：丰田凯美瑞混动，7/26 16:12 取 – 7/27 14:05 还，行驶 273 英里",
+      "amount": 49.75,
+      "currency": "USD",
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "华盛顿 DC → 纽约",
+      "bankNote": "本笔为还车时信用卡尾款 $49.75；租车总价 $189.34，其中 $139.59 为预付凭证（Prepay Voucher），预订渠道与扣款待确认",
+      "notes": "协议号 RA 651392033，含单程费 $50、CSS/TOL 选装 $36.49；总价 $189.34 = 预付 $139.59 + 尾款 $49.75；票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260728-001",
+      "date": "2026-07-28",
+      "time": "16:09",
+      "merchant": "Costco Wholesale #1062",
+      "merchantNote": "开市客（曼哈顿东哈莱姆店）",
+      "category": "shopping",
+      "description": "Costco：Levi’s 505 牛仔裤、CAT 工装T恤、蔬果 6 项",
+      "items": [
+        {
+          "name": "上海青",
+          "amount": 6.99
+        },
+        {
+          "name": "绿葡萄",
+          "amount": 7.49
+        },
+        {
+          "name": "有机菠菜",
+          "amount": 3.99
+        },
+        {
+          "name": "小番茄",
+          "amount": 6.49
+        },
+        {
+          "name": "Levi’s 505 牛仔裤",
+          "amount": 36.99
+        },
+        {
+          "name": "CAT（卡特彼勒）工装口袋T恤（折后）",
+          "amount": 8.99
+        }
+      ],
+      "amount": 70.94,
+      "currency": "USD",
+      "subtotal": 70.94,
+      "tax": 0,
+      "paymentMethod": "Visa 信用卡（Apple Pay 设备卡号5254，招行卡尾号1980）",
+      "cardLast4": "1980",
+      "location": "纽约 曼哈顿",
+      "bankNote": "补录小票（7/28），待与流水核对",
+      "notes": "立省 $2.00 已并入T恤单价；服饰均为成人款；票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260729-001",
+      "date": "2026-07-29",
+      "time": "12:10",
+      "merchant": "Chick-fil-A (31st & Park)",
+      "category": "dining",
+      "description": "快餐外带：鸡柳、辣鸡堡、甜茶柠檬水",
+      "items": [
+        {
+          "name": "Strips 鸡柳 2ct",
+          "amount": 4.99
+        },
+        {
+          "name": "Spicy Sandwich 辣鸡堡（去酸黄瓜）",
+          "amount": 7.45
+        },
+        {
+          "name": "甜茶柠檬水",
+          "amount": 4.39
+        }
+      ],
+      "amount": 18.32,
+      "currency": "USD",
+      "subtotal": 16.83,
+      "tax": 1.49,
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "纽约 曼哈顿",
+      "bankNote": "补录小票（7/29），待与流水核对",
+      "notes": "票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260729-002",
+      "date": "2026-07-29",
+      "time": "16:58",
+      "merchant": "Mom's Food Market (321 W 110th St)",
+      "category": "shopping",
+      "description": "零食杂货：巧克力、软糖、玉米油",
+      "items": [
+        {
+          "name": "Lebby 牛奶巧克力",
+          "amount": 8.99
+        },
+        {
+          "name": "Albanese 软糖",
+          "amount": 5.99
+        },
+        {
+          "name": "Mazola 玉米油",
+          "amount": 4.99
+        },
+        {
+          "name": "刷卡附加费",
+          "amount": 0.86
+        }
+      ],
+      "amount": 22.6,
+      "currency": "USD",
+      "subtotal": 19.97,
+      "paymentMethod": "Visa 信用卡（招行尾号1980）",
+      "cardLast4": "1980",
+      "location": "纽约 曼哈顿",
+      "bankNote": "补录小票（7/29），待与流水核对",
+      "notes": "票面构成：小计 19.97 + 税 1.77 + 刷卡附加费 0.86 = 22.60；票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260731-001",
+      "date": "2026-07-31",
+      "time": "21:00",
+      "merchant": "Curb Mobility（NYC 出租车）",
+      "category": "transport",
+      "description": "夜间打车 4.84 英里（21:00–21:23）",
+      "amount": 31.85,
+      "currency": "USD",
+      "subtotal": 27.1,
+      "paymentMethod": "Visa 信用卡（Apple Pay 设备卡号5254，招行卡尾号1980）",
+      "cardLast4": "1980",
+      "location": "纽约 曼哈顿",
+      "bankNote": "补录小票（7/31），待与流水核对",
+      "notes": "车费 $26.10+附加 $1.00+州附加 $0.50+改善费 $1.00+拥堵费 $2.50+过路 $0.75；小费未显示；票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260801-001",
+      "date": "2026-08-01",
+      "merchant": "Burger King #32192 (2141 Frederick Douglass Blvd)",
+      "category": "dining",
+      "description": "快餐外带：鸡块、鸡堡、儿童套餐等",
+      "items": [
+        {
+          "name": "Chicken Jr",
+          "amount": 1.99
+        },
+        {
+          "name": "8pc 皇冠鸡块 ×2（配烧烤酱）",
+          "quantity": 2,
+          "amount": 7.98
+        },
+        {
+          "name": "Original Chicken Sandwich 鸡堡",
+          "amount": 6.99
+        },
+        {
+          "name": "Cheeseburger King Jr 儿童套餐（含玩具）",
+          "amount": 3.99
+        }
+      ],
+      "amount": 23.14,
+      "currency": "USD",
+      "subtotal": 21.25,
+      "tax": 1.89,
+      "paymentMethod": "Apple Pay 银联（设备卡号8443，招行卡尾号4833）",
+      "cardLast4": "4833",
+      "location": "纽约 曼哈顿",
+      "reimburseRisk": "票面含 King Jr Kids Meal 与 TOY 字样，暴露儿童餐",
+      "bankNote": "补录小票（8/1），待与流水核对",
+      "notes": "个别单价按票面推读，合计以 $23.14 为准；票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260802-001",
+      "date": "2026-08-02",
+      "time": "05:41",
+      "merchant": "Tony + Benny's Pizza Parlor (LGA Terminal B)",
+      "category": "dining",
+      "description": "清晨航班前早餐：披萨卷、芝士切片、汽水（拉瓜迪亚机场）",
+      "items": [
+        {
+          "name": "Pepperoni Stromboli 披萨卷",
+          "amount": 10.95
+        },
+        {
+          "name": "经典芝士披萨切片",
+          "amount": 5.95
+        },
+        {
+          "name": "汽水",
+          "amount": 4.05
+        },
+        {
+          "name": "3% 员工福利附加费",
+          "amount": 0.63
+        }
+      ],
+      "amount": 23.5,
+      "currency": "USD",
+      "subtotal": 21.58,
+      "tax": 1.92,
+      "paymentMethod": "Apple Pay 银联（设备卡号8443，招行卡尾号4833）",
+      "cardLast4": "4833",
+      "location": "纽约 拉瓜迪亚机场",
+      "bankNote": "补录小票（8/2），待与流水核对（尾号4833）",
+      "notes": "8/2 清晨离开纽约；票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260802-002",
+      "date": "2026-08-02",
+      "time": "11:09",
+      "merchant": "Applebee's (DFW Airport Terminal D)",
+      "category": "dining",
+      "description": "达拉斯转机午餐：虾排帕玛森牛排、儿童鸡柳套餐",
+      "items": [
+        {
+          "name": "Shrimp Parmesan Steak（西兰花+蒜蓉土豆泥，全熟）",
+          "amount": 28.49
+        },
+        {
+          "name": "Kids Chicken Tenders（牛奶+薯条）",
+          "amount": 8.49
+        },
+        {
+          "name": "刷卡附加费",
+          "amount": 1.2
+        }
+      ],
+      "amount": 41.33,
+      "currency": "USD",
+      "subtotal": 38.18,
+      "tax": 3.15,
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "达拉斯 DFW 机场",
+      "reimburseRisk": "票面含 Kids Chicken Tenders 儿童餐，暴露随行儿童",
+      "bankNote": "重点核对：刷卡凭条小费栏空白（Amount $41.33），如写了小费实际更高；另一张 $40.03 为加收附加费前的同单据，勿重复计",
+      "notes": "含 $1.20 信用卡附加费；票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260802-003",
+      "date": "2026-08-02",
+      "time": "15:52",
+      "merchant": "Jollibee Ontario Mills - 3072",
+      "merchantNote": "快乐蜂（加州安大略米尔斯购物中心）",
+      "category": "dining",
+      "description": "落地加州晚餐：10 块炸鸡桶、土豆泥、薯条、冰沙",
+      "items": [
+        {
+          "name": "10pc Chickenjoy Bucket Half & Half（含2份肉汁）",
+          "amount": 28.99
+        },
+        {
+          "name": "土豆泥（常规）",
+          "amount": 3.49
+        },
+        {
+          "name": "大薯条",
+          "amount": 4.99
+        },
+        {
+          "name": "草莓冰沙 Bliss Freeze",
+          "amount": 5.59
+        },
+        {
+          "name": "Starry 柠檬苏打",
+          "amount": 3.79
+        }
+      ],
+      "amount": 50.95,
+      "currency": "USD",
+      "subtotal": 46.85,
+      "tax": 4.1,
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "加州 安大略",
+      "bankNote": "补录小票（8/2），待与流水核对",
+      "notes": "票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260803-001",
+      "date": "2026-08-03",
+      "time": "16:10",
+      "merchant": "The Ritz-Carlton Laguna Niguel · 180blu",
+      "merchantNote": "丽思卡尔顿酒店泳池畔餐吧",
+      "category": "dining",
+      "description": "酒店餐吧（7 人）：软饮、金色艾尔啤酒、薯条",
+      "items": [
+        {
+          "name": "健怡可乐",
+          "amount": 6
+        },
+        {
+          "name": "可乐",
+          "quantity": 4,
+          "amount": 24
+        },
+        {
+          "name": "Sunset Surf 金色艾尔（杯装）",
+          "quantity": 2,
+          "amount": 28
+        },
+        {
+          "name": "薯条",
+          "amount": 9
+        }
+      ],
+      "amount": 72.19,
+      "currency": "USD",
+      "subtotal": 67,
+      "tax": 5.19,
+      "paymentMethod": "待确认（票面为账单联，或挂房账）",
+      "location": "加州 拉古纳尼格尔",
+      "bankNote": "待确认：可能挂房账，请在退房时索取酒店对账单（folio）核对；含酒水 $28",
+      "notes": "票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260803-002",
+      "date": "2026-08-03",
+      "time": "20:14",
+      "merchant": "In-N-Out (San Juan Capistrano)",
+      "category": "dining",
+      "description": "晚餐：芝士堡、双层堡、薯条、饮品、奶昔",
+      "items": [
+        {
+          "name": "Cheeseburger",
+          "amount": 4.4
+        },
+        {
+          "name": "Double-Double",
+          "amount": 6.35
+        },
+        {
+          "name": "薯条",
+          "amount": 2.4
+        },
+        {
+          "name": "中杯饮品",
+          "amount": 2.45
+        },
+        {
+          "name": "草莓奶昔",
+          "amount": 3.2
+        }
+      ],
+      "amount": 20.26,
+      "currency": "USD",
+      "subtotal": 18.8,
+      "tax": 1.46,
+      "paymentMethod": "Visa 信用卡（Apple Pay 设备卡号5254，招行卡尾号1980）",
+      "cardLast4": "1980",
+      "location": "加州 San Juan Capistrano",
+      "bankNote": "补录小票（8/3），待与流水核对",
+      "notes": "票面部分褪色，单项以小计 $18.80 为准；票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260804-001",
+      "date": "2026-08-04",
+      "time": "11:51",
+      "merchant": "In-N-Out (San Juan Capistrano)",
+      "category": "dining",
+      "description": "午餐（多人）：汉堡×4、薯条、饮品、奶昔×2",
+      "items": [
+        {
+          "name": "Hamburger",
+          "amount": 3.85
+        },
+        {
+          "name": "Cheeseburger",
+          "quantity": 2,
+          "amount": 8.8
+        },
+        {
+          "name": "Double-Double",
+          "amount": 6.35
+        },
+        {
+          "name": "薯条",
+          "amount": 2.4
+        },
+        {
+          "name": "中杯饮品",
+          "amount": 2.45
+        },
+        {
+          "name": "草莓奶昔",
+          "quantity": 2,
+          "amount": 6.4
+        }
+      ],
+      "amount": 32.59,
+      "currency": "USD",
+      "subtotal": 30.25,
+      "tax": 2.34,
+      "paymentMethod": "Visa 信用卡（Apple Pay 设备卡号5254，招行卡尾号1980）",
+      "cardLast4": "1980",
+      "location": "加州 San Juan Capistrano",
+      "bankNote": "补录小票（8/4），待与流水核对",
+      "notes": "票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260804-002",
+      "date": "2026-08-04",
+      "time": "12:11",
+      "merchant": "In-N-Out (San Juan Capistrano)",
+      "category": "dining",
+      "description": "加购薯条一份",
+      "items": [
+        {
+          "name": "薯条",
+          "amount": 2.4
+        }
+      ],
+      "amount": 2.59,
+      "currency": "USD",
+      "subtotal": 2.4,
+      "tax": 0.19,
+      "paymentMethod": "Amex 信用卡",
+      "cardLast4": "0873",
+      "location": "加州 San Juan Capistrano",
+      "bankNote": "补录小票（8/4），待与流水核对",
+      "notes": "票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260804-003",
+      "date": "2026-08-04",
+      "time": "17:48",
+      "merchant": "The Ritz-Carlton Laguna Niguel · RAYA",
+      "merchantNote": "丽思卡尔顿酒店正餐厅",
+      "category": "dining",
+      "description": "酒店晚餐（5 人）：三文鱼、烤鲈鱼、炖牛小排、儿童意面等",
+      "items": [
+        {
+          "name": "KD Little Nibble 儿童开胃（赠送）",
+          "quantity": 2,
+          "amount": 0
+        },
+        {
+          "name": "Piloncillo Shrimp 红糖虾",
+          "amount": 22
+        },
+        {
+          "name": "Achiote Salmon 胭脂树籽三文鱼",
+          "amount": 41
+        },
+        {
+          "name": "Branzino Zarandeado 烤地中海鲈鱼",
+          "amount": 61
+        },
+        {
+          "name": "Braised Short Rib 炖牛小排",
+          "amount": 63
+        },
+        {
+          "name": "KD Spaghetti 儿童番茄意面",
+          "quantity": 2,
+          "amount": 36
+        },
+        {
+          "name": "KD Grilled Chicken 儿童烤鸡",
+          "amount": 18
+        },
+        {
+          "name": "薯条",
+          "amount": 9
+        }
+      ],
+      "amount": 269.38,
+      "currency": "USD",
+      "subtotal": 250,
+      "tax": 19.38,
+      "paymentMethod": "待确认（票面为账单联，含房账栏，或挂房账）",
+      "location": "加州 拉古纳尼格尔",
+      "reimburseRisk": "票面含 KD（Kids）儿童菜品 3 行，暴露随行儿童",
+      "bankNote": "待确认：小费栏与房号栏空白，实际入账金额（含小费）需酒店对账单/流水确认",
+      "notes": "票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260804-004",
+      "date": "2026-08-04",
+      "time": "20:22",
+      "merchant": "Costco Pharmacy #429 (San Juan Capistrano)",
+      "category": "medical",
+      "description": "非处方药品（OTC）",
+      "items": [
+        {
+          "name": "MISC OTC 非处方药",
+          "amount": 17.39
+        }
+      ],
+      "amount": 18.74,
+      "currency": "USD",
+      "subtotal": 17.39,
+      "tax": 1.35,
+      "paymentMethod": "Visa 信用卡（Apple Pay 设备卡号5254，招行卡尾号1980）",
+      "cardLast4": "1980",
+      "location": "加州 San Juan Capistrano",
+      "bankNote": "补录小票（8/4），待与流水核对",
+      "notes": "票面注明 FSA 合规金额 $18.74；票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260804-005",
+      "date": "2026-08-04",
+      "time": "20:33",
+      "merchant": "Costco Gas #429 (San Juan Capistrano)",
+      "category": "transport",
+      "description": "租车加油：8.655 加仑普通汽油 @ $5.499",
+      "items": [
+        {
+          "name": "Regular 汽油 8.655 gal",
+          "amount": 47.59
+        }
+      ],
+      "amount": 47.59,
+      "currency": "USD",
+      "paymentMethod": "Visa 信用卡（Apple Pay 设备卡号5254，招行卡尾号1980）",
+      "cardLast4": "1980",
+      "location": "加州 San Juan Capistrano",
+      "bankNote": "补录小票（8/4），待与流水核对",
+      "notes": "会员号与超市小票不同（112056292982），或为同行家人会员卡；票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
+    },
+    {
+      "id": "20260804-006",
+      "date": "2026-08-04",
+      "time": "20:53",
+      "merchant": "Target (San Juan Capistrano)",
+      "category": "office",
+      "description": "文具：思高胶带",
+      "items": [
+        {
+          "name": "Scotch 胶带",
+          "amount": 4.69
+        }
+      ],
+      "amount": 5.05,
+      "currency": "USD",
+      "subtotal": 4.69,
+      "tax": 0.36,
+      "paymentMethod": "Apple Pay 银联（设备卡号8443，招行卡尾号4833）",
+      "cardLast4": "4833",
+      "location": "加州 San Juan Capistrano",
+      "bankNote": "补录小票（8/4），待与流水核对（尾号4833）",
+      "notes": "票据原件以合照形式提供（内嵌图片未落盘），归档照片待补",
+      "receipts": [],
+      "reimburse": "pending",
+      "recordedAt": "2026-08-08T04:40:00Z"
     }
   ]
 }
