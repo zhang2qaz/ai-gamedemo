@@ -38,9 +38,11 @@ export type ServerMsg =
   | { type: 'ERROR'; message: string; fatal?: boolean; reason?: ErrorReason; action?: string }
   /**
    * 离开 / 放弃的确认：vacated=true 表示你已不再持有座位（大厅里让出了，或令牌已失效、房间已不存在），
-   * false 表示座位保留、可凭令牌回来（已开局）；busy=true 表示座位正被别的连接使用，什么也没做。
+   * false 表示座位保留、可凭令牌回来（已开局）；busy=true 表示座位此刻还挂着一条连接（可能是别的标签页，
+   * 也可能是服务器还没察觉断开的旧连接）：服务器记下这次放弃，等那条连接断开时执行，并再发一次 LEFT 通知。
+   * token：ABANDON 的回复会带上对应的令牌（客户端据此只处理那一枚令牌）。
    */
-  | { type: 'LEFT'; code: string; vacated: boolean; busy?: boolean }
+  | { type: 'LEFT'; code: string; vacated: boolean; busy?: boolean; token?: string }
   | { type: 'PONG' }
 
 export const MYSTERY_WS_PATH = '/ws-mystery'

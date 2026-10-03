@@ -250,14 +250,29 @@ describe('MysteryHub（ABANDON：凭令牌放弃座位）', () => {
     expect(last(c, 'WELCOME')?.seat).toBe('P2')
   })
 
-  test('座位正被别的连接使用：不顶掉它（busy）', () => {
+  test('座位还挂着连接：不顶掉它（busy）；等那条连接断开再执行放弃并通知', () => {
+    const { a, b, code } = room()
+    const token = last(b, 'WELCOME')!.token
+    const x = sock()
+    send(x, { type: 'ABANDON', code, token })
+    expect(last(x, 'LEFT')).toMatchObject({ vacated: false, busy: true, token })
+    expect(b.closed).toBe(false)
+    expect(b.msgs.some(m => m.type === 'ERROR' && m.reason === 'superseded')).toBe(false)
+    // 旧连接被回收（心跳 / 关闭）→ 执行放弃：大厅座位让出，发起方收到确认
+    hub.handleClose(b.ws)
+    expect(last(x, 'LEFT')).toMatchObject({ vacated: true, token })
+    expect(last(a, 'VIEW')!.view.players.P2.name).toBeNull()
+  })
+
+  test('暂缓的放弃：期间有人凭令牌回到座位就作废', () => {
     const { b, code } = room()
     const token = last(b, 'WELCOME')!.token
     const x = sock()
-    send(x, { type: 'ABANDON', code, token, final: true })
-    expect(last(x, 'LEFT')).toMatchObject({ vacated: false, busy: true })
-    expect(b.closed).toBe(false)
-    expect(b.msgs.some(m => m.type === 'ERROR' && m.reason === 'superseded')).toBe(false)
+    send(x, { type: 'ABANDON', code, token })
+    const b2 = sock()
+    send(b2, { type: 'RESUME', code, token }) // 别的标签页回来了（顶掉旧连接）
+    hub.handleClose(b2.ws)
+    expect(x.msgs.filter(m => m.type === 'LEFT')).toHaveLength(1) // 只有最初的 busy
   })
 
   test('开局后彻底放弃：座位保留，对方只看到一次"不会再回来了"，不会闪"已重新连线"', () => {

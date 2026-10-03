@@ -81,7 +81,15 @@ export class MysteryClient {
       this.lastMessageAt = Date.now()
       this.pendingPing = null
       this.emitStatus(true)
-      for (const a of this.abandons.values()) this.rawSend({ type: 'ABANDON', ...a })
+      for (const [token, a] of this.abandons) {
+        // 别的标签页已经凭这枚令牌回到了座位（共享会话不再是"暂离"）：这条放弃作废
+        const cur = loadSession()
+        if (cur && cur.token === token && !cur.paused) {
+          this.abandons.delete(token)
+          continue
+        }
+        this.rawSend({ type: 'ABANDON', ...a })
+      }
       if (this.resumeWith) this.rawSend({ type: 'RESUME', code: this.resumeWith.code, token: this.resumeWith.token })
       if (this.pendingIntent) {
         this.rawSend(this.pendingIntent)
@@ -199,9 +207,9 @@ export class MysteryClient {
     else this.connect()
   }
 
-  /** 收到某个房间的 LEFT：对应的放弃请求已确认 */
-  ackAbandon(code: string) {
-    for (const [token, a] of this.abandons) if (a.code === code) this.abandons.delete(token)
+  /** 收到对应令牌的 LEFT（含 busy：服务器已记下，会在旧连接断开时执行）：这条放弃已被受理，不再重发 */
+  ackAbandon(token: string) {
+    this.abandons.delete(token)
   }
 
   /** 玩家改主意要回到这个座位：撤回尚未确认的放弃 */

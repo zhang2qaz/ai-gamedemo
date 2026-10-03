@@ -75,7 +75,7 @@ test('大厅里离线点「离开」：令牌先保留，连上后发 ABANDON；
   expect(store.getState().paused).toBeNull() // 大厅不显示"回到房间"
   last().open()
   expect(last().sent).toEqual([{ type: 'ABANDON', code: 'ABCD', token: 't', final: false }])
-  last().reply({ type: 'LEFT', code: 'ABCD', vacated: true })
+  last().reply({ type: 'LEFT', code: 'ABCD', vacated: true, token: 't' })
   expect(session()).toBeNull()
 })
 
@@ -100,7 +100,7 @@ test('放弃请求发出后、确认前断线：每次重连都重发，直到�
   jest.advanceTimersByTime(1000)
   last().open()
   expect(last().sent.map(m => m.type)).toEqual(['ABANDON'])
-  last().reply({ type: 'LEFT', code: 'ABCD', vacated: false })
+  last().reply({ type: 'LEFT', code: 'ABCD', vacated: false, token: 't' })
   last().drop()
   jest.advanceTimersByTime(1000)
   last().open()
@@ -124,7 +124,7 @@ test('离线点「离开」后又去建新房：放弃旧座位照常发出，�
   store.getState().create('甲')
   last().open()
   expect(last().sent.map(m => m.type)).toEqual(['ABANDON', 'CREATE'])
-  last().reply({ type: 'LEFT', code: 'ABCD', vacated: true })
+  last().reply({ type: 'LEFT', code: 'ABCD', vacated: true, token: 't' })
   last().reply({ type: 'WELCOME', code: 'NEW1', seat: 'P1', token: 'n' })
   expect(store.getState().code).toBe('NEW1')
   expect(session()).toEqual({ code: 'NEW1', token: 'n' })
@@ -134,7 +134,7 @@ test('令牌已失效（座位被补位 / 房间回收）：服务器回 vacated
   const store = joinedOffline('lobby')
   store.getState().leave()
   last().open()
-  last().reply({ type: 'LEFT', code: 'ABCD', vacated: true })
+  last().reply({ type: 'LEFT', code: 'ABCD', vacated: true, token: 't' })
   expect(session()).toBeNull()
   expect(store.getState().paused).toBeNull()
   expect(store.getState().toasts).toHaveLength(0)
@@ -170,18 +170,41 @@ test('另一个标签页在玩别的房间时，这边点「放弃这局」不�
   mem.set('mystery:session', JSON.stringify({ code: 'WXYZ', token: 'other' }))
   store.getState().forget()
   expect(last().sent).toEqual([{ type: 'ABANDON', code: 'ABCD', token: 't', final: true }])
-  last().reply({ type: 'LEFT', code: 'ABCD', vacated: true })
+  last().reply({ type: 'LEFT', code: 'ABCD', vacated: true, token: 't' })
   expect(session()).toEqual({ code: 'WXYZ', token: 'other' })
 })
 
-test('座位正被别的连接使用（busy）：什么都不动，下次重连再试', () => {
-  const store = joinedOffline('read')
+test('座位还挂着旧连接（busy）：服务器接管，不再重发；服务器稍后通知让出时删除令牌', () => {
+  const store = joinedOffline('lobby')
   store.getState().leave()
   last().open()
-  last().reply({ type: 'LEFT', code: 'ABCD', vacated: false, busy: true })
+  last().reply({ type: 'LEFT', code: 'ABCD', vacated: false, busy: true, token: 't' })
   expect(session()).toEqual({ code: 'ABCD', token: 't', paused: true })
+  // 服务器回收旧连接后执行放弃，通知本连接
+  last().reply({ type: 'LEFT', code: 'ABCD', vacated: true, token: 't' })
+  expect(session()).toBeNull()
   last().drop()
   jest.advanceTimersByTime(1000)
   last().open()
-  expect(last().sent.map(m => m.type)).toEqual(['ABANDON'])
+  expect(last().sent).toEqual([])
+})
+
+test('同一房间号、不同令牌的回复不会误删当前令牌', () => {
+  const store = joinedOffline('read')
+  store.getState().leave()
+  // 本地已是新令牌 t2 的暂离会话（比如重新加入过）
+  mem.set('mystery:session', JSON.stringify({ code: 'ABCD', token: 't2', paused: true }))
+  last().open()
+  last().reply({ type: 'LEFT', code: 'ABCD', vacated: true, token: 't' })
+  expect(session()).toEqual({ code: 'ABCD', token: 't2', paused: true })
+  void store
+})
+
+test('排队的放弃在发送前复查：别的标签页已经凭这枚令牌回到座位，就不发', () => {
+  const store = joinedOffline('read')
+  store.getState().leave()
+  mem.set('mystery:session', JSON.stringify({ code: 'ABCD', token: 't' })) // 别的标签页恢复了
+  last().open()
+  expect(last().sent.map(m => m.type)).not.toContain('ABANDON')
+  void store
 })

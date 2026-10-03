@@ -21,6 +21,8 @@ type SeatConn = {
   lastView: string | null
   /** 已彻底放弃（只告诉对方一次） */
   abandoned?: boolean
+  /** 座位还挂着连接时收到的放弃：等这条连接断开再执行（凭令牌回到座位则作废） */
+  pendingAbandon?: { final: boolean; notify: WebSocket }
 }
 
 type Room = {
@@ -173,6 +175,12 @@ export class MysteryHub {
       conn.offlineSince = this.now()
       room.state = setPresence(room.state, ref.seat, false, this.now())
       this.afterChange(room)
+      // 之前因为"座位还挂着这条连接"而暂缓的放弃，现在执行
+      const p = conn.pendingAbandon
+      if (p) {
+        conn.pendingAbandon = undefined
+        this.performAbandon(room, ref.seat, p.final, p.notify)
+      }
     }
   }
 
@@ -214,11 +222,12 @@ export class MysteryHub {
    */
   private abandon(ws: WebSocket, rawCode: unknown, token: unknown, final: boolean) {
     const code = typeof rawCode === 'string' ? normalizeRoomCode(rawCode) : ''
+    const tok = typeof token === 'string' ? token : ''
     const room = code ? this.rooms.get(code) : undefined
-    const seat = room && typeof token === 'string' && token ? SEATS.find(s => room.seats[s]?.token === token) : undefined
+    const seat = room && tok ? SEATS.find(s => room.seats[s]?.token === tok) : undefined
     if (!room || !seat) {
       // 房间不在了 / 令牌已失效：你已经不持有座位
-      this.send(ws, { type: 'LEFT', code, vacated: true })
+      this.send(ws, { type: 'LEFT', code, vacated: true, token: tok })
       return
     }
     const conn = room.seats[seat]!
@@ -227,13 +236,23 @@ export class MysteryHub {
       return
     }
     if (conn.ws) {
-      // 座位正被别的连接（别的标签页）使用：不打扰它
-      this.send(ws, { type: 'LEFT', code, vacated: false, busy: true })
+      // 座位还挂着一条连接：可能是别的标签页正在玩，也可能是服务器还没察觉断开的旧连接（心跳要 30–60 秒）。
+      // 不顶掉它；记下这次放弃，等这条连接断开时执行（期间有人凭令牌回到座位就作废）
+      conn.pendingAbandon = { final: final || !!conn.pendingAbandon?.final, notify: ws }
+      this.send(ws, { type: 'LEFT', code, vacated: false, busy: true, token: tok })
       return
     }
+    this.performAbandon(room, seat, final, ws)
+  }
+
+  /** 执行放弃：大厅里让出座位；开局后（彻底放弃时）告诉对方一次"不会再回来了"。结果通知给 notify */
+  private performAbandon(room: Room, seat: Seat, final: boolean, notify: WebSocket) {
+    const conn = room.seats[seat]
+    if (!conn) return
     const now = this.now()
+    const token = conn.token
     if (room.state.stepIndex === -1) {
-      this.send(ws, { type: 'LEFT', code, vacated: true })
+      this.send(notify, { type: 'LEFT', code: room.code, vacated: true, token })
       delete room.seats[seat]
       room.state = vacateSeat(room.state, seat, now)
       if (SEATS.every(s => !room.seats[s])) {
@@ -243,7 +262,7 @@ export class MysteryHub {
       this.afterChange(room)
       return
     }
-    this.send(ws, { type: 'LEFT', code, vacated: false })
+    this.send(notify, { type: 'LEFT', code: room.code, vacated: false, token })
     if (final && !conn.abandoned) {
       conn.abandoned = true
       room.state = abandonSeat(room.state, seat, now)
@@ -381,6 +400,7 @@ export class MysteryHub {
     conn.offlineSince = null
     conn.lastView = null
     conn.abandoned = false
+    conn.pendingAbandon = undefined
     this.wsRoom.set(ws, { code, seat })
     this.send(ws, { type: 'WELCOME', code, seat, token: conn.token })
     room.state = setPresence(room.state, seat, true, this.now())
