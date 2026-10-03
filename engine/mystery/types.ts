@@ -27,7 +27,7 @@ export type Cond =
 export type FlagValue = string | number | boolean
 
 export type Effect =
-  | { giveClue: string; to?: 'self' | 'other' | 'both' }
+  | { giveClue: string; to?: 'self' | 'other' | 'both'; role?: string }
   | { setFlag: string; value: FlagValue }
   | { setSeatFlag: string; value: FlagValue; to?: 'self' | 'other' }
   | { money: number; to?: 'self' | 'other' }
@@ -104,6 +104,8 @@ export type GoalDef = {
   /** 达成条件；未提供 check 的目标由剧本特定逻辑判定 */
   check?: Cond
   hidden?: boolean
+  /** 从哪个流程步骤开始向玩家展示（随剧情解锁新任务） */
+  from?: string
 }
 
 export type RoleDef = {
@@ -157,6 +159,8 @@ export type AccuseQuestion = {
   options: { id: string; label: string }[]
   answer: string | string[]
   points: number
+  /** 答对时发放的酬金（离开指认步骤时结算，只告知总额） */
+  bonus?: number
   /** 只对某角色出现（个人问题） */
   onlyRole?: string
 }
@@ -167,6 +171,7 @@ export type StepKind =
   | 'search'    // 搜证/问询
   | 'discuss'   // 讨论
   | 'choice'    // 同时秘密抉择
+  | 'auction'   // 暗标拍卖
   | 'finale'    // 终局大机制（剧本特定）
   | 'accuse'    // 结构化指认
   | 'ending'    // 结局与复盘
@@ -185,8 +190,19 @@ export type StepDef = {
   ap?: number
   /** choice：按角色给出的提示与选项 */
   choice?: Record<string, { prompt: string; options: ChoiceOption[] }>
+  /** auction：拍品 */
+  lots?: AuctionLot[]
   /** 进入步骤时触发的效果 */
   onEnter?: Effect[]
+}
+
+export type AuctionLot = {
+  id: string
+  title: string
+  desc: string
+  /** 成交后获得的道具（线索 id，kind 应为 item） */
+  item: string
+  min: number
 }
 
 export type EndingDef = {
@@ -268,9 +284,17 @@ export type GameState = {
   flags: Record<string, FlagValue>
   log: LogEntry[]
   logSeq: number
+  /** 拍卖状态（当前步骤为 auction 时） */
+  auction: AuctionState | null
   /** 剧本特定的终局状态 */
   finale: unknown
   ended: boolean
+}
+
+export type AuctionState = {
+  stepId: string
+  bids: Partial<Record<Seat, Record<string, number>>>
+  results: { lot: string; winner: Seat | null; price: number; tie: boolean }[] | null
 }
 
 // ───────────────────────── 玩家动作 ─────────────────────────
@@ -286,6 +310,7 @@ export type MysteryAction =
   | { type: 'choose'; optionId: string }
   | { type: 'caseFile'; caseId: string; answers: Record<string, string> }
   | { type: 'accuse'; answers: Record<string, string | string[]> }
+  | { type: 'bid'; bids: Record<string, number> }
   | { type: 'finale'; payload: unknown }
 
 // ───────────────────────── 视图 ─────────────────────────
@@ -374,6 +399,12 @@ export type SeatView = {
   clues: ClueView[]
   caseFiles: CaseFileView[]
   accuse: { id: string; prompt: string; options: { id: string; label: string }[]; multi: boolean }[]
+  auction: {
+    lots: { id: string; title: string; desc: string; min: number; itemTitle: string; itemIcon: string }[]
+    myBids: Record<string, number> | null
+    otherSubmitted: boolean
+    results: { lot: string; winner: 'me' | 'other' | null; price: number; tie: boolean; myBid: number; otherBid: number }[] | null
+  } | null
   log: LogEntry[]
   finale: unknown
   result: ResultView | null

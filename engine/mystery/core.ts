@@ -9,8 +9,8 @@ import type {
 } from './types'
 import { SEATS, otherSeat } from './types'
 import type { ScenarioRuntime } from './runtime'
+import { appendLog } from './log'
 
-const MAX_LOG = 400
 const MAX_CHAT = 300
 
 export type ReduceResult = { state: GameState; error?: string }
@@ -96,11 +96,7 @@ export function makeEngine(rt: ScenarioRuntime) {
     return false
   }
 
-  function log(state: GameState, now: number, from: LogEntry['from'], to: LogEntry['to'], text: string, kind: LogEntry['kind']) {
-    state.logSeq += 1
-    state.log.push({ id: state.logSeq, ts: now, from, to, text, kind })
-    if (state.log.length > MAX_LOG) state.log.splice(0, state.log.length - MAX_LOG)
-  }
+  const log = appendLog
 
   function grantClue(state: GameState, seat: Seat, clueId: string, now: number, opts: { quiet?: boolean } = {}) {
     const def = clueById.get(clueId)
@@ -134,6 +130,7 @@ export function makeEngine(rt: ScenarioRuntime) {
     if (!effects) return
     for (const e of effects) {
       if ('giveClue' in e) {
+        if (e.role && state.seats[seat].roleId !== e.role) continue
         const targets: Seat[] = e.to === 'other' ? [otherSeat(seat)] : e.to === 'both' ? [...SEATS] : [seat]
         for (const t of targets) grantClue(state, t, e.giveClue, now)
       } else if ('setFlag' in e) {
@@ -182,6 +179,9 @@ export function makeEngine(rt: ScenarioRuntime) {
         if (ch) log(state, now, 'DM', s, `你的剧本已更新：「${ch.title}」。`, 'dm')
       }
     }
+    if (step.kind === 'auction') {
+      state.auction = { stepId: step.id, bids: {}, results: null }
+    }
     if (step.kind === 'finale' && rt.finale) {
       rt.finale.init(state, now)
     }
@@ -213,9 +213,57 @@ export function makeEngine(rt: ScenarioRuntime) {
         if (opt) applyEffects(state, s, opt.effects, now)
       }
     }
-    if (step.kind === 'accuse') {
-      for (const s of SEATS) if (!state.seats[s].accuse) state.seats[s].accuse = {}
+    if (step.kind === 'auction' && state.auction && !state.auction.results) {
+      resolveAuction(state, step, now)
     }
+    if (step.kind === 'accuse') {
+      for (const s of SEATS) {
+        if (!state.seats[s].accuse) state.seats[s].accuse = {}
+        let bonus = 0
+        for (const q of accuseFor(state, s)) {
+          if (q.bonus && isCorrect(q, state.seats[s].accuse![q.id])) bonus += q.bonus
+        }
+        if (bonus > 0) state.seats[s].money += bonus
+        log(state, now, 'DM', s, bonus > 0
+          ? `DM 核对了你的指认：酬金 $${bonus.toLocaleString('en-US')} 已到账。（只告诉你总额，不告诉你对在哪里。）`
+          : 'DM 核对了你的指认：这一次，你没有拿到酬金。', 'dm')
+      }
+    }
+  }
+
+  function resolveAuction(state: GameState, step: StepDef, now: number) {
+    const a = state.auction!
+    const results: NonNullable<typeof a.results> = []
+    const lines: string[] = []
+    for (const lot of step.lots ?? []) {
+      const b1 = a.bids.P1?.[lot.id] ?? 0
+      const b2 = a.bids.P2?.[lot.id] ?? 0
+      const itemTitle = clueById.get(lot.item)?.title ?? lot.title
+      if (b1 === b2) {
+        results.push({ lot: lot.id, winner: null, price: b1, tie: b1 > 0 })
+        lines.push(b1 > 0
+          ? `「${lot.title}」：双方出价相同（$${b1.toLocaleString('en-US')}），被维克多·奥尔洛夫以更高价截走。`
+          : `「${lot.title}」：无人出价，流拍。`)
+        continue
+      }
+      const winner: Seat = b1 > b2 ? 'P1' : 'P2'
+      const price = Math.max(b1, b2)
+      state.seats[winner].money = Math.max(0, state.seats[winner].money - price)
+      grantClue(state, winner, lot.item, now, { quiet: true })
+      results.push({ lot: lot.id, winner, price, tie: false })
+      lines.push(`「${lot.title}」：${seatName(state, winner)} 以 $${price.toLocaleString('en-US')} 拍得，获得道具【${itemTitle}】。`)
+    }
+    a.results = results
+    log(state, now, 'DM', 'all', `🔨 拍卖结果\n${lines.join('\n')}`, 'event')
+  }
+
+  function isCorrect(q: { answer: string | string[] }, v: string | string[] | undefined): boolean {
+    if (Array.isArray(q.answer)) {
+      if (!Array.isArray(v)) return false
+      const want = [...q.answer].sort().join('|')
+      return [...v].sort().join('|') === want
+    }
+    return v === q.answer
   }
 
   function advance(state: GameState, now: number) {
@@ -232,6 +280,15 @@ export function makeEngine(rt: ScenarioRuntime) {
     }
     if (step.kind === 'accuse') {
       if (SEATS.every(s => state.seats[s].accuse)) advance(state, now)
+      return
+    }
+    if (step.kind === 'auction') {
+      if (state.auction && !state.auction.results && SEATS.every(s => state.auction!.bids[s])) {
+        resolveAuction(state, step, now)
+        for (const s of SEATS) state.seats[s].ready = false
+        return
+      }
+      if (state.auction?.results && SEATS.every(s => state.seats[s].ready)) advance(state, now)
       return
     }
     if (step.kind === 'choice') {
@@ -262,6 +319,7 @@ export function makeEngine(rt: ScenarioRuntime) {
       flags: {},
       log: [],
       logSeq: 0,
+      auction: null,
       finale: null,
       ended: false,
     }
@@ -334,6 +392,7 @@ export function makeEngine(rt: ScenarioRuntime) {
         }
         if (!step) return
         if (step.kind === 'finale' || step.kind === 'ending' || step.kind === 'accuse') return '此阶段不能使用“准备”'
+        if (step.kind === 'auction' && value && !state.auction?.results) return '请先提交出价，等待揭晓'
         if (step.kind === 'choice' && value) {
           const r = roleOf(state, seat)
           if (r && step.choice?.[r.id] && !me.choices[step.id]) return '请先做出选择'
@@ -461,6 +520,28 @@ export function makeEngine(rt: ScenarioRuntime) {
         }
         me.accuse = clean
         log(state, now, 'DM', otherSeat(seat), `${seatName(state, seat)} 已提交最终指认。`, 'dm')
+        return
+      }
+
+      case 'bid': {
+        if (!step || step.kind !== 'auction' || !state.auction) return '现在不是拍卖时间'
+        if (state.auction.bids[seat]) return '你已经提交了出价'
+        if (state.auction.results) return '拍卖已经结束'
+        const raw = action.bids && typeof action.bids === 'object' ? action.bids : {}
+        const clean: Record<string, number> = {}
+        let total = 0
+        for (const lot of step.lots ?? []) {
+          const v = Math.floor(Number(raw[lot.id] ?? 0))
+          if (!Number.isFinite(v) || v < 0) return '出价无效'
+          if (v === 0) { clean[lot.id] = 0; continue }
+          if (v < lot.min) return `「${lot.title}」最低出价 $${lot.min}`
+          if (v % 100 !== 0) return '出价须为 $100 的整数倍'
+          clean[lot.id] = v
+          total += v
+        }
+        if (total > me.money) return '总出价超过了你的现金'
+        state.auction.bids[seat] = clean
+        log(state, now, 'DM', otherSeat(seat), `${seatName(state, seat)} 已经把暗标交给了拍卖师。`, 'dm')
         return
       }
 
@@ -634,6 +715,30 @@ export function makeEngine(rt: ScenarioRuntime) {
 
     const log = state.log.filter(e => e.to === 'all' || e.to === seat).slice(-200)
 
+    let auction: SeatView['auction'] = null
+    if (step?.kind === 'auction' && state.auction) {
+      const other = otherSeat(seat)
+      const a = state.auction
+      auction = {
+        lots: (step.lots ?? []).map(l => ({
+          id: l.id, title: l.title, desc: l.desc, min: l.min,
+          itemTitle: clueById.get(l.item)?.title ?? '', itemIcon: clueById.get(l.item)?.icon ?? '🎁',
+        })),
+        myBids: a.bids[seat] ?? null,
+        otherSubmitted: !!a.bids[other],
+        results: a.results
+          ? a.results.map(r => ({
+              lot: r.lot,
+              winner: r.winner === null ? null : r.winner === seat ? 'me' : 'other',
+              price: r.price,
+              tie: r.tie,
+              myBid: a.bids[seat]?.[r.lot] ?? 0,
+              otherBid: a.bids[other]?.[r.lot] ?? 0,
+            }))
+          : null,
+      }
+    }
+
     return {
       code: state.code,
       seat,
@@ -655,7 +760,7 @@ export function makeEngine(rt: ScenarioRuntime) {
         ap: me.ap,
         money: me.money,
         chapters,
-        goals: state.stepIndex >= 0 ? (role?.goals ?? []).filter(g => !g.hidden).map(g => ({ id: g.id, text: g.text, points: g.points })) : [],
+        goals: state.stepIndex >= 0 ? (role?.goals ?? []).filter(g => !g.hidden && reached(state, g.from)).map(g => ({ id: g.id, text: g.text, points: g.points })) : [],
         choice,
         accuse: me.accuse,
       },
@@ -665,6 +770,7 @@ export function makeEngine(rt: ScenarioRuntime) {
       clues,
       caseFiles,
       accuse,
+      auction,
       log,
       finale: step?.kind === 'finale' || (state.ended && rt.finale) ? rt.finale?.view(state, seat, now) ?? null : null,
       result: state.ended ? rt.result(state) : null,
