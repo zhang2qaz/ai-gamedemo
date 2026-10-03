@@ -72,6 +72,7 @@ export default function EntryScreen() {
             <div className="mx-panel p-4 space-y-3 ring-1 ring-[var(--mx-gold)]/40">
               <div className="text-sm text-white/85">这一局（房间 <b className="font-mono text-[var(--mx-gold)]">{paused.code}</b>）正在另一个窗口里进行。</div>
               <button className="mx-btn mx-btn-gold w-full" onClick={resume}>在此窗口继续</button>
+              <div className="text-[11px] text-[var(--mx-muted)]">要在这台设备上开新局，请先在那个窗口里离开这一局（同一台设备只能记住一局）。</div>
             </div>
           ) : (
             <div className="mx-panel p-4 space-y-3 ring-1 ring-[var(--mx-gold)]/40">
@@ -87,7 +88,7 @@ export default function EntryScreen() {
 
         {resuming ? (
           <div className="mx-panel p-4 text-center text-sm text-white/70">正在恢复你的上一局…</div>
-        ) : (
+        ) : paused && pausedElsewhere ? null : (
           <div className="mx-panel p-4 space-y-4">
             <div>
               <label className="text-[11px] font-bold tracking-wider text-[var(--mx-muted)] block mb-1.5">你的昵称</label>

@@ -56,11 +56,18 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
         // 已离开房间后迟到的 WELCOME 要丢掉；只要还在房间里（含断线重连的自动 RESUME），
         // 就以服务器为准——服务器只会因为本连接的请求发 WELCOME，连接已经绑到了这个座位
         if (!pending && !st.joined) return
+        // 建房 / 加入成功了：这时才放弃之前暂离的那一局（加入失败就什么都不放弃）
+        if ((pending === 'CREATE' || pending === 'JOIN') && st.paused && !st.pausedElsewhere && st.paused.token !== msg.token) {
+          const old = st.paused
+          const cur = loadSession()
+          // 别的标签页已经回到了那一局：不归这里管
+          if (!(cur && cur.token === old.token && !cur.paused)) ensureClient().abandon(old, true)
+        }
         pending = null
         saveSession({ code: msg.code, token: msg.token })
         if (client) client.resumeWith = { code: msg.code, token: msg.token }
         set({
-          joined: true, resuming: false, paused: null, code: msg.code, seat: msg.seat,
+          joined: true, resuming: false, paused: null, pausedElsewhere: false, code: msg.code, seat: msg.seat,
           view: st.view && st.view.code === msg.code ? st.view : null,
         })
         break
@@ -135,17 +142,6 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
   }
 
 
-  /** 暂离着一局时去开新局 / 加入别的房间：等同于点了「放弃这局」，并如实告诉搭档 */
-  function abandonPaused() {
-    const p = get().paused
-    if (!p || get().pausedElsewhere) return
-    set({ paused: null })
-    const cur = loadSession()
-    // 别的标签页已经回到了这局：不归这里管
-    if (cur && cur.token === p.token && !cur.paused) return
-    ensureClient().abandon(p, true)
-  }
-
   function startResume(saved: SavedSession) {
     const c = ensureClient()
     // 改主意回到这个座位：撤回尚未确认的放弃
@@ -185,7 +181,6 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
 
     create: (name) => {
       const c = ensureClient()
-      abandonPaused()
       c.resumeWith = null
       pending = 'CREATE'
       c.send({ type: 'CREATE', name })
@@ -199,7 +194,6 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
         return
       }
       const c = ensureClient()
-      abandonPaused()
       c.resumeWith = null
       pending = 'JOIN'
       c.send({ type: 'JOIN', code, name })
@@ -208,6 +202,15 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     resume: () => {
       const p = get().paused
       if (!p) return
+      if (get().pausedElsewhere) {
+        // 横幅可能已经过时：那一局也许已在另一个窗口里离开、放弃，或者那边开了新局
+        const cur = loadSession()
+        if (!cur || cur.token !== p.token) {
+          set({ paused: null, pausedElsewhere: false })
+          pushToast('那一局已在另一个窗口里结束或放弃了', 'info')
+          return
+        }
+      }
       saveSession({ code: p.code, token: p.token })
       startResume(p)
     },

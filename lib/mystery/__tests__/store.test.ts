@@ -249,14 +249,32 @@ test('服务器回"座位保留"（暂缓的放弃已作废）：确认，不再
   void store
 })
 
-test('暂离着一局时直接建新房：先放弃那一局（告诉搭档），再建房', () => {
+test('暂离着一局时直接建新房：建房成功（收到 WELCOME）后才放弃那一局', () => {
   mem.set('mystery:session', JSON.stringify({ code: 'ABCD', token: 't', paused: true }))
   const store = fresh()
   store.getState().init()
   last().open()
   store.getState().create('甲')
-  expect(last().sent.map(m => m.type)).toEqual(['ABANDON', 'CREATE'])
-  expect(last().sent[0]).toMatchObject({ code: 'ABCD', token: 't', final: true })
+  expect(last().sent.map(m => m.type)).toEqual(['CREATE'])
+  last().reply({ type: 'WELCOME', code: 'NEW1', seat: 'P1', token: 'n' })
+  expect(last().sent.map(m => m.type)).toEqual(['CREATE', 'ABANDON'])
+  expect(last().sent[1]).toMatchObject({ code: 'ABCD', token: 't', final: true })
+  // 旧局的确认回来，不会动新房间的会话
+  last().reply({ type: 'LEFT', code: 'ABCD', vacated: false, token: 't' })
+  expect(session()).toEqual({ code: 'NEW1', token: 'n' })
+  expect(store.getState().paused).toBeNull()
+})
+
+test('暂离着一局时加入别的房间失败（房间号输错）：什么都不放弃，横幅保持', () => {
+  mem.set('mystery:session', JSON.stringify({ code: 'ABCD', token: 't', paused: true }))
+  const store = fresh()
+  store.getState().init()
+  last().open()
+  store.getState().join('ZZZZ', '甲')
+  last().reply({ type: 'ERROR', message: '房间不存在，请检查房间号' })
+  expect(last().sent.map(m => m.type)).toEqual(['JOIN'])
+  expect(store.getState().paused?.code).toBe('ABCD')
+  expect(session()).toEqual({ code: 'ABCD', token: 't', paused: true })
 })
 
 test('暂离着一局时"加入"同一个房间号：直接回到原座位', () => {
@@ -295,4 +313,20 @@ test('被别的窗口顶下线：入口页给"在此窗口继续"，共享会话
   // 「放弃这局」对另一个窗口里进行的局无效
   store.getState().forget()
   expect(session()).toEqual({ code: 'ABCD', token: 't' })
+})
+
+test('"在此窗口继续"之前先核对：那一局已在另一个窗口里结束 / 换了新局，就收起横幅、不再拉回', () => {
+  const store = fresh()
+  store.getState().init()
+  last().open()
+  last().reply({ type: 'WELCOME', code: 'ABCD', seat: 'P1', token: 't' })
+  last().reply({ type: 'ERROR', message: '你已在其它窗口重新连接', fatal: true, reason: 'superseded' })
+  expect(store.getState().pausedElsewhere).toBe(true)
+  // 另一个窗口离开了这局，开了新局
+  mem.set('mystery:session', JSON.stringify({ code: 'NEW1', token: 'n' }))
+  const before = last().sent.length
+  store.getState().resume()
+  expect(last().sent.length).toBe(before)
+  expect(store.getState().paused).toBeNull()
+  expect(session()).toEqual({ code: 'NEW1', token: 'n' })
 })
