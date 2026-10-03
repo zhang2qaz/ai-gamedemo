@@ -400,6 +400,15 @@ export function makeEngine(rt: ScenarioRuntime) {
     return state
   }
 
+  /** 开局后彻底放弃（入口页「放弃这局」）：如实告诉对方 */
+  function abandonSeat(prev: GameState, seat: Seat, now: number): GameState {
+    if (prev.stepIndex === -1 || prev.ended) return prev
+    const state = structuredClone(prev)
+    state.seats[seat].online = false
+    log(state, now, 'DM', 'all', `${state.seats[seat].name ?? seat} 放弃了这一局，不会再回来了。`, 'system')
+    return state
+  }
+
   /** 大厅阶段离开：让出座位，新玩家可以补位 */
   function vacateSeat(prev: GameState, seat: Seat, now: number): GameState {
     if (prev.stepIndex !== -1) return prev
@@ -897,6 +906,7 @@ export function makeEngine(rt: ScenarioRuntime) {
     joinSeat,
     setPresence,
     vacateSeat,
+    abandonSeat,
     reduce,
     tick,
     nextDeadline,

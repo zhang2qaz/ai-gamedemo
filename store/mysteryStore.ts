@@ -38,8 +38,6 @@ let client: MysteryClient | null = null
 let toastSeq = 0
 /** 正在等待的进房请求：只接受与之对应的 WELCOME（离开后迟到的 WELCOME 要丢掉） */
 let pending: 'CREATE' | 'JOIN' | 'RESUME' | null = null
-/** 正在"凭令牌离开"的房间：服务器为此回的 WELCOME / VIEW 不能把画面拉回去 */
-let leaving: string | null = null
 
 export const useMysteryStore = create<MysteryStore>((set, get) => {
   function pushToast(text: string, tone: Toast['tone']) {
@@ -52,8 +50,6 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     switch (msg.type) {
       case 'WELCOME': {
         const st = get()
-        // 凭令牌离开时，服务器会先回一个 WELCOME（恢复身份）再回 LEFT：不能把画面拉回那个房间
-        if (msg.code === leaving) return
         // 已离开房间后迟到的 WELCOME 要丢掉；只要还在房间里（含断线重连的自动 RESUME），
         // 就以服务器为准——服务器只会因为本连接的请求发 WELCOME，连接已经绑到了这个座位
         if (!pending && !st.joined) return
@@ -74,9 +70,15 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
       }
       case 'LEFT': {
         // 以服务器为准：座位让出了就删掉本地令牌；座位还保留（比如离开时恰好开局了）就留着，入口页可以回来
-        if (leaving === msg.code) leaving = null
+        // 座位正被别的连接使用（别的标签页在玩，或本页的旧连接服务器还没察觉断开）：什么都不动，
+        // 放弃请求也不算确认，下次重连再试
+        if (msg.busy) return
+        client?.ackAbandon(msg.code)
         const saved = loadSession()
-        if (!saved || saved.code !== msg.code) return
+        if (!saved || saved.code !== msg.code) {
+          if (msg.vacated && get().paused?.code === msg.code) set({ paused: null })
+          return
+        }
         if (msg.vacated) {
           saveSession(null)
           if (get().paused?.code === msg.code) set({ paused: null })
@@ -91,13 +93,6 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
         // 过期操作（双击、迟到）已被服务器丢弃，界面已经是新阶段："准备"不打扰玩家，其余操作提示一下
         if (msg.reason === 'stale') {
           if (msg.action && msg.action !== 'ready') pushToast(msg.message, 'info')
-          return
-        }
-        if (msg.fatal && leaving && !get().joined) {
-          // 凭令牌离开时房间已失效 / 令牌已作废：本来就要放弃，不用提示；但本地令牌也要删掉
-          if (loadSession()?.code === leaving) saveSession(null)
-          if (get().paused?.code === leaving) set({ paused: null })
-          leaving = null
           return
         }
         if (msg.fatal) {
@@ -116,29 +111,17 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     if (!client) {
       client = new MysteryClient()
       client.onMessage(onMessage)
-      client.onStatus(online => {
-        set({ online })
-        // 凭令牌离开的请求发出后、还没等到确认就断线了：下次连上再补发一次（离开是幂等的）
-        if (!online && leaving && client) {
-          const s = loadSession()
-          if (s && s.code === leaving && s.paused) client.queueLeave(s)
-          else leaving = null
-        }
-      })
+      client.onStatus(online => set({ online }))
     }
     client.connect()
     return client
   }
 
-  /** 玩家改主意（回到房间 / 加入 / 建房）：不再离开那个房间 */
-  function stopLeaving() {
-    leaving = null
-    client?.cancelLeave()
-  }
 
   function startResume(saved: SavedSession) {
     const c = ensureClient()
-    stopLeaving()
+    // 改主意回到这个座位：撤回尚未确认的放弃
+    c.cancelAbandon(saved.token)
     // 离线时先点过「创建 / 加入」又改成恢复旧局：丢掉那个还没发出的请求
     c.cancelIntent()
     c.resumeWith = { code: saved.code, token: saved.token }
@@ -173,7 +156,6 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
 
     create: (name) => {
       const c = ensureClient()
-      stopLeaving()
       c.resumeWith = null
       pending = 'CREATE'
       c.send({ type: 'CREATE', name })
@@ -181,7 +163,6 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
 
     join: (code, name) => {
       const c = ensureClient()
-      stopLeaving()
       c.resumeWith = null
       pending = 'JOIN'
       c.send({ type: 'JOIN', code, name })
@@ -197,15 +178,14 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     forget: () => {
       const p = get().paused
       set({ paused: null })
-      // 别的标签页已经用这枚令牌回到了这局（本地会话不再是"暂离"）：不能去顶掉它，也不能删共享的令牌
+      if (!p) return
       const cur = loadSession()
-      if (p && cur && cur.code === p.code && !cur.paused) return
-      saveSession(null)
-      // 通知服务器：大厅里让出座位，开局后标记为暂离（否则座位一直占着）
-      if (p) {
-        leaving = p.code
-        ensureClient().leaveSession(p)
-      }
+      // 别的标签页已经用这枚令牌回到了这局（共享会话不再是"暂离"）：什么都不做
+      if (cur && cur.token === p.token && !cur.paused) return
+      // 只删属于这枚令牌的会话；共享会话已经属于别的房间（别的标签页在玩），不能动
+      if (cur && cur.token === p.token) saveSession(null)
+      // 通知服务器：大厅里让出座位；开局后告诉对方"不会再回来了"
+      ensureClient().abandon(p, true)
     },
 
     act: (action) => {
@@ -227,11 +207,8 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
         const p = { code: saved.code, token: saved.token, paused: true }
         saveSession(p)
         set({ paused: inLobby ? null : p })
-        // 离线没发出去：连上后凭令牌补发"离开"
-        if (!sent && client) {
-          leaving = saved.code
-          client.leaveSession(p)
-        }
+        // 离线没发出去：凭令牌放弃（连上后发送，直到服务器确认）
+        if (!sent) ensureClient().abandon(p, false)
       } else {
         saveSession(null)
         set({ paused: null })

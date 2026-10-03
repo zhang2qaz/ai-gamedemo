@@ -226,3 +226,60 @@ describe('MysteryHub（第二轮修复）', () => {
     expect(blocked).toBeGreaterThanOrEqual(10)
   })
 })
+
+describe('MysteryHub（ABANDON：凭令牌放弃座位）', () => {
+  function started() {
+    const { a, b, code } = room()
+    send(a, { type: 'ACT', action: { type: 'pickRole', roleId: 'mandy' } })
+    send(b, { type: 'ACT', action: { type: 'pickRole', roleId: 'ethan' } })
+    send(a, { type: 'ACT', action: { type: 'ready', value: true } })
+    send(b, { type: 'ACT', action: { type: 'ready', value: true } })
+    return { a, b, code }
+  }
+
+  test('大厅里离线的座位：放弃后让出，别人可以立刻补位；不发 WELCOME', () => {
+    const { b, code } = room()
+    const token = last(b, 'WELCOME')!.token
+    hub.handleClose(b.ws)
+    const x = sock()
+    send(x, { type: 'ABANDON', code, token })
+    expect(x.msgs.map(m => m.type)).toEqual(['LEFT'])
+    expect(last(x, 'LEFT')).toMatchObject({ vacated: true })
+    const c = sock()
+    send(c, { type: 'JOIN', code, name: '丙' })
+    expect(last(c, 'WELCOME')?.seat).toBe('P2')
+  })
+
+  test('座位正被别的连接使用：不顶掉它（busy）', () => {
+    const { b, code } = room()
+    const token = last(b, 'WELCOME')!.token
+    const x = sock()
+    send(x, { type: 'ABANDON', code, token, final: true })
+    expect(last(x, 'LEFT')).toMatchObject({ vacated: false, busy: true })
+    expect(b.closed).toBe(false)
+    expect(b.msgs.some(m => m.type === 'ERROR' && m.reason === 'superseded')).toBe(false)
+  })
+
+  test('开局后彻底放弃：座位保留，对方只看到一次"不会再回来了"，不会闪"已重新连线"', () => {
+    const { a, b, code } = started()
+    const token = last(b, 'WELCOME')!.token
+    hub.handleClose(b.ws)
+    for (let i = 0; i < 2; i++) {
+      const x = sock()
+      send(x, { type: 'ABANDON', code, token, final: true })
+      expect(last(x, 'LEFT')).toMatchObject({ vacated: false })
+    }
+    const log = last(a, 'VIEW')!.view.log.map(e => e.text)
+    expect(log.filter(t => t.includes('不会再回来了'))).toHaveLength(1)
+    expect(log.slice(-3).some(t => t.includes('已重新连线'))).toBe(false)
+  })
+
+  test('令牌无效 / 房间不存在：回复一模一样（探测不出房间号是否存在）', () => {
+    const { code } = room()
+    const x = sock()
+    send(x, { type: 'ABANDON', code, token: 'nope' })
+    send(x, { type: 'ABANDON', code: 'ZZZZ', token: 'nope' })
+    const lefts = x.msgs.filter(m => m.type === 'LEFT').map(m => ({ ...m, code: '' }))
+    expect(lefts[0]).toEqual(lefts[1])
+  })
+})

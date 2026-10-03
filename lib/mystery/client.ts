@@ -60,8 +60,11 @@ export class MysteryClient {
   private listening = false
   /** 重连成功后自动发送（恢复身份） */
   resumeWith: SavedSession | null = null
-  /** 离线时没能发出的"离开"：连上后先凭令牌恢复身份、再离开，由服务器的 LEFT 决定令牌删不删 */
-  private leaveOnReconnect: SavedSession | null = null
+  /**
+   * 待确认的"凭令牌放弃座位"（按令牌记）。每次连上都会（重新）发送，直到 store 收到对应的 LEFT 调用 ackAbandon。
+   * 服务器端的 ABANDON 是幂等的，重发没有副作用。
+   */
+  private abandons = new Map<string, { code: string; token: string; final: boolean }>()
 
   connect() {
     this.closedByUser = false
@@ -78,12 +81,7 @@ export class MysteryClient {
       this.lastMessageAt = Date.now()
       this.pendingPing = null
       this.emitStatus(true)
-      if (this.leaveOnReconnect) {
-        const l = this.leaveOnReconnect
-        this.leaveOnReconnect = null
-        this.rawSend({ type: 'RESUME', code: l.code, token: l.token })
-        this.rawSend({ type: 'LEAVE' })
-      }
+      for (const a of this.abandons.values()) this.rawSend({ type: 'ABANDON', ...a })
       if (this.resumeWith) this.rawSend({ type: 'RESUME', code: this.resumeWith.code, token: this.resumeWith.token })
       if (this.pendingIntent) {
         this.rawSend(this.pendingIntent)
@@ -191,27 +189,24 @@ export class MysteryClient {
   }
 
   /**
-   * 凭令牌离开一个座位（让服务器真正让出 / 标记暂离）。在线就立刻发，离线就等连上后补发。
-   * 用于：离线时点了「离开」、入口页点「放弃这局」。
+   * 凭令牌放弃一个座位（离线时点了「离开」、入口页点「放弃这局」）。在线就立刻发；
+   * 不论是否已发出，都保留到收到确认（ackAbandon）为止，断线重连后会重发。
    */
-  leaveSession(s: SavedSession) {
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      this.rawSend({ type: 'RESUME', code: s.code, token: s.token })
-      this.rawSend({ type: 'LEAVE' })
-      return
-    }
-    this.leaveOnReconnect = { code: s.code, token: s.token }
-    this.connect()
+  abandon(s: SavedSession, final: boolean) {
+    const a = { code: s.code, token: s.token, final }
+    this.abandons.set(s.token, a)
+    if (this.ws?.readyState === WebSocket.OPEN) this.rawSend({ type: 'ABANDON', ...a })
+    else this.connect()
   }
 
-  /** 只排队、不主动连接：下次连上时补发"凭令牌离开"（用于断线时重新排队，避免和重连退避打架） */
-  queueLeave(s: SavedSession) {
-    this.leaveOnReconnect = { code: s.code, token: s.token }
+  /** 收到某个房间的 LEFT：对应的放弃请求已确认 */
+  ackAbandon(code: string) {
+    for (const [token, a] of this.abandons) if (a.code === code) this.abandons.delete(token)
   }
 
-  /** 取消排队中的"凭令牌离开"（玩家改主意要回到 / 加入房间时） */
-  cancelLeave() {
-    this.leaveOnReconnect = null
+  /** 玩家改主意要回到这个座位：撤回尚未确认的放弃 */
+  cancelAbandon(token: string) {
+    this.abandons.delete(token)
   }
 
   /** 取消尚未发出的建房 / 加入请求（改为恢复旧局时用，避免连上后两个请求先后执行） */

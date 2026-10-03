@@ -14,6 +14,12 @@ export type ClientMsg =
    */
   | { type: 'ACT'; action: MysteryAction; at?: number }
   | { type: 'LEAVE' }
+  /**
+   * 凭令牌放弃一个"不在本连接上"的座位（离线时点的「离开」、入口页的「放弃这局」）。
+   * 不绑定连接、不发 WELCOME、不改在线状态；座位正被别的连接使用时拒绝（busy）。
+   * final：彻底放弃（入口页「放弃这局」），开局后会告诉对方"不会再回来了"。
+   */
+  | { type: 'ABANDON'; code: string; token: string; final?: boolean }
   | { type: 'PING' }
 
 /**
@@ -30,8 +36,11 @@ export type ServerMsg =
   | { type: 'VIEW'; view: SeatView }
   /** action：被判过期（stale）的那个操作类型 */
   | { type: 'ERROR'; message: string; fatal?: boolean; reason?: ErrorReason; action?: string }
-  /** 离开的确认：vacated=true 表示座位已让出（大厅），false 表示座位保留、可凭令牌回来（已开局） */
-  | { type: 'LEFT'; code: string; vacated: boolean }
+  /**
+   * 离开 / 放弃的确认：vacated=true 表示你已不再持有座位（大厅里让出了，或令牌已失效、房间已不存在），
+   * false 表示座位保留、可凭令牌回来（已开局）；busy=true 表示座位正被别的连接使用，什么也没做。
+   */
+  | { type: 'LEFT'; code: string; vacated: boolean; busy?: boolean }
   | { type: 'PONG' }
 
 export const MYSTERY_WS_PATH = '/ws-mystery'

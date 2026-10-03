@@ -7,7 +7,7 @@ import type { WebSocket } from 'ws'
 import { randomUUID } from 'crypto'
 import type { Seat, GameState } from '@/engine/mystery/types'
 import { SEATS } from '@/engine/mystery/types'
-import { createGame, reduce, tick, nextDeadline, viewFor, joinSeat, setPresence, vacateSeat } from '@/engine/mystery/engine'
+import { createGame, reduce, tick, nextDeadline, viewFor, joinSeat, setPresence, vacateSeat, abandonSeat } from '@/engine/mystery/engine'
 import type { ClientMsg, ServerMsg } from './protocol'
 import { makeRoomCode, normalizeRoomCode, sanitizeName } from './protocol'
 
@@ -19,6 +19,8 @@ type SeatConn = {
   offlineSince: number | null
   /** 上一次发给这个座位的视图（去掉 serverNow）：没变就不发，否则"多收到一份一样的视图"会暴露对方的私密操作 */
   lastView: string | null
+  /** 已彻底放弃（只告诉对方一次） */
+  abandoned?: boolean
 }
 
 type Room = {
@@ -123,6 +125,9 @@ export class MysteryHub {
       case 'LEAVE':
         this.leave(ws)
         return
+      case 'ABANDON':
+        this.abandon(ws, msg.code, msg.token, !!msg.final)
+        return
       case 'ACT': {
         const ref = this.wsRoom.get(ws)
         if (!ref) {
@@ -201,6 +206,49 @@ export class MysteryHub {
       room.state = setPresence(room.state, ref.seat, false, now, 'left')
     }
     this.afterChange(room)
+  }
+
+  /**
+   * 凭令牌放弃一个座位（这个座位不在本连接上）。不绑定连接、不发 WELCOME、不改在线状态，
+   * 所以不会顶掉正在用这个座位的另一个标签页；回复与房间是否存在无关（不能拿来探测房间号）。
+   */
+  private abandon(ws: WebSocket, rawCode: unknown, token: unknown, final: boolean) {
+    const code = typeof rawCode === 'string' ? normalizeRoomCode(rawCode) : ''
+    const room = code ? this.rooms.get(code) : undefined
+    const seat = room && typeof token === 'string' && token ? SEATS.find(s => room.seats[s]?.token === token) : undefined
+    if (!room || !seat) {
+      // 房间不在了 / 令牌已失效：你已经不持有座位
+      this.send(ws, { type: 'LEFT', code, vacated: true })
+      return
+    }
+    const conn = room.seats[seat]!
+    if (conn.ws === ws) {
+      this.leave(ws)
+      return
+    }
+    if (conn.ws) {
+      // 座位正被别的连接（别的标签页）使用：不打扰它
+      this.send(ws, { type: 'LEFT', code, vacated: false, busy: true })
+      return
+    }
+    const now = this.now()
+    if (room.state.stepIndex === -1) {
+      this.send(ws, { type: 'LEFT', code, vacated: true })
+      delete room.seats[seat]
+      room.state = vacateSeat(room.state, seat, now)
+      if (SEATS.every(s => !room.seats[s])) {
+        this.dropRoom(room)
+        return
+      }
+      this.afterChange(room)
+      return
+    }
+    this.send(ws, { type: 'LEFT', code, vacated: false })
+    if (final && !conn.abandoned) {
+      conn.abandoned = true
+      room.state = abandonSeat(room.state, seat, now)
+      this.afterChange(room)
+    }
   }
 
   // ── 建房 ──
@@ -332,6 +380,7 @@ export class MysteryHub {
     conn.ws = ws
     conn.offlineSince = null
     conn.lastView = null
+    conn.abandoned = false
     this.wsRoom.set(ws, { code, seat })
     this.send(ws, { type: 'WELCOME', code, seat, token: conn.token })
     room.state = setPresence(room.state, seat, true, this.now())
