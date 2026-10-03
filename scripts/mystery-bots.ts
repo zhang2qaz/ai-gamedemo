@@ -9,7 +9,8 @@ import WebSocket from 'ws'
 import type { SeatView } from '../engine/mystery/types'
 import type { ClientMsg, ServerMsg } from '../lib/mystery/protocol'
 
-const URL = process.argv[2] ?? 'ws://127.0.0.1:3000/ws-mystery'
+const URL = process.argv.slice(2).find(a => a.startsWith('ws')) ?? 'ws://127.0.0.1:3000/ws-mystery'
+const VERBOSE = process.argv.includes('--verbose')
 const TIMEOUT_MS = 120_000
 
 type FinaleHint = { actions?: { id: string; label: string; payload: unknown }[] }
@@ -18,7 +19,8 @@ class Bot {
   ws!: WebSocket
   view: SeatView | null = null
   errors: string[] = []
-  private lastKey = ''
+  private inFlight = false
+  private timer: ReturnType<typeof setTimeout> | null = null
   private acted = new Set<string>()
 
   constructor(public name: string) {}
@@ -37,21 +39,34 @@ class Bot {
   }
 
   act(action: Extract<ClientMsg, { type: 'ACT' }>['action']) {
+    if (VERBOSE) console.log(`[${this.name}] act ${JSON.stringify(action).slice(0, 80)}`)
+    this.inFlight = true
     this.send({ type: 'ACT', action })
   }
 
   private onMsg(m: ServerMsg) {
     if (m.type === 'ERROR') {
       this.errors.push(m.message)
+      if (VERBOSE) console.log(`[${this.name}] ERROR ${m.message}`)
+      this.inFlight = false
+      this.schedule()
       return
     }
     if (m.type !== 'VIEW') return
+    if (VERBOSE && this.view?.step.id !== m.view.step.id) console.log(`[${this.name}] → ${m.view.step.id} (${m.view.step.kind})`)
+    if (process.argv.includes('--trace')) console.log(`[${this.name}] VIEW ${m.view.step.id} ready=${m.view.players.P1.ready}/${m.view.players.P2.ready} ap=${m.view.me.ap}`)
     this.view = m.view
-    // 每次视图变化都尝试推进（去抖：同一状态只处理一次）
-    const key = `${m.view.step.index}|${m.view.me.ap}|${m.view.clues.length}|${m.view.players[m.view.seat].ready}|${JSON.stringify(m.view.finale)?.length ?? 0}|${m.view.me.choice?.chosen ?? ''}|${m.view.players.P1.roleId}|${m.view.players.P2.roleId}|${m.view.players.P1.name}|${m.view.players.P2.name}`
-    if (key === this.lastKey) return
-    this.lastKey = key
-    setTimeout(() => this.decide(), 5)
+    this.inFlight = false
+    this.schedule()
+  }
+
+  /** 一次只发一个动作：发出后等服务器回应（VIEW 或 ERROR）再决定下一步 */
+  private schedule() {
+    if (this.timer) return
+    this.timer = setTimeout(() => {
+      this.timer = null
+      if (!this.inFlight) this.decide()
+    }, 60)
   }
 
   private once(id: string, f: () => void) {
@@ -80,7 +95,9 @@ class Bot {
     }
 
     if (k === 'search') {
-      const open = v.spots.filter(s => s.status === 'open' && s.cost <= v.me.ap).sort((a, b) => a.cost - b.cost)
+      // 两个机器人从相反的方向挑搜查点，减少"同时抢同一处"
+      const open = v.spots.filter(s => s.status === 'open' && s.cost <= v.me.ap)
+      if (v.seat === 'P2') open.reverse()
       if (open.length) {
         this.act({ type: 'search', clueId: open[0].clueId })
         return
@@ -98,6 +115,19 @@ class Bot {
         this.once(`pub:${mine[0].id}`, () => this.act({ type: 'publish', clueId: mine[0].id }))
       }
       if (!me.ready) this.act({ type: 'ready', value: true })
+      return
+    }
+
+    if (k === 'auction') {
+      const a = v.auction
+      if (a && !a.myBids && !a.results) {
+        // 甲出价律师与游艇，乙出价头版与重新计票
+        const mine = v.seat === 'P1' ? ['lot_lawyer', 'lot_yacht'] : ['lot_headline', 'lot_recount']
+        const bids = Object.fromEntries(a.lots.map(l => [l.id, mine.includes(l.id) ? l.min + 300 : 0]))
+        this.once(`bid:${stepKey}`, () => this.act({ type: 'bid', bids }))
+        return
+      }
+      if (a?.results && !me.ready) this.act({ type: 'ready', value: true })
       return
     }
 
@@ -149,6 +179,7 @@ async function main() {
   console.log(`   结局：${r.headline}`)
   for (const s of r.scores) console.log(`   ${s.roleName}：${s.total} 分`)
   console.log(`   甲获得线索 ${a.view!.clues.length} 条，乙获得线索 ${b.view!.clues.length} 条`)
+  console.log(`   ${r.endings.map(e => `${e.roleName}：「${e.title}」`).join('；')}`)
   const errs = [...a.errors, ...b.errors].filter(e => !/已经|不能|还不能|行动点/.test(e))
   if (errs.length) console.log('   非预期错误：', errs)
   a.ws.close()

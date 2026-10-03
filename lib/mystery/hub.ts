@@ -32,7 +32,7 @@ const MSG_BURST = 30 // 每个连接每秒最多处理的消息数
 export class MysteryHub {
   private rooms = new Map<string, Room>()
   private wsRoom = new Map<WebSocket, { code: string; seat: Seat }>()
-  private rate = new Map<WebSocket, { windowStart: number; count: number }>()
+  private rate = new Map<WebSocket, { windowStart: number; count: number; warned: boolean }>()
   private sweeper: ReturnType<typeof setInterval>
 
   constructor(private now: () => number = Date.now) {
@@ -44,6 +44,16 @@ export class MysteryHub {
   get roomCount() { return this.rooms.size }
 
   handleMessage(ws: WebSocket, raw: string) {
+    try {
+      this.route(ws, raw)
+    } catch (err) {
+      // 单条消息出错不能拖垮整个房间
+      console.error('[mystery] 处理消息出错', err)
+      this.send(ws, { type: 'ERROR', message: '服务器处理出错，请重试' })
+    }
+  }
+
+  private route(ws: WebSocket, raw: string) {
     if (!this.allow(ws)) return
     let msg: ClientMsg
     try {
@@ -253,11 +263,17 @@ export class MysteryHub {
     const now = this.now()
     const r = this.rate.get(ws)
     if (!r || now - r.windowStart > 1000) {
-      this.rate.set(ws, { windowStart: now, count: 1 })
+      this.rate.set(ws, { windowStart: now, count: 1, warned: false })
       return true
     }
     r.count++
-    return r.count <= MSG_BURST
+    if (r.count <= MSG_BURST) return true
+    // 超限：不静默丢弃，告诉客户端（每个窗口只提示一次）
+    if (!r.warned) {
+      r.warned = true
+      this.send(ws, { type: 'ERROR', message: '操作太频繁，请稍后再试' })
+    }
+    return false
   }
 
   private send(ws: WebSocket, msg: ServerMsg) {

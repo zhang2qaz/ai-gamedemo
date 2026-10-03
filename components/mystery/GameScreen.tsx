@@ -8,10 +8,11 @@ import { ConnectionBadge, Countdown, Money } from './ui'
 import Feed from './Feed'
 import { AccusePanel, CasePanel, ChoicePanel, CluePanel, ResultPanel, ScriptPanel, SearchPanel } from './panels'
 import FinalePanel from './FinalePanel'
+import AuctionPanel from './AuctionPanel'
 
 type Tab = 'stage' | 'script' | 'search' | 'clues' | 'cases' | 'feed'
 
-const READY_KINDS = new Set(['story', 'read', 'search', 'discuss', 'choice'])
+const READY_KINDS = new Set(['story', 'read', 'search', 'discuss', 'choice', 'auction'])
 
 function defaultTab(kind: SeatView['step']['kind']): Tab {
   switch (kind) {
@@ -90,7 +91,7 @@ export default function GameScreen() {
       <main className="flex-1 max-w-6xl w-full mx-auto px-3 py-3 grid lg:grid-cols-[1fr_360px] gap-3">
         <section className="min-w-0 space-y-3">
           {/* 阶段说明 + 准备 */}
-          {READY_KINDS.has(k) && (
+          {READY_KINDS.has(k) && (k !== 'auction' || !!view.auction?.results) && (
             <div className="mx-panel p-3 flex flex-wrap items-center gap-3">
               <div className="flex-1 min-w-[200px] text-[13px] text-white/80 leading-5">{stageHint(view)}</div>
               <div className="flex items-center gap-2">
@@ -140,6 +141,7 @@ export default function GameScreen() {
 function stageLabel(kind: SeatView['step']['kind']) {
   switch (kind) {
     case 'choice': return '抉择'
+    case 'auction': return '拍卖'
     case 'finale': return '终局'
     case 'accuse': return '指认'
     case 'ending': return '结局'
@@ -163,6 +165,7 @@ function stageHint(view: SeatView): string {
     case 'search': return '在「搜证」中消耗行动点搜查地点、问询人物。线索默认只有你可见，可以选择公开或交给对方。'
     case 'discuss': return '自由讨论：交换（或隐瞒）信息，对质疑点。可在「案卷」向 DM 递交推理领取酬金。'
     case 'choice': return '请做出你的秘密抉择。对方看不到你的选择。'
+    case 'auction': return '拍卖结果已揭晓。拍到的道具在「线索」里，终局时可以用。双方点「继续」进入第二幕。'
     default: return ''
   }
 }
@@ -170,6 +173,7 @@ function stageHint(view: SeatView): string {
 function Stage({ view, goto }: { view: SeatView; goto: (t: Tab) => void }) {
   const k = view.step.kind
   if (k === 'choice') return <ChoicePanel view={view} />
+  if (k === 'auction') return <AuctionPanel view={view} />
   if (k === 'finale') return <FinalePanel view={view} />
   if (k === 'accuse') return <AccusePanel view={view} />
   if (k === 'ending') return <ResultPanel view={view} />
