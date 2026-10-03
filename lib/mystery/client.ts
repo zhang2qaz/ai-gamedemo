@@ -207,7 +207,7 @@ export class MysteryClient {
     else this.connect()
   }
 
-  /** 收到对应令牌的 LEFT（含 busy：服务器已记下，会在旧连接断开时执行）：这条放弃已被受理，不再重发 */
+  /** 收到对应令牌的最终结果（LEFT，非 busy）：这条放弃已完成，不再重发 */
   ackAbandon(token: string) {
     this.abandons.delete(token)
   }

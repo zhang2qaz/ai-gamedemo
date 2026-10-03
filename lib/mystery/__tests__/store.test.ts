@@ -174,17 +174,22 @@ test('另一个标签页在玩别的房间时，这边点「放弃这局」不�
   expect(session()).toEqual({ code: 'WXYZ', token: 'other' })
 })
 
-test('座位还挂着旧连接（busy）：服务器接管，不再重发；服务器稍后通知让出时删除令牌', () => {
+test('座位还挂着旧连接（busy）：先不算确认，重连后照样重发；拿到最终结果才删令牌', () => {
   const store = joinedOffline('lobby')
   store.getState().leave()
   last().open()
   last().reply({ type: 'LEFT', code: 'ABCD', vacated: false, busy: true, token: 't' })
   expect(session()).toEqual({ code: 'ABCD', token: 't', paused: true })
-  // 服务器回收旧连接后执行放弃，通知本连接
+  // 本连接在服务器回收旧连接前也断了：重连后重发
+  last().drop()
+  jest.advanceTimersByTime(1000)
+  last().open()
+  expect(last().sent.map(m => m.type)).toEqual(['ABANDON'])
+  // 最终结果：座位已让出
   last().reply({ type: 'LEFT', code: 'ABCD', vacated: true, token: 't' })
   expect(session()).toBeNull()
   last().drop()
-  jest.advanceTimersByTime(1000)
+  jest.advanceTimersByTime(2000)
   last().open()
   expect(last().sent).toEqual([])
 })

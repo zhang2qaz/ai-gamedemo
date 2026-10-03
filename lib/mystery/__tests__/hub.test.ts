@@ -298,3 +298,29 @@ describe('MysteryHub（ABANDON：凭令牌放弃座位）', () => {
     expect(lefts[0]).toEqual(lefts[1])
   })
 })
+
+describe('MysteryHub（暂缓的放弃：时限与取消准备）', () => {
+  test('大厅里暂缓放弃期间先取消准备：对方不能抢先开局', () => {
+    const { a, b, code } = room()
+    send(a, { type: 'ACT', action: { type: 'pickRole', roleId: 'mandy' } })
+    send(b, { type: 'ACT', action: { type: 'pickRole', roleId: 'ethan' } })
+    send(b, { type: 'ACT', action: { type: 'ready', value: true } })
+    const token = last(b, 'WELCOME')!.token
+    const x = sock()
+    send(x, { type: 'ABANDON', code, token })
+    expect(last(a, 'VIEW')!.view.players.P2.ready).toBe(false)
+    send(a, { type: 'ACT', action: { type: 'ready', value: true } })
+    expect(last(a, 'VIEW')!.view.step.index).toBe(-1)
+  })
+
+  test('暂缓的放弃超过 90 秒作废：那其实是另一个真实在玩的连接，之后它短暂断线也不会被替它离开', () => {
+    const { a, b, code } = room()
+    const token = last(b, 'WELCOME')!.token
+    const x = sock()
+    send(x, { type: 'ABANDON', code, token })
+    tick(91_000)
+    hub.handleClose(b.ws)
+    expect(last(a, 'VIEW')!.view.players.P2.name).toBe('乙')
+    expect(x.msgs.filter(m => m.type === 'LEFT')).toHaveLength(1)
+  })
+})

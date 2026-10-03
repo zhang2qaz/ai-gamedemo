@@ -70,9 +70,10 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
       }
       case 'LEFT': {
         // 以服务器为准：座位让出了就删掉本地令牌；座位还保留（比如离开时恰好开局了）就留着，入口页可以回来
-        if (msg.token) client?.ackAbandon(msg.token)
-        // 座位还挂着一条连接：服务器已记下这次放弃，等那条连接断开时执行并再通知一次。现在什么都不动
+        // 座位还挂着一条连接：服务器已记下这次放弃，等那条连接断开时执行并通知。
+        // 现在什么都不动，也不算确认——万一本连接先断了收不到通知，重连后还会重发（服务器端幂等）
         if (msg.busy) return
+        if (msg.token) client?.ackAbandon(msg.token)
         // 只处理属于这枚令牌的会话（同一房间号可能先后对应过不同的令牌）
         const same = (s: { code: string; token: string } | null | undefined) =>
           !!s && s.code === msg.code && (!msg.token || s.token === msg.token)

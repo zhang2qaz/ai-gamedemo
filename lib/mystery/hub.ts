@@ -7,7 +7,7 @@ import type { WebSocket } from 'ws'
 import { randomUUID } from 'crypto'
 import type { Seat, GameState } from '@/engine/mystery/types'
 import { SEATS } from '@/engine/mystery/types'
-import { createGame, reduce, tick, nextDeadline, viewFor, joinSeat, setPresence, vacateSeat, abandonSeat } from '@/engine/mystery/engine'
+import { createGame, reduce, tick, nextDeadline, viewFor, joinSeat, setPresence, vacateSeat, abandonSeat, unready } from '@/engine/mystery/engine'
 import type { ClientMsg, ServerMsg } from './protocol'
 import { makeRoomCode, normalizeRoomCode, sanitizeName } from './protocol'
 
@@ -21,8 +21,8 @@ type SeatConn = {
   lastView: string | null
   /** 已彻底放弃（只告诉对方一次） */
   abandoned?: boolean
-  /** 座位还挂着连接时收到的放弃：等这条连接断开再执行（凭令牌回到座位则作废） */
-  pendingAbandon?: { final: boolean; notify: WebSocket }
+  /** 座位还挂着连接时收到的放弃：等这条连接断开再执行（凭令牌回到座位、或超过时限则作废） */
+  pendingAbandon?: { final: boolean; notify: WebSocket; at: number }
 }
 
 type Room = {
@@ -54,6 +54,11 @@ const MSG_BURST = 30 // 每个连接每秒最多处理的消息数
 const CREATE_PER_MIN = 5 // 每个连接每分钟最多建房次数
 const JOIN_FAILS_PER_MIN = 10 // 每个连接每分钟最多加入失败次数（防止扫房间号）
 const TICK_MAX_RETRIES = 5
+/**
+ * 暂缓的放弃最多等这么久。真正的"半开旧连接"会在两个心跳周期（≤60 秒）内被回收；
+ * 超过这个时间还在线，说明是另一个真实在玩的标签页，不应该再替它离开
+ */
+const PENDING_ABANDON_MS = 90_000
 /** 同一 IP（换连接也算）每分钟的上限：家庭网络多人共用一个出口，所以比单连接宽松 */
 const CREATE_PER_IP_MIN = 20
 const JOIN_FAILS_PER_IP_MIN = 30
@@ -179,7 +184,7 @@ export class MysteryHub {
       const p = conn.pendingAbandon
       if (p) {
         conn.pendingAbandon = undefined
-        this.performAbandon(room, ref.seat, p.final, p.notify)
+        if (this.now() - p.at <= PENDING_ABANDON_MS) this.performAbandon(room, ref.seat, p.final, p.notify)
       }
     }
   }
@@ -238,8 +243,16 @@ export class MysteryHub {
     if (conn.ws) {
       // 座位还挂着一条连接：可能是别的标签页正在玩，也可能是服务器还没察觉断开的旧连接（心跳要 30–60 秒）。
       // 不顶掉它；记下这次放弃，等这条连接断开时执行（期间有人凭令牌回到座位就作废）
-      conn.pendingAbandon = { final: final || !!conn.pendingAbandon?.final, notify: ws }
+      conn.pendingAbandon = { final: final || !!conn.pendingAbandon?.final, notify: ws, at: this.now() }
       this.send(ws, { type: 'LEFT', code, vacated: false, busy: true, token: tok })
+      // 大厅里：主人已经要走了，先取消准备，免得对方抢在旧连接回收前一键开局
+      if (room.state.stepIndex === -1) {
+        const next = unready(room.state, seat)
+        if (next !== room.state) {
+          room.state = next
+          this.afterChange(room)
+        }
+      }
       return
     }
     this.performAbandon(room, seat, final, ws)

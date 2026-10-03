@@ -13,6 +13,7 @@ export const joinSeat = engine.joinSeat
 export const setPresence = engine.setPresence
 export const vacateSeat = engine.vacateSeat
 export const abandonSeat = engine.abandonSeat
+export const unready = engine.unready
 export const reduce = engine.reduce
 export const tick = engine.tick
 export const nextDeadline = engine.nextDeadline

@@ -400,6 +400,14 @@ export function makeEngine(rt: ScenarioRuntime) {
     return state
   }
 
+  /** 大厅里取消某个座位的准备（例如它的主人已经要离开、只是服务器还挂着旧连接） */
+  function unready(prev: GameState, seat: Seat): GameState {
+    if (prev.stepIndex !== -1 || !prev.seats[seat].ready) return prev
+    const state = structuredClone(prev)
+    state.seats[seat].ready = false
+    return state
+  }
+
   /** 开局后彻底放弃（入口页「放弃这局」）：如实告诉对方 */
   function abandonSeat(prev: GameState, seat: Seat, now: number): GameState {
     if (prev.stepIndex === -1 || prev.ended) return prev
@@ -907,6 +915,7 @@ export function makeEngine(rt: ScenarioRuntime) {
     setPresence,
     vacateSeat,
     abandonSeat,
+    unready,
     reduce,
     tick,
     nextDeadline,
