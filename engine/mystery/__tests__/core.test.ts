@@ -100,7 +100,9 @@ describe('剧本杀引擎（通用流程）', () => {
   test('公开与交出线索', () => {
     let s = toSearch()
     s = ok(s, 'P1', search(s, 'key'))
-    expect(act(s, 'P2', { type: 'publish', clueId: 'key' }).error).toBe('只能公开自己持有的线索')
+    // P2 看不见这把钥匙：报错和"根本没人拿到"一样，探测不出对方私下拿到了什么
+    expect(act(s, 'P2', { type: 'publish', clueId: 'key' }).error).toBe('没有这条线索')
+    expect(act(s, 'P2', { type: 'publish', clueId: 'diary' }).error).toBe('没有这条线索')
     s = ok(s, 'P1', { type: 'give', clueId: 'key' })
     expect(E.viewFor(s, 'P2', now).clues.find(c => c.id === 'key')?.holder).toBe('me')
     expect(E.viewFor(s, 'P1', now).clues.find(c => c.id === 'key')?.holder).toBe('other')

@@ -507,10 +507,12 @@ export function makeEngine(rt: ScenarioRuntime) {
       }
 
       case 'publish': {
-        const c = state.clues[String(action.clueId)]
-        const def = clueById.get(String(action.clueId))
-        // 先判归属、再判销毁：对方手里的牌烧没烧，错误信息不能有区别
-        if (!c || !def) return '没有这条线索'
+        const id = String(action.clueId)
+        const c = state.clues[id]
+        const def = clueById.get(id)
+        // 先判"你看不看得见"，再判归属、最后判销毁：自己看不见的线索，不论存在与否、在谁手里，都是同一句话；
+        // 对方手里的牌烧没烧，也是同一句话（否则错误信息就能探测对方私下拿到 / 烧掉了什么）
+        if (!c || !def || !canSee(state, seat, id)) return '没有这条线索'
         if (c.owner !== seat) return '只能公开自己持有的线索'
         if (c.destroyed) return '没有这条线索'
         if (c.public) return '已经公开过了'
@@ -522,9 +524,10 @@ export function makeEngine(rt: ScenarioRuntime) {
       }
 
       case 'give': {
-        const c = state.clues[String(action.clueId)]
-        const def = clueById.get(String(action.clueId))
-        if (!c || !def) return '没有这条线索'
+        const id = String(action.clueId)
+        const c = state.clues[id]
+        const def = clueById.get(id)
+        if (!c || !def || !canSee(state, seat, id)) return '没有这条线索'
         if (c.owner !== seat) return '只能交出自己持有的线索'
         if (c.destroyed) return '没有这条线索'
         if (state.stepIndex < 0 || state.ended) return '现在不能交出线索'

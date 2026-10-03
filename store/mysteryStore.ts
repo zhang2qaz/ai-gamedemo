@@ -182,15 +182,18 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
       // 先把令牌留着（标记为暂离），等服务器的 LEFT 确认：大厅里座位让出了才删。
       // 不能只看本地画面——离开的瞬间对方可能刚好点了开局。结局后离开就没必要保留了
       const ended = !!view?.result
-      if (!ended && saved && saved.code === code) {
+      const inLobby = !view || view.step.kind === 'lobby'
+      const sent = !!client?.send({ type: 'LEAVE' })
+      // 大厅里离开、但消息没发出去（离线）：不会有 LEFT 来确认，按原来的逻辑直接删令牌——
+      // 服务器那边座位掉线超过 1 分钟就能被别人补上
+      if (!ended && saved && saved.code === code && !(inLobby && !sent)) {
         const p = { code: saved.code, token: saved.token, paused: true }
         saveSession(p)
-        set({ paused: view && view.step.kind !== 'lobby' ? p : null })
+        set({ paused: inLobby ? null : p })
       } else {
         saveSession(null)
         set({ paused: null })
       }
-      client?.send({ type: 'LEAVE' })
       pending = null
       if (client) client.resumeWith = null
       set({ joined: false, resuming: false, view: null, code: null, seat: null })

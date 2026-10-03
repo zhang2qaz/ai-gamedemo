@@ -19,6 +19,8 @@ npm run start:mp          # 先 next build，再用 tsx server.ts 启动（默�
 
 部署到 Railway 时，`railway.json` 已经是 `npm run build` + `npm start`（即 `tsx server.ts`），不需要额外配置。
 
+建房、加入失败按来源 IP 限流。转发头（`X-Forwarded-For`）客户端可以伪造，所以默认只认 TCP 对端地址；Railway 上会自动信任它的代理。如果你部署在别的反向代理（Nginx 等）后面，请设置环境变量 `TRUST_PROXY=1`，否则所有玩家会被当成同一个 IP。
+
 ## 电脑 DM 做什么
 
 - **推进流程**：每个环节都有倒计时；两人都点「继续 / 读完了 / 结束搜证 / 讨论完毕」就提前进入下一环节，时间到了也会自动推进。

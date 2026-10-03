@@ -542,3 +542,25 @@ describe('第二轮审查修复（回归测试）', () => {
     for (const e of r.endings) expect(e.text).not.toMatch(/没有一份证据指向他/)
   })
 })
+
+describe('第三轮审查修复（回归测试）', () => {
+  test('探测不出对方私下拿到了什么：没人拿到 / 被对方私下拿到的线索，公开与交出的报错一样', () => {
+    let s = until(start(), 'search1')
+    const before = { pub: err(s, 'P1', { type: 'publish', clueId: 'door_log' }), give: err(s, 'P1', { type: 'give', clueId: 'door_log' }) }
+    s = ok(s, 'P2', search(s, 'door_log'))
+    s = ok(s, 'P2', { type: 'ask', npcId: 'hector', questionId: 'h_tray' })
+    for (const id of ['door_log', 'hector_tray']) {
+      expect(err(s, 'P1', { type: 'publish', clueId: id })).toBe(before.pub)
+      expect(err(s, 'P1', { type: 'give', clueId: id })).toBe(before.give)
+    }
+  })
+
+  test('日志按受众分桶裁剪：公共记录刷满之后，对方的私信也不会改变你看到的记录', () => {
+    let s = until(start(), 'search1')
+    // 把公共记录刷到上限
+    for (let i = 0; i < 650; i++) s = E.setPresence(E.setPresence(s, 'P1', false, now), 'P1', true, now)
+    const before = JSON.stringify(E.viewFor(s, 'P1', now).log)
+    s = ok(s, 'P2', { type: 'caseFile', caseId: 'cf_rose', answers: { cause: 'heart', vehicle: 'dinner', claim: 'possible' } })
+    expect(JSON.stringify(E.viewFor(s, 'P1', now).log)).toBe(before)
+  })
+})

@@ -19,6 +19,7 @@ import { networkInterfaces } from 'os'
 import { RoomManager } from './lib/multiplayer/roomManager'
 import { MysteryHub } from './lib/mystery/hub'
 import { MYSTERY_WS_PATH } from './lib/mystery/protocol'
+import { clientIp, trustProxyFromEnv } from './lib/mystery/clientIp'
 
 const dev = process.env.DEV_MODE === '1'  // 默认 production；DEV_MODE=1 启用 HMR + 详细错误
 const listenHost = '0.0.0.0'
@@ -73,11 +74,10 @@ app.prepare().then(() => {
   const mysteryHub = new MysteryHub()
   // 心跳：30 秒没回 pong 的连接视为已断（手机休眠、切网后的"半开"连接），及时让对方看到离线
   const mysteryAlive = new WeakMap<object, boolean>()
+  // 来源 IP（建房 / 加入失败按 IP 限流）：只有在受信反向代理后面才读转发头（见 lib/mystery/clientIp.ts）
+  const trustProxy = trustProxyFromEnv()
   mysteryWss.on('connection', (ws, req) => {
-    // 来源 IP（建房 / 加入失败按 IP 限流）。部署在反向代理（如 Railway）后面时取 X-Forwarded-For 的第一跳
-    const fwd = req.headers['x-forwarded-for']
-    const ip = (Array.isArray(fwd) ? fwd[0] : fwd)?.split(',')[0].trim() || req.socket.remoteAddress || 'unknown'
-    mysteryHub.attach(ws, ip)
+    mysteryHub.attach(ws, clientIp(req, trustProxy))
     mysteryAlive.set(ws, true)
     ws.on('pong', () => mysteryAlive.set(ws, true))
     ws.on('message', (data) => {
