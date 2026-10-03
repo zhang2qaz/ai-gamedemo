@@ -58,7 +58,7 @@ const TICK_MAX_RETRIES = 5
  * 暂缓的放弃最多等这么久。真正的"半开旧连接"会在两个心跳周期（≤60 秒）内被回收；
  * 超过这个时间还在线，说明是另一个真实在玩的标签页，不应该再替它离开
  */
-const PENDING_ABANDON_MS = 90_000
+export const PENDING_ABANDON_MS = 90_000
 /** 同一 IP（换连接也算）每分钟的上限：家庭网络多人共用一个出口，所以比单连接宽松 */
 const CREATE_PER_IP_MIN = 20
 const JOIN_FAILS_PER_IP_MIN = 30
@@ -185,6 +185,7 @@ export class MysteryHub {
       if (p) {
         conn.pendingAbandon = undefined
         if (this.now() - p.at <= PENDING_ABANDON_MS) this.performAbandon(room, ref.seat, p.final, p.notify)
+        else this.send(p.notify, { type: 'LEFT', code: room.code, vacated: false, kept: true, token: conn.token })
       }
     }
   }
@@ -243,10 +244,19 @@ export class MysteryHub {
     if (conn.ws) {
       // 座位还挂着一条连接：可能是别的标签页正在玩，也可能是服务器还没察觉断开的旧连接（心跳要 30–60 秒）。
       // 不顶掉它；记下这次放弃，等这条连接断开时执行（期间有人凭令牌回到座位就作废）
-      conn.pendingAbandon = { final: final || !!conn.pendingAbandon?.final, notify: ws, at: this.now() }
+      const prev = conn.pendingAbandon
+      const now = this.now()
+      if (prev && now - prev.at > PENDING_ABANDON_MS) {
+        // 已经等过 90 秒那条连接还在：它是另一个真实在玩的标签页。作废，并给出最终结果
+        conn.pendingAbandon = undefined
+        this.send(ws, { type: 'LEFT', code, vacated: false, kept: true, token: tok })
+        return
+      }
+      // 时限从第一次放弃算起，重发不会重新计时
+      conn.pendingAbandon = { final: final || !!prev?.final, notify: ws, at: prev?.at ?? now }
       this.send(ws, { type: 'LEFT', code, vacated: false, busy: true, token: tok })
-      // 大厅里：主人已经要走了，先取消准备，免得对方抢在旧连接回收前一键开局
-      if (room.state.stepIndex === -1) {
+      // 大厅里：主人已经要走了，先取消准备（只在第一次），免得对方抢在旧连接回收前一键开局
+      if (!prev && room.state.stepIndex === -1) {
         const next = unready(room.state, seat)
         if (next !== room.state) {
           room.state = next

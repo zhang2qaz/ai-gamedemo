@@ -19,6 +19,8 @@ const PONG_TIMEOUT_MS = 10_000
 /** 切回页面 / 网络恢复时，超过这么久没消息就先探测一下 */
 const PROBE_AFTER_MS = 15_000
 const PROBE_TIMEOUT_MS = 5_000
+/** 放弃请求从第一次被回"座位还挂着连接"起，最多再重发这么久（与服务器的暂缓时限一致） */
+const ABANDON_BUSY_MAX_MS = 90_000
 
 /** paused：玩家主动离开了一局进行中的游戏；不自动恢复，但入口页会提供"回到房间" */
 export type SavedSession = { code: string; token: string; paused?: boolean }
@@ -64,7 +66,7 @@ export class MysteryClient {
    * 待确认的"凭令牌放弃座位"（按令牌记）。每次连上都会（重新）发送，直到 store 收到对应的 LEFT 调用 ackAbandon。
    * 服务器端的 ABANDON 是幂等的，重发没有副作用。
    */
-  private abandons = new Map<string, { code: string; token: string; final: boolean }>()
+  private abandons = new Map<string, { code: string; token: string; final: boolean; busySince?: number }>()
 
   connect() {
     this.closedByUser = false
@@ -88,7 +90,12 @@ export class MysteryClient {
           this.abandons.delete(token)
           continue
         }
-        this.rawSend({ type: 'ABANDON', ...a })
+        // 被"座位还挂着连接"挡了超过时限：那是另一个真实在玩的连接，不再替它离开
+        if (a.busySince && Date.now() - a.busySince > ABANDON_BUSY_MAX_MS) {
+          this.abandons.delete(token)
+          continue
+        }
+        this.rawSend({ type: 'ABANDON', code: a.code, token: a.token, final: a.final })
       }
       if (this.resumeWith) this.rawSend({ type: 'RESUME', code: this.resumeWith.code, token: this.resumeWith.token })
       if (this.pendingIntent) {
@@ -201,10 +208,17 @@ export class MysteryClient {
    * 不论是否已发出，都保留到收到确认（ackAbandon）为止，断线重连后会重发。
    */
   abandon(s: SavedSession, final: boolean) {
-    const a = { code: s.code, token: s.token, final }
+    const prev = this.abandons.get(s.token)
+    const a = { code: s.code, token: s.token, final: final || !!prev?.final, busySince: prev?.busySince }
     this.abandons.set(s.token, a)
-    if (this.ws?.readyState === WebSocket.OPEN) this.rawSend({ type: 'ABANDON', ...a })
+    if (this.ws?.readyState === WebSocket.OPEN) this.rawSend({ type: 'ABANDON', code: a.code, token: a.token, final: a.final })
     else this.connect()
+  }
+
+  /** 服务器回"座位还挂着连接"：记下第一次的时间（超过时限就不再重发） */
+  markAbandonBusy(token: string) {
+    const a = this.abandons.get(token)
+    if (a && !a.busySince) a.busySince = Date.now()
   }
 
   /** 收到对应令牌的最终结果（LEFT，非 busy）：这条放弃已完成，不再重发 */

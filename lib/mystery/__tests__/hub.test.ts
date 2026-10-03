@@ -321,6 +321,33 @@ describe('MysteryHub（暂缓的放弃：时限与取消准备）', () => {
     tick(91_000)
     hub.handleClose(b.ws)
     expect(last(a, 'VIEW')!.view.players.P2.name).toBe('乙')
-    expect(x.msgs.filter(m => m.type === 'LEFT')).toHaveLength(1)
+    // 发起方收到最终结果：座位保留（暂缓的放弃已作废）
+    expect(x.msgs.filter(m => m.type === 'LEFT').map(m => (m as { kept?: boolean }).kept ?? false)).toEqual([false, true])
+  })
+})
+
+describe('MysteryHub（暂缓放弃：时限从第一次算起）', () => {
+  test('重发不重新计时、不反复取消准备；超时后的重发得到最终的"座位保留"', () => {
+    const { a, b, code } = room()
+    send(a, { type: 'ACT', action: { type: 'pickRole', roleId: 'mandy' } })
+    send(b, { type: 'ACT', action: { type: 'pickRole', roleId: 'ethan' } })
+    const token = last(b, 'WELCOME')!.token
+    const x1 = sock()
+    send(x1, { type: 'ABANDON', code, token })
+    expect(last(a, 'VIEW')!.view.players.P2.ready).toBe(false)
+    // 乙（真实在玩）重新准备
+    send(b, { type: 'ACT', action: { type: 'ready', value: true } })
+    tick(60_000)
+    const x2 = sock()
+    send(x2, { type: 'ABANDON', code, token }) // 重发：仍 busy，但不再取消准备
+    expect(last(x2, 'LEFT')).toMatchObject({ busy: true })
+    expect(last(a, 'VIEW')!.view.players.P2.ready).toBe(true)
+    tick(31_000) // 距第一次已 91 秒
+    const x3 = sock()
+    send(x3, { type: 'ABANDON', code, token })
+    expect(last(x3, 'LEFT')).toMatchObject({ vacated: false, kept: true, token })
+    // 之后乙短暂断线：不会被替它离开
+    hub.handleClose(b.ws)
+    expect(last(a, 'VIEW')!.view.players.P2.name).toBe('乙')
   })
 })

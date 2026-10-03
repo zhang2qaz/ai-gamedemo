@@ -213,3 +213,34 @@ test('排队的放弃在发送前复查：别的标签页已经凭这枚令牌�
   expect(last().sent.map(m => m.type)).not.toContain('ABANDON')
   void store
 })
+
+test('一直被"座位还挂着连接"挡着超过 90 秒：不再重发（那是另一个真实在玩的标签页）', () => {
+  const store = joinedOffline('read')
+  store.getState().leave()
+  last().open()
+  last().reply({ type: 'LEFT', code: 'ABCD', vacated: false, busy: true, token: 't' })
+  last().drop()
+  jest.advanceTimersByTime(1000)
+  last().open()
+  expect(last().sent.map(m => m.type)).toEqual(['ABANDON'])
+  last().reply({ type: 'LEFT', code: 'ABCD', vacated: false, busy: true, token: 't' })
+  jest.setSystemTime(Date.now() + 91_000)
+  last().drop()
+  jest.advanceTimersByTime(1000)
+  last().open()
+  expect(last().sent).toEqual([])
+  void store
+})
+
+test('服务器回"座位保留"（暂缓的放弃已作废）：确认，不再重发，本地会话不动', () => {
+  const store = joinedOffline('read')
+  store.getState().leave()
+  last().open()
+  last().reply({ type: 'LEFT', code: 'ABCD', vacated: false, kept: true, token: 't' })
+  expect(session()).toEqual({ code: 'ABCD', token: 't', paused: true })
+  last().drop()
+  jest.advanceTimersByTime(1000)
+  last().open()
+  expect(last().sent).toEqual([])
+  void store
+})
