@@ -204,6 +204,16 @@ export class MysteryClient {
     this.connect()
   }
 
+  /** 只排队、不主动连接：下次连上时补发"凭令牌离开"（用于断线时重新排队，避免和重连退避打架） */
+  queueLeave(s: SavedSession) {
+    this.leaveOnReconnect = { code: s.code, token: s.token }
+  }
+
+  /** 取消排队中的"凭令牌离开"（玩家改主意要回到 / 加入房间时） */
+  cancelLeave() {
+    this.leaveOnReconnect = null
+  }
+
   /** 取消尚未发出的建房 / 加入请求（改为恢复旧局时用，避免连上后两个请求先后执行） */
   cancelIntent() {
     this.pendingIntent = null

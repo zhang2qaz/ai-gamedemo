@@ -94,7 +94,9 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
           return
         }
         if (msg.fatal && leaving && !get().joined) {
-          // 凭令牌离开时房间已失效 / 令牌已作废：本来就要放弃，不用提示
+          // 凭令牌离开时房间已失效 / 令牌已作废：本来就要放弃，不用提示；但本地令牌也要删掉
+          if (loadSession()?.code === leaving) saveSession(null)
+          if (get().paused?.code === leaving) set({ paused: null })
           leaving = null
           return
         }
@@ -114,14 +116,29 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     if (!client) {
       client = new MysteryClient()
       client.onMessage(onMessage)
-      client.onStatus(online => set({ online }))
+      client.onStatus(online => {
+        set({ online })
+        // 凭令牌离开的请求发出后、还没等到确认就断线了：下次连上再补发一次（离开是幂等的）
+        if (!online && leaving && client) {
+          const s = loadSession()
+          if (s && s.code === leaving && s.paused) client.queueLeave(s)
+          else leaving = null
+        }
+      })
     }
     client.connect()
     return client
   }
 
+  /** 玩家改主意（回到房间 / 加入 / 建房）：不再离开那个房间 */
+  function stopLeaving() {
+    leaving = null
+    client?.cancelLeave()
+  }
+
   function startResume(saved: SavedSession) {
     const c = ensureClient()
+    stopLeaving()
     // 离线时先点过「创建 / 加入」又改成恢复旧局：丢掉那个还没发出的请求
     c.cancelIntent()
     c.resumeWith = { code: saved.code, token: saved.token }
@@ -156,6 +173,7 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
 
     create: (name) => {
       const c = ensureClient()
+      stopLeaving()
       c.resumeWith = null
       pending = 'CREATE'
       c.send({ type: 'CREATE', name })
@@ -163,6 +181,7 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
 
     join: (code, name) => {
       const c = ensureClient()
+      stopLeaving()
       c.resumeWith = null
       pending = 'JOIN'
       c.send({ type: 'JOIN', code, name })
@@ -177,8 +196,11 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
 
     forget: () => {
       const p = get().paused
-      saveSession(null)
       set({ paused: null })
+      // 别的标签页已经用这枚令牌回到了这局（本地会话不再是"暂离"）：不能去顶掉它，也不能删共享的令牌
+      const cur = loadSession()
+      if (p && cur && cur.code === p.code && !cur.paused) return
+      saveSession(null)
       // 通知服务器：大厅里让出座位，开局后标记为暂离（否则座位一直占着）
       if (p) {
         leaving = p.code
