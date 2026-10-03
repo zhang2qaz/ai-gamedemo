@@ -7,6 +7,7 @@ import type { MysteryAction, Seat, SeatView } from '@/engine/mystery/types'
 import { MysteryClient, loadSession, saveSession } from '@/lib/mystery/client'
 import type { SavedSession } from '@/lib/mystery/client'
 import type { ServerMsg } from '@/lib/mystery/protocol'
+import { normalizeRoomCode } from '@/lib/mystery/protocol'
 
 type Toast = { id: number; text: string; tone: 'error' | 'info' }
 
@@ -19,6 +20,8 @@ type MysteryStore = {
   view: SeatView | null
   /** 主动离开、尚未结束的一局（入口页提供"回到房间"） */
   paused: SavedSession | null
+  /** paused 那一局此刻正在另一个窗口里进行（本页被顶下线）：入口页提供"在此窗口继续" */
+  pausedElsewhere: boolean
   /** 本地时钟与服务器时钟的差（server - local），用于倒计时 */
   clockSkew: number
   toasts: Toast[]
@@ -106,10 +109,15 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
         }
         if (msg.fatal) {
           pending = null
-          // 被别的窗口顶下线：会话仍然有效（属于新窗口），不能删
-          if (msg.reason !== 'superseded') saveSession(null)
           if (client) client.resumeWith = null
           set({ joined: false, resuming: false, view: null, code: null, seat: null })
+          if (msg.reason === 'superseded') {
+            // 被别的窗口顶下线：会话仍然有效（属于新窗口），不能删；入口页给一个"在此窗口继续"
+            const s = loadSession()
+            if (s) set({ paused: { code: s.code, token: s.token }, pausedElsewhere: true })
+          } else {
+            saveSession(null)
+          }
         }
         pushToast(msg.message, 'error')
         break
@@ -127,6 +135,17 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
   }
 
 
+  /** 暂离着一局时去开新局 / 加入别的房间：等同于点了「放弃这局」，并如实告诉搭档 */
+  function abandonPaused() {
+    const p = get().paused
+    if (!p || get().pausedElsewhere) return
+    set({ paused: null })
+    const cur = loadSession()
+    // 别的标签页已经回到了这局：不归这里管
+    if (cur && cur.token === p.token && !cur.paused) return
+    ensureClient().abandon(p, true)
+  }
+
   function startResume(saved: SavedSession) {
     const c = ensureClient()
     // 改主意回到这个座位：撤回尚未确认的放弃
@@ -135,7 +154,7 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     c.cancelIntent()
     c.resumeWith = { code: saved.code, token: saved.token }
     pending = 'RESUME'
-    set({ resuming: true, paused: null })
+    set({ resuming: true, paused: null, pausedElsewhere: false })
     // 已连上时 onopen 不会再触发，需主动发送；否则由 onopen 自动发送
     if (c.isOpen) c.send({ type: 'RESUME', code: saved.code, token: saved.token })
     setTimeout(() => { if (!get().joined) set({ resuming: false }) }, 4000)
@@ -149,6 +168,7 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     seat: null,
     view: null,
     paused: null,
+    pausedElsewhere: false,
     clockSkew: 0,
     toasts: [],
 
@@ -165,13 +185,21 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
 
     create: (name) => {
       const c = ensureClient()
+      abandonPaused()
       c.resumeWith = null
       pending = 'CREATE'
       c.send({ type: 'CREATE', name })
     },
 
     join: (code, name) => {
+      // 要加入的正是自己暂离的那一局：直接回到原座位（JOIN 只会得到"房间已满"）
+      const p = get().paused
+      if (p && normalizeRoomCode(code) === p.code) {
+        get().resume()
+        return
+      }
       const c = ensureClient()
+      abandonPaused()
       c.resumeWith = null
       pending = 'JOIN'
       c.send({ type: 'JOIN', code, name })
@@ -186,8 +214,10 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
 
     forget: () => {
       const p = get().paused
-      set({ paused: null })
-      if (!p) return
+      const elsewhere = get().pausedElsewhere
+      set({ paused: null, pausedElsewhere: false })
+      // 那一局正在另一个窗口里进行：放弃不归这里管
+      if (!p || elsewhere) return
       const cur = loadSession()
       // 别的标签页已经用这枚令牌回到了这局（共享会话不再是"暂离"）：什么都不做
       if (cur && cur.token === p.token && !cur.paused) return
@@ -210,14 +240,15 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
       // 不能只看本地画面——离开的瞬间对方可能刚好点了开局。结局后离开就没必要保留了
       const ended = !!view?.result
       const inLobby = !view || view.step.kind === 'lobby'
-      const sent = !!client?.send({ type: 'LEAVE' })
+      client?.send({ type: 'LEAVE' })
       if (!ended && saved && saved.code === code) {
         // 先把令牌留着（暂离），等服务器的 LEAVE 确认（LEFT）再决定删不删
         const p = { code: saved.code, token: saved.token, paused: true }
         saveSession(p)
-        set({ paused: inLobby ? null : p })
-        // 离线没发出去：凭令牌放弃（连上后发送，直到服务器确认）
-        if (!sent) ensureClient().abandon(p, false)
+        set({ paused: inLobby ? null : p, pausedElsewhere: false })
+        // 同时凭令牌登记一次放弃，直到服务器确认：LEAVE 可能没发出（离线），也可能写进了半开的死连接
+        // （send 返回了 true 却没送达）。服务器端幂等，LEAVE 已生效时它只会再确认一次
+        ensureClient().abandon(p, false)
       } else {
         saveSession(null)
         set({ paused: null })

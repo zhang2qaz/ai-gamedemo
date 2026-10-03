@@ -133,7 +133,7 @@ export class MysteryHub {
         this.leave(ws)
         return
       case 'ABANDON':
-        this.abandon(ws, msg.code, msg.token, !!msg.final)
+        this.abandon(ws, msg.code, msg.token, !!msg.final, !!msg.check)
         return
       case 'ACT': {
         const ref = this.wsRoom.get(ws)
@@ -226,11 +226,18 @@ export class MysteryHub {
    * 凭令牌放弃一个座位（这个座位不在本连接上）。不绑定连接、不发 WELCOME、不改在线状态，
    * 所以不会顶掉正在用这个座位的另一个标签页；回复与房间是否存在无关（不能拿来探测房间号）。
    */
-  private abandon(ws: WebSocket, rawCode: unknown, token: unknown, final: boolean) {
+  private abandon(ws: WebSocket, rawCode: unknown, token: unknown, final: boolean, check = false) {
     const code = typeof rawCode === 'string' ? normalizeRoomCode(rawCode) : ''
     const tok = typeof token === 'string' ? token : ''
     const room = code ? this.rooms.get(code) : undefined
     const seat = room && tok ? SEATS.find(s => room.seats[s]?.token === tok) : undefined
+    if (check) {
+      // 只查询：座位还在就是"保留"，否则"已不属于你"。没有任何副作用
+      this.send(ws, room && seat
+        ? { type: 'LEFT', code, vacated: false, kept: true, token: tok }
+        : { type: 'LEFT', code, vacated: true, token: tok })
+      return
+    }
     if (!room || !seat) {
       // 房间不在了 / 令牌已失效：你已经不持有座位
       this.send(ws, { type: 'LEFT', code, vacated: true, token: tok })
@@ -380,7 +387,7 @@ export class MysteryHub {
     }
     if (!seat) {
       fail()
-      this.send(ws, { type: 'ERROR', message: '房间已满（本剧本限 2 人）。若你是掉线的玩家，请用原设备重新打开本页，会自动恢复。' })
+      this.send(ws, { type: 'ERROR', message: '房间已满（本剧本限 2 人）。若你是这局的玩家：在原设备上打开本页，点「回到房间」。' })
       return
     }
     this.leave(ws)

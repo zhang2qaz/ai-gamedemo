@@ -90,12 +90,10 @@ export class MysteryClient {
           this.abandons.delete(token)
           continue
         }
-        // 被"座位还挂着连接"挡了超过时限：那是另一个真实在玩的连接，不再替它离开
-        if (a.busySince && Date.now() - a.busySince > ABANDON_BUSY_MAX_MS) {
-          this.abandons.delete(token)
-          continue
-        }
-        this.rawSend({ type: 'ABANDON', code: a.code, token: a.token, final: a.final })
+        // 被"座位还挂着连接"挡了超过时限：不再真的放弃（那可能是另一个真实在玩的连接），
+        // 只查询一下最终结果——服务器也可能早已执行了放弃，只是结果发给了已经断掉的连接
+        const check = !!a.busySince && Date.now() - a.busySince > ABANDON_BUSY_MAX_MS
+        this.rawSend({ type: 'ABANDON', code: a.code, token: a.token, final: a.final, ...(check ? { check: true } : {}) })
       }
       if (this.resumeWith) this.rawSend({ type: 'RESUME', code: this.resumeWith.code, token: this.resumeWith.token })
       if (this.pendingIntent) {

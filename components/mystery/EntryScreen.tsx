@@ -13,6 +13,7 @@ export default function EntryScreen() {
   const join = useMysteryStore(s => s.join)
   const resuming = useMysteryStore(s => s.resuming)
   const paused = useMysteryStore(s => s.paused)
+  const pausedElsewhere = useMysteryStore(s => s.pausedElsewhere)
   const resume = useMysteryStore(s => s.resume)
   const forget = useMysteryStore(s => s.forget)
   // 本组件只在客户端挂载后渲染（见 MysteryApp），可直接读取 window
@@ -67,13 +68,21 @@ export default function EntryScreen() {
         </div>
 
         {paused && !resuming && (
-          <div className="mx-panel p-4 space-y-3 ring-1 ring-[var(--mx-gold)]/40">
-            <div className="text-sm text-white/85">你有一局还没结束的游戏（房间 <b className="font-mono text-[var(--mx-gold)]">{paused.code}</b>）。</div>
-            <div className="grid grid-cols-2 gap-3">
-              <button className="mx-btn mx-btn-ghost" onClick={forget}>放弃这局</button>
-              <button className="mx-btn mx-btn-gold" onClick={resume}>回到房间</button>
+          pausedElsewhere ? (
+            <div className="mx-panel p-4 space-y-3 ring-1 ring-[var(--mx-gold)]/40">
+              <div className="text-sm text-white/85">这一局（房间 <b className="font-mono text-[var(--mx-gold)]">{paused.code}</b>）正在另一个窗口里进行。</div>
+              <button className="mx-btn mx-btn-gold w-full" onClick={resume}>在此窗口继续</button>
             </div>
-          </div>
+          ) : (
+            <div className="mx-panel p-4 space-y-3 ring-1 ring-[var(--mx-gold)]/40">
+              <div className="text-sm text-white/85">你有一局还没结束的游戏（房间 <b className="font-mono text-[var(--mx-gold)]">{paused.code}</b>）。</div>
+              <div className="grid grid-cols-2 gap-3">
+                <button className="mx-btn mx-btn-ghost" onClick={forget}>放弃这局</button>
+                <button className="mx-btn mx-btn-gold" onClick={resume}>回到房间</button>
+              </div>
+              <div className="text-[11px] text-[var(--mx-muted)]">直接创建或加入别的房间，也会放弃这一局（搭档会收到通知）。</div>
+            </div>
+          )
         )}
 
         {resuming ? (

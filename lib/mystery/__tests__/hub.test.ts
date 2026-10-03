@@ -351,3 +351,19 @@ describe('MysteryHub（暂缓放弃：时限从第一次算起）', () => {
     expect(last(a, 'VIEW')!.view.players.P2.name).toBe('乙')
   })
 })
+
+describe('MysteryHub（ABANDON check：只查询）', () => {
+  test('只查询没有副作用：座位还在回 kept，令牌失效回 vacated', () => {
+    const { a, b, code } = room()
+    send(b, { type: 'ACT', action: { type: 'pickRole', roleId: 'ethan' } })
+    send(b, { type: 'ACT', action: { type: 'ready', value: true } })
+    const token = last(b, 'WELCOME')!.token
+    const before = JSON.stringify(last(a, 'VIEW')!.view.players)
+    const x = sock()
+    send(x, { type: 'ABANDON', code, token, check: true })
+    expect(last(x, 'LEFT')).toMatchObject({ vacated: false, kept: true, token })
+    expect(JSON.stringify(last(a, 'VIEW')!.view.players)).toBe(before)
+    send(x, { type: 'ABANDON', code, token: 'nope', check: true })
+    expect(last(x, 'LEFT')).toMatchObject({ vacated: true })
+  })
+})

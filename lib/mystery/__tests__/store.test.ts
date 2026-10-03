@@ -85,7 +85,7 @@ test('离开时服务器说座位还保留（恰好开局了）：令牌留着�
   last().open()
   last().reply({ type: 'WELCOME', code: 'ABCD', seat: 'P1', token: 't' })
   store.getState().leave()
-  expect(last().sent.at(-1)).toEqual({ type: 'LEAVE' })
+  expect(last().sent.slice(-2).map(m => m.type)).toEqual(['LEAVE', 'ABANDON'])
   last().reply({ type: 'LEFT', code: 'ABCD', vacated: false })
   expect(session()).toEqual({ code: 'ABCD', token: 't', paused: true })
   expect(store.getState().paused?.code).toBe('ABCD')
@@ -214,7 +214,7 @@ test('排队的放弃在发送前复查：别的标签页已经凭这枚令牌�
   void store
 })
 
-test('一直被"座位还挂着连接"挡着超过 90 秒：不再重发（那是另一个真实在玩的标签页）', () => {
+test('一直被"座位还挂着连接"挡着超过 90 秒：不再真的放弃，只查询最终结果', () => {
   const store = joinedOffline('read')
   store.getState().leave()
   last().open()
@@ -228,7 +228,11 @@ test('一直被"座位还挂着连接"挡着超过 90 秒：不再重发（那�
   last().drop()
   jest.advanceTimersByTime(1000)
   last().open()
-  expect(last().sent).toEqual([])
+  // 不再真的放弃，只查询最终结果
+  expect(last().sent).toEqual([{ type: 'ABANDON', code: 'ABCD', token: 't', final: false, check: true }])
+  // 服务器早已执行了放弃（结果当时发丢了）：座位已不属于你 → 删令牌
+  last().reply({ type: 'LEFT', code: 'ABCD', vacated: true, token: 't' })
+  expect(session()).toBeNull()
   void store
 })
 
@@ -243,4 +247,52 @@ test('服务器回"座位保留"（暂缓的放弃已作废）：确认，不再
   last().open()
   expect(last().sent).toEqual([])
   void store
+})
+
+test('暂离着一局时直接建新房：先放弃那一局（告诉搭档），再建房', () => {
+  mem.set('mystery:session', JSON.stringify({ code: 'ABCD', token: 't', paused: true }))
+  const store = fresh()
+  store.getState().init()
+  last().open()
+  store.getState().create('甲')
+  expect(last().sent.map(m => m.type)).toEqual(['ABANDON', 'CREATE'])
+  expect(last().sent[0]).toMatchObject({ code: 'ABCD', token: 't', final: true })
+})
+
+test('暂离着一局时"加入"同一个房间号：直接回到原座位', () => {
+  mem.set('mystery:session', JSON.stringify({ code: 'ABCD', token: 't', paused: true }))
+  const store = fresh()
+  store.getState().init()
+  last().open()
+  store.getState().join('abcd', '甲')
+  expect(last().sent.map(m => m.type)).toEqual(['RESUME'])
+})
+
+test('连接其实已半开时点离开（LEAVE 写进了死连接）：同时登记的放弃会在重连后补发', () => {
+  const store = fresh()
+  store.getState().init()
+  last().open()
+  last().reply({ type: 'WELCOME', code: 'ABCD', seat: 'P1', token: 't' })
+  last().reply({ type: 'VIEW', view: { ...fakeView('lobby'), step: { ...fakeView('lobby').step, serverNow: Date.now() } } })
+  const dead = last()
+  store.getState().leave()
+  expect(dead.sent.slice(-2).map(m => m.type)).toEqual(['LEAVE', 'ABANDON']) // 都写进了死连接
+  dead.drop()
+  jest.advanceTimersByTime(1000)
+  last().open()
+  expect(last().sent.map(m => m.type)).toEqual(['ABANDON'])
+})
+
+test('被别的窗口顶下线：入口页给"在此窗口继续"，共享会话不动', () => {
+  const store = fresh()
+  store.getState().init()
+  last().open()
+  last().reply({ type: 'WELCOME', code: 'ABCD', seat: 'P1', token: 't' })
+  last().reply({ type: 'ERROR', message: '你已在其它窗口重新连接', fatal: true, reason: 'superseded' })
+  expect(session()).toEqual({ code: 'ABCD', token: 't' })
+  expect(store.getState().paused?.code).toBe('ABCD')
+  expect(store.getState().pausedElsewhere).toBe(true)
+  // 「放弃这局」对另一个窗口里进行的局无效
+  store.getState().forget()
+  expect(session()).toEqual({ code: 'ABCD', token: 't' })
 })

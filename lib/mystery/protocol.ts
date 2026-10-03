@@ -18,8 +18,9 @@ export type ClientMsg =
    * 凭令牌放弃一个"不在本连接上"的座位（离线时点的「离开」、入口页的「放弃这局」）。
    * 不绑定连接、不发 WELCOME、不改在线状态；座位正被别的连接使用时拒绝（busy）。
    * final：彻底放弃（入口页「放弃这局」），开局后会告诉对方"不会再回来了"。
+   * check：只查询、不做任何改动——座位还在（kept）还是已经不属于你（vacated）。
    */
-  | { type: 'ABANDON'; code: string; token: string; final?: boolean }
+  | { type: 'ABANDON'; code: string; token: string; final?: boolean; check?: boolean }
   | { type: 'PING' }
 
 /**
