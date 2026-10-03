@@ -20,6 +20,10 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## 双人剧本杀《摇摆州》
+
+`/mystery` 是一个 2 人联机、电脑当 DM 的剧本杀，需要用 `npm run start:mp`（或 `DEV_MODE=1 npx tsx server.ts`）启动才有联机。玩法与开局方式见 [docs/mystery/README.md](docs/mystery/README.md)（无剧透）。
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
