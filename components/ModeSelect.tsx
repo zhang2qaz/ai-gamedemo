@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useMultiplayerStore } from '@/store/multiplayerStore'
 import { useGameStore } from '@/store/gameStore'
 import AchievementWall from './AchievementWall'
+import Link from 'next/link'
+import { SCENARIO_META } from '@/engine/mystery/scenarios/meta'
 
 export default function ModeSelect() {
   const [view, setView] = useState<'main' | 'host' | 'join'>('main')
@@ -213,6 +215,24 @@ export default function ModeSelect() {
           </button>
         ))}
       </div>
+
+      {/* 双人剧本杀入口（独立玩法，支持公网联机） */}
+      <Link
+        href="/mystery"
+        className="max-w-sm w-full mt-3 glass-card border-red-900/50 hover:border-red-500/50 hover:bg-red-950/20 rounded-2xl p-5 text-left transition-all duration-300 group animate-fade-in-up relative z-10"
+        style={{ animationDelay: '240ms' }}
+      >
+        <div className="flex items-center gap-4">
+          <span className="text-3xl drop-shadow-lg">🕵️</span>
+          <div>
+            <div className="font-black text-lg text-red-400 group-hover:text-red-300 transition-colors">双人剧本杀 ·《{SCENARIO_META.title}》</div>
+            <div className="text-stone-500 text-sm">{SCENARIO_META.era} · 2 人线上 · 电脑 DM</div>
+          </div>
+          <div className="ml-auto text-stone-700 group-hover:text-stone-500 transition-colors">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+        </div>
+      </Link>
 
       {/* 成就墙入口 */}
       <button

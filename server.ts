@@ -17,6 +17,8 @@ import next from 'next'
 import { WebSocketServer } from 'ws'
 import { networkInterfaces } from 'os'
 import { RoomManager } from './lib/multiplayer/roomManager'
+import { MysteryHub } from './lib/mystery/hub'
+import { MYSTERY_WS_PATH } from './lib/mystery/protocol'
 
 const dev = process.env.DEV_MODE === '1'  // 默认 production；DEV_MODE=1 启用 HMR + 详细错误
 const listenHost = '0.0.0.0'
@@ -66,18 +68,32 @@ app.prepare().then(() => {
   const wss = new WebSocketServer({ noServer: true })
   const room = new RoomManager()
 
+  // 剧本杀（2 人，多房间，服务器即 DM）
+  const mysteryWss = new WebSocketServer({ noServer: true, maxPayload: 64 * 1024 })
+  const mysteryHub = new MysteryHub()
+  mysteryWss.on('connection', (ws) => {
+    ws.on('message', (data) => mysteryHub.handleMessage(ws, data.toString()))
+    ws.on('close', () => mysteryHub.handleDisconnect(ws))
+    ws.on('error', () => mysteryHub.handleDisconnect(ws))
+  })
+
   const localIp = getLocalIp()
   console.log(`\n🎮 弈战 多人联机服务器`)
   console.log(`   房间号: ${room.roomCode}`)
   console.log(`   本机访问: http://localhost:${port}`)
   console.log(`   局域网访问: http://${localIp}:${port}`)
-  console.log(`   其他玩家打开上方链接，输入房间号 ${room.roomCode} 加入\n`)
+  console.log(`   其他玩家打开上方链接，输入房间号 ${room.roomCode} 加入`)
+  console.log(`   🕵️ 双人剧本杀: http://${localIp}:${port}/mystery\n`)
 
   server.on('upgrade', (req, socket, head) => {
     const { pathname } = parse(req.url ?? '/', true)
     if (pathname === '/ws') {
       wss.handleUpgrade(req, socket, head, (ws) => {
         wss.emit('connection', ws, req)
+      })
+    } else if (pathname === MYSTERY_WS_PATH) {
+      mysteryWss.handleUpgrade(req, socket, head, (ws) => {
+        mysteryWss.emit('connection', ws, req)
       })
     } else {
       socket.destroy()
