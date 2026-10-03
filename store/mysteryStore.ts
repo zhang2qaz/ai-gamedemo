@@ -38,6 +38,8 @@ let client: MysteryClient | null = null
 let toastSeq = 0
 /** 正在等待的进房请求：只接受与之对应的 WELCOME（离开后迟到的 WELCOME 要丢掉） */
 let pending: 'CREATE' | 'JOIN' | 'RESUME' | null = null
+/** 正在"凭令牌离开"的房间：服务器为此回的 WELCOME / VIEW 不能把画面拉回去 */
+let leaving: string | null = null
 
 export const useMysteryStore = create<MysteryStore>((set, get) => {
   function pushToast(text: string, tone: Toast['tone']) {
@@ -50,6 +52,8 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     switch (msg.type) {
       case 'WELCOME': {
         const st = get()
+        // 凭令牌离开时，服务器会先回一个 WELCOME（恢复身份）再回 LEFT：不能把画面拉回那个房间
+        if (msg.code === leaving) return
         // 已离开房间后迟到的 WELCOME 要丢掉；只要还在房间里（含断线重连的自动 RESUME），
         // 就以服务器为准——服务器只会因为本连接的请求发 WELCOME，连接已经绑到了这个座位
         if (!pending && !st.joined) return
@@ -70,6 +74,7 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
       }
       case 'LEFT': {
         // 以服务器为准：座位让出了就删掉本地令牌；座位还保留（比如离开时恰好开局了）就留着，入口页可以回来
+        if (leaving === msg.code) leaving = null
         const saved = loadSession()
         if (!saved || saved.code !== msg.code) return
         if (msg.vacated) {
@@ -86,6 +91,11 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
         // 过期操作（双击、迟到）已被服务器丢弃，界面已经是新阶段："准备"不打扰玩家，其余操作提示一下
         if (msg.reason === 'stale') {
           if (msg.action && msg.action !== 'ready') pushToast(msg.message, 'info')
+          return
+        }
+        if (msg.fatal && leaving && !get().joined) {
+          // 凭令牌离开时房间已失效 / 令牌已作废：本来就要放弃，不用提示
+          leaving = null
           return
         }
         if (msg.fatal) {
@@ -166,8 +176,14 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     },
 
     forget: () => {
+      const p = get().paused
       saveSession(null)
       set({ paused: null })
+      // 通知服务器：大厅里让出座位，开局后标记为暂离（否则座位一直占着）
+      if (p) {
+        leaving = p.code
+        ensureClient().leaveSession(p)
+      }
     },
 
     act: (action) => {
@@ -184,12 +200,16 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
       const ended = !!view?.result
       const inLobby = !view || view.step.kind === 'lobby'
       const sent = !!client?.send({ type: 'LEAVE' })
-      // 大厅里离开、但消息没发出去（离线）：不会有 LEFT 来确认，按原来的逻辑直接删令牌——
-      // 服务器那边座位掉线超过 1 分钟就能被别人补上
-      if (!ended && saved && saved.code === code && !(inLobby && !sent)) {
+      if (!ended && saved && saved.code === code) {
+        // 先把令牌留着（暂离），等服务器的 LEAVE 确认（LEFT）再决定删不删
         const p = { code: saved.code, token: saved.token, paused: true }
         saveSession(p)
         set({ paused: inLobby ? null : p })
+        // 离线没发出去：连上后凭令牌补发"离开"
+        if (!sent && client) {
+          leaving = saved.code
+          client.leaveSession(p)
+        }
       } else {
         saveSession(null)
         set({ paused: null })

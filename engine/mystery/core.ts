@@ -10,6 +10,7 @@ import type {
 import { SEATS, otherSeat } from './types'
 import type { ScenarioRuntime } from './runtime'
 import { appendLog } from './log'
+import { createHash } from 'node:crypto'
 
 const MAX_CHAT = 300
 /** 必须双方各自操作才能推进的步骤（accuse / choice / auction）没配倒计时时的兜底 */
@@ -54,14 +55,17 @@ export function makeEngine(rt: ScenarioRuntime) {
   // ───────────── 搜查点编号 ─────────────
   // 发给客户端的是按房间种子散列出来的编号，不暴露线索 id（线索 id 本身是剧透）
 
+  // 用房间的秘密种子做 SHA-256（不可逆）：拿自己看得见的点反推不出别的点的编号
+  const spotIdCache = new Map<string, string>()
   function spotIdOf(state: GameState, clueId: string): string {
-    let h = 0x811c9dc5 ^ (state.seed | 0)
-    const key = `${state.code}:${clueId}`
-    for (let i = 0; i < key.length; i++) {
-      h ^= key.charCodeAt(i)
-      h = Math.imul(h, 0x01000193)
+    const key = `${state.seed}:${state.code}:${clueId}`
+    let id = spotIdCache.get(key)
+    if (!id) {
+      id = createHash('sha256').update(key).digest('base64url').slice(0, 12)
+      if (spotIdCache.size > 50_000) spotIdCache.clear()
+      spotIdCache.set(key, id)
     }
-    return (h >>> 0).toString(36)
+    return id
   }
 
   function clueOfSpot(state: GameState, spotId: string): ClueDef | null {
@@ -385,6 +389,8 @@ export function makeEngine(rt: ScenarioRuntime) {
     if (prev.seats[seat].online === online) return prev
     const state = structuredClone(prev)
     state.seats[seat].online = online
+    // 大厅里掉线就取消准备：离线的座位不能被对方"一键开局"，否则开局后可能再也没人能回到这个座位
+    if (!online && state.stepIndex === -1) state.seats[seat].ready = false
     const name = state.seats[seat].name ?? seat
     log(state, now, 'DM', 'all', online
       ? `${name} 已重新连线。`
@@ -450,7 +456,7 @@ export function makeEngine(rt: ScenarioRuntime) {
             if (!other.name) return '等待第二位玩家加入'
           }
           me.ready = value
-          if (SEATS.every(s => state.seats[s].ready && state.seats[s].roleId)) startGame(state, now)
+          if (SEATS.every(s => state.seats[s].ready && state.seats[s].roleId && state.seats[s].online)) startGame(state, now)
           return
         }
         if (!step) return
@@ -469,8 +475,9 @@ export function makeEngine(rt: ScenarioRuntime) {
         const def = clueOfSpot(state, action.spotId)
         if (!def || !def.location) return '这里没有可搜的东西'
         const spot = spotStatus(state, seat, def)
+        // 先判"你够不够得着"：够不着的点（专属 / 未解锁），对方搜没搜走，报错都一样
+        if (spot !== 'mine' && !spotReachable(state, seat, def)) return '还不能搜这里'
         if (spot === 'mine' || spot === 'taken') return '这里已经被搜过了'
-        if (spot === 'locked') return '还不能搜这里'
         const cost = def.cost ?? 1
         if (me.ap < cost) return '行动点不足'
         me.ap -= cost

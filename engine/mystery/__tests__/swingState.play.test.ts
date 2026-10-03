@@ -564,3 +564,28 @@ describe('第三轮审查修复（回归测试）', () => {
     expect(JSON.stringify(E.viewFor(s, 'P1', now).log)).toBe(before)
   })
 })
+
+describe('第四轮审查修复（回归测试）', () => {
+  test('大厅里掉线的座位自动取消准备，对方不能一键开局', () => {
+    let s = E.createGame('TEST', 7, now)
+    s = E.joinSeat(s, 'P1', 'A', now)
+    s = E.joinSeat(s, 'P2', 'B', now)
+    s = ok(s, 'P1', { type: 'pickRole', roleId: 'mandy' })
+    s = ok(s, 'P2', { type: 'pickRole', roleId: 'ethan' })
+    s = ok(s, 'P1', { type: 'ready', value: true })
+    s = E.setPresence(s, 'P1', false, now)
+    expect(s.seats.P1.ready).toBe(false)
+    s = ok(s, 'P2', { type: 'ready', value: true })
+    expect(s.stepIndex).toBe(-1)
+  })
+
+  test('搜证探测不出对方搜了什么：够不着的点，对方搜没搜走，报错都一样', () => {
+    let s = until(start(), 'search1')
+    const probe = () => E.reduce(s, 'P1', search(s, 'door_log'), now).error
+    const before = probe()
+    s = ok(s, 'P2', search(s, 'door_log'))
+    expect(probe()).toBe(before)
+    // 编号是带房间密钥的 SHA-256：看不出规律
+    expect(E.spotIdOf(s, 'door_log')).toMatch(/^[\w-]{12}$/)
+  })
+})

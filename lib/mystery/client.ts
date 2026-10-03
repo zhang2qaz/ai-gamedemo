@@ -60,6 +60,8 @@ export class MysteryClient {
   private listening = false
   /** 重连成功后自动发送（恢复身份） */
   resumeWith: SavedSession | null = null
+  /** 离线时没能发出的"离开"：连上后先凭令牌恢复身份、再离开，由服务器的 LEFT 决定令牌删不删 */
+  private leaveOnReconnect: SavedSession | null = null
 
   connect() {
     this.closedByUser = false
@@ -76,6 +78,12 @@ export class MysteryClient {
       this.lastMessageAt = Date.now()
       this.pendingPing = null
       this.emitStatus(true)
+      if (this.leaveOnReconnect) {
+        const l = this.leaveOnReconnect
+        this.leaveOnReconnect = null
+        this.rawSend({ type: 'RESUME', code: l.code, token: l.token })
+        this.rawSend({ type: 'LEAVE' })
+      }
       if (this.resumeWith) this.rawSend({ type: 'RESUME', code: this.resumeWith.code, token: this.resumeWith.token })
       if (this.pendingIntent) {
         this.rawSend(this.pendingIntent)
@@ -180,6 +188,20 @@ export class MysteryClient {
       this.probeTimer = null
       if (this.received === before) this.forceReconnect()
     }, PROBE_TIMEOUT_MS)
+  }
+
+  /**
+   * 凭令牌离开一个座位（让服务器真正让出 / 标记暂离）。在线就立刻发，离线就等连上后补发。
+   * 用于：离线时点了「离开」、入口页点「放弃这局」。
+   */
+  leaveSession(s: SavedSession) {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.rawSend({ type: 'RESUME', code: s.code, token: s.token })
+      this.rawSend({ type: 'LEAVE' })
+      return
+    }
+    this.leaveOnReconnect = { code: s.code, token: s.token }
+    this.connect()
   }
 
   /** 取消尚未发出的建房 / 加入请求（改为恢复旧局时用，避免连上后两个请求先后执行） */
