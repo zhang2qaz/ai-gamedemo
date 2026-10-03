@@ -182,7 +182,7 @@ export type StepDef = {
   title: string
   /** 公共叙事 / 阶段说明（DM 播报） */
   text?: string
-  /** 倒计时（秒）；不填则只靠双方“准备” */
+  /** 倒计时（秒）；不填则只靠双方“准备”（accuse / choice / auction 不填时引擎给 15 分钟兜底） */
   seconds?: number
   /** read：对应的剧本章节 id */
   chapter?: string
@@ -192,6 +192,8 @@ export type StepDef = {
   choice?: Record<string, { prompt: string; options: ChoiceOption[] }>
   /** auction：拍品 */
   lots?: AuctionLot[]
+  /** auction：同价时的处理文案（log：DM 播报；label：结果栏短标签）。不填则为"流拍" */
+  tie?: { log: string; label: string }
   /** 进入步骤时触发的效果 */
   onEnter?: Effect[]
 }
@@ -249,6 +251,8 @@ export type ClueState = {
   /** 被谁看到过（所有权可转移，但看过的人仍记得内容） */
   seenBy: Seat[]
   foundAt: number
+  /** 最初是谁拿到的（搜证点据此显示"已获得"，交给对方后也一样） */
+  foundBy?: Seat
   destroyed?: boolean
   forged?: boolean
 }
@@ -303,12 +307,14 @@ export type MysteryAction =
   | { type: 'pickRole'; roleId: string }
   | { type: 'ready'; value: boolean }
   | { type: 'chat'; text: string }
-  | { type: 'search'; clueId: string }
+  /** spotId 是本局专用的不透明编号（见 SpotView），不暴露线索 id */
+  | { type: 'search'; spotId: string }
   | { type: 'ask'; npcId: string; questionId: string }
   | { type: 'publish'; clueId: string }
   | { type: 'give'; clueId: string }
   | { type: 'choose'; optionId: string }
-  | { type: 'caseFile'; caseId: string; answers: Record<string, string> }
+  /** attemptsLeft：客户端看到的剩余次数；与服务器不一致时拒绝，防止重复提交 */
+  | { type: 'caseFile'; caseId: string; answers: Record<string, string>; attemptsLeft?: number }
   | { type: 'accuse'; answers: Record<string, string | string[]> }
   | { type: 'bid'; bids: Record<string, number> }
   | { type: 'finale'; payload: unknown }
@@ -328,7 +334,8 @@ export type ClueView = {
 }
 
 export type SpotView = {
-  clueId: string
+  /** 本局专用的不透明编号（按房间种子散列），不含线索 id */
+  spotId: string
   location: string
   spot: string
   cost: number
@@ -373,7 +380,8 @@ export type SeatView = {
   seat: Seat
   scenario: { id: string; title: string; subtitle: string; tagline: string; intro: string; era: string; duration: string }
   roles: { id: string; name: string; enName: string; title: string; avatar: string; color: string; publicProfile: string }[]
-  players: Record<Seat, { name: string | null; online: boolean; roleId: string | null; ready: boolean; money: number }>
+  /** money 只对自己（以及结局后）下发：对方余额会泄露案卷对错与指认得分 */
+  players: Record<Seat, { name: string | null; online: boolean; roleId: string | null; ready: boolean; money?: number }>
   step: {
     index: number
     total: number
@@ -404,6 +412,8 @@ export type SeatView = {
     myBids: Record<string, number> | null
     otherSubmitted: boolean
     results: { lot: string; winner: 'me' | 'other' | null; price: number; tie: boolean; myBid: number; otherBid: number }[] | null
+    /** 同价时结果栏显示的短标签 */
+    tieLabel: string
   } | null
   log: LogEntry[]
   finale: unknown

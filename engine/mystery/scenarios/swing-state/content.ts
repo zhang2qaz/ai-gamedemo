@@ -64,10 +64,11 @@ export const FLOW: StepDef[] = [
   },
   {
     id: 'auction', kind: 'auction', title: '21:30 · 慈善拍卖', text: AUCTION_TEXT, seconds: 420,
+    tie: { log: '被维克多·奥利维拉以更高的价钱截走', label: '平局 · 被维克多截走' },
     lots: [
-      { id: 'lot_lawyer', title: '罗伊·凯斯勒律师的一年法律顾问', desc: '棕榈滩最贵的刑辩律师。【终局】你受到的指控降一级。', item: 'item_lawyer', min: 500 },
-      { id: 'lot_headline', title: '《棕榈滩纪事报》头版专访', desc: '乔安亲自执笔。【终局】你递交的一张证据权重 ×2（一次）。', item: 'item_headline', min: 500 },
-      { id: 'lot_recount', title: '2000 年重新计票纪念放大镜', desc: '棕榈滩县计票员用过的放大镜。【终局】作废对方上一轮递交的一张证据（一次）。', item: 'item_recount', min: 500 },
+      { id: 'lot_lawyer', title: '罗伊·凯斯勒律师的一年法律顾问', desc: '棕榈滩最贵的刑辩律师。【终局】一级谋杀降为较轻的罪名（只降一级）。', item: 'item_lawyer', min: 500 },
+      { id: 'lot_headline', title: '《棕榈滩纪事报》头版专访', desc: '乔安亲自执笔。【终局】你递交的一张证据权重 ×2（限一次）。', item: 'item_headline', min: 500 },
+      { id: 'lot_recount', title: '2000 年重新计票纪念放大镜', desc: '棕榈滩县计票员用过的放大镜。【终局】事先布置，揭晓时作废对方本轮递交的一张证据（限一次）。', item: 'item_recount', min: 500 },
       { id: 'lot_yacht', title: '"第二次机会号"游艇周末', desc: '附钥匙，码头就在庄园西侧。【终局】第三轮可出海逃亡（不被起诉，放弃遗产）。', item: 'item_yacht', min: 500 },
     ],
   },
@@ -101,8 +102,8 @@ export const FLOW: StepDef[] = [
     text: '最后一次交换信息。想清楚：天亮以后，你希望警长相信什么？',
   },
   {
-    id: 'accuse', kind: 'accuse', title: '盘凶 · 向 DM 交底',
-    text: '各自独立回答。每答对一题，DM 会私下付给你 $1,000 酬金（只告诉你总额），供终局使用；答对的题目也计入最终得分。',
+    id: 'accuse', kind: 'accuse', title: '盘凶 · 向 DM 交底', seconds: 1200,
+    text: '各自独立回答（20 分钟内提交；超时未交视为放弃作答）。每答对一题，DM 会私下付给你 $1,000 酬金（只告诉你总额），供终局使用；答对的题目也计入最终得分。',
   },
   { id: 'finale', kind: 'finale', title: '终局 · 黎明计票', text: FINALE_TEXT },
   { id: 'ending', kind: 'ending', title: '06:00 · 破晓之前' },

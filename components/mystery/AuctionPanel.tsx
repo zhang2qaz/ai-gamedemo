@@ -10,6 +10,7 @@ export default function AuctionPanel({ view }: { view: SeatView }) {
   const a = view.auction
   const [bids, setBids] = useState<Record<string, number>>({})
   const [confirm, setConfirm] = useState(false)
+  const [sent, setSent] = useState(false)
   if (!a) return null
 
   const total = Object.values(bids).reduce((n, v) => n + v, 0)
@@ -46,7 +47,7 @@ export default function AuctionPanel({ view }: { view: SeatView }) {
                 <div className="text-right text-xs font-bold">
                   {r.winner === 'me' && <span className="text-emerald-300">你拍得 · <Money value={r.price} /></span>}
                   {r.winner === 'other' && <span className="text-sky-300">对方拍得</span>}
-                  {r.winner === null && (r.tie ? <span className="text-red-300">平局 · 被维克多截走</span> : <span className="text-white/40">流拍</span>)}
+                  {r.winner === null && (r.tie ? <span className="text-red-300">{a.tieLabel}</span> : <span className="text-white/40">流拍</span>)}
                 </div>
               </div>
             )
@@ -90,8 +91,18 @@ export default function AuctionPanel({ view }: { view: SeatView }) {
           </div>
           {confirm ? (
             <div className="grid grid-cols-2 gap-2">
-              <button className="mx-btn mx-btn-ghost" onClick={() => setConfirm(false)}>再想想</button>
-              <button className="mx-btn mx-btn-gold" onClick={() => act({ type: 'bid', bids })}>确认暗标（不可更改）</button>
+              <button className="mx-btn mx-btn-ghost" disabled={sent} onClick={() => setConfirm(false)}>再想想</button>
+              <button
+                className="mx-btn mx-btn-gold"
+                disabled={sent}
+                onClick={() => {
+                  setSent(true)
+                  act({ type: 'bid', bids })
+                  setTimeout(() => setSent(false), 4000)
+                }}
+              >
+                {sent ? '已发出…' : '确认暗标（不可更改）'}
+              </button>
             </div>
           ) : (
             <button className="mx-btn mx-btn-gold w-full" disabled={over || invalid} onClick={() => setConfirm(true)}>

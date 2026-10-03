@@ -12,6 +12,9 @@ export default function EntryScreen() {
   const create = useMysteryStore(s => s.create)
   const join = useMysteryStore(s => s.join)
   const resuming = useMysteryStore(s => s.resuming)
+  const paused = useMysteryStore(s => s.paused)
+  const resume = useMysteryStore(s => s.resume)
+  const forget = useMysteryStore(s => s.forget)
   // 本组件只在客户端挂载后渲染（见 MysteryApp），可直接读取 window
   const [roomFromUrl] = useState(() => (new URLSearchParams(window.location.search).get('room') ?? '').toUpperCase().slice(0, 4))
   const [name, setName] = useState(() => {
@@ -62,6 +65,16 @@ export default function EntryScreen() {
         <div className="mx-panel p-4 text-sm leading-7 text-white/80 mx-serif whitespace-pre-line">
           {m.intro}
         </div>
+
+        {paused && !resuming && (
+          <div className="mx-panel p-4 space-y-3 ring-1 ring-[var(--mx-gold)]/40">
+            <div className="text-sm text-white/85">你有一局还没结束的游戏（房间 <b className="font-mono text-[var(--mx-gold)]">{paused.code}</b>）。</div>
+            <div className="grid grid-cols-2 gap-3">
+              <button className="mx-btn mx-btn-ghost" onClick={forget}>放弃这局</button>
+              <button className="mx-btn mx-btn-gold" onClick={resume}>回到房间</button>
+            </div>
+          </div>
+        )}
 
         {resuming ? (
           <div className="mx-panel p-4 text-center text-sm text-white/70">正在恢复你的上一局…</div>

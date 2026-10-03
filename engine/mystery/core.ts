@@ -12,6 +12,8 @@ import type { ScenarioRuntime } from './runtime'
 import { appendLog } from './log'
 
 const MAX_CHAT = 300
+/** 必须双方各自操作才能推进的步骤（accuse / choice / auction）没配倒计时时的兜底 */
+const FALLBACK_SECONDS = 900
 
 export type ReduceResult = { state: GameState; error?: string }
 
@@ -47,6 +49,25 @@ export function makeEngine(rt: ScenarioRuntime) {
   const roleById = new Map(sc.roles.map(r => [r.id, r]))
   const stepIndexById = new Map(sc.flow.map((s, i) => [s.id, i]))
   const caseById = new Map(sc.caseFiles.map(c => [c.id, c]))
+  const spotClues = sc.clues.filter(c => c.location)
+
+  // ───────────── 搜查点编号 ─────────────
+  // 发给客户端的是按房间种子散列出来的编号，不暴露线索 id（线索 id 本身是剧透）
+
+  function spotIdOf(state: GameState, clueId: string): string {
+    let h = 0x811c9dc5 ^ (state.seed | 0)
+    const key = `${state.code}:${clueId}`
+    for (let i = 0; i < key.length; i++) {
+      h ^= key.charCodeAt(i)
+      h = Math.imul(h, 0x01000193)
+    }
+    return (h >>> 0).toString(36)
+  }
+
+  function clueOfSpot(state: GameState, spotId: string): ClueDef | null {
+    if (typeof spotId !== 'string' || !spotId) return null
+    return spotClues.find(c => spotIdOf(state, c.id) === spotId) ?? null
+  }
 
   // ───────────── 工具 ─────────────
 
@@ -72,7 +93,10 @@ export function makeEngine(rt: ScenarioRuntime) {
 
   function canSee(state: GameState, seat: Seat, clueId: string): boolean {
     const c = state.clues[clueId]
-    if (!c || c.destroyed) return false
+    if (!c) return false
+    // 被销毁的线索只从持有者那里消失；看过它的另一方仍然记得内容，
+    // 也就无从得知它被烧了（"秘密销毁"到结局才公开）
+    if (c.destroyed) return c.owner !== seat && (c.public || c.seenBy.includes(seat))
     return c.public || c.owner === seat || c.seenBy.includes(seat)
   }
 
@@ -113,6 +137,7 @@ export function makeEngine(rt: ScenarioRuntime) {
       public: !!def.autoPublic,
       seenBy: def.autoPublic ? [...SEATS] : [seat],
       foundAt: now,
+      foundBy: seat,
     }
     if (def.autoPublic) {
       log(state, now, 'DM', 'all', `【公开线索】${seatName(state, seat)} 发现了「${def.title}」，内容已对双方公开。`, 'event')
@@ -166,12 +191,13 @@ export function makeEngine(rt: ScenarioRuntime) {
       state.deadline = null
       return
     }
-    state.deadline = step.seconds ? now + step.seconds * 1000 : null
+    const seconds = step.seconds ?? (step.kind === 'accuse' || step.kind === 'choice' || step.kind === 'auction' ? FALLBACK_SECONDS : 0)
+    state.deadline = seconds ? now + seconds * 1000 : null
     if (step.kind === 'search') {
       for (const s of SEATS) state.seats[s].ap = step.ap ?? 0
     }
     log(state, now, 'DM', 'all', `—— ${step.title} ——${step.text ? '\n' + step.text : ''}`, 'system')
-    for (const s of SEATS) applyEffects(state, s, step.onEnter, now)
+    applyEnterEffects(state, step.onEnter, now)
     if (step.kind === 'read' && step.chapter) {
       for (const s of SEATS) {
         const r = roleOf(state, s)
@@ -189,6 +215,19 @@ export function makeEngine(rt: ScenarioRuntime) {
       state.ended = true
       state.deadline = null
     }
+  }
+
+  /**
+   * onEnter：与座位相关的效果（带 role 的发线索、seatFlag、money、私信）对每个座位各执行一次；
+   * 全局效果（setFlag、对双方的广播、不带 role 的发线索）只执行一次。
+   */
+  function applyEnterEffects(state: GameState, effects: Effect[] | undefined, now: number) {
+    if (!effects?.length) return
+    const perSeat = (e: Effect) =>
+      ('giveClue' in e && !!e.role) || 'setSeatFlag' in e || 'money' in e || ('dm' in e && e.to !== 'both')
+    for (const s of SEATS) applyEffects(state, s, effects.filter(perSeat), now)
+    const globals = effects.filter(e => !perSeat(e)).map(e => ('giveClue' in e && !e.to ? { ...e, to: 'both' as const } : e))
+    applyEffects(state, SEATS[0], globals, now)
   }
 
   function leaveStep(state: GameState, now: number) {
@@ -242,7 +281,7 @@ export function makeEngine(rt: ScenarioRuntime) {
       if (b1 === b2) {
         results.push({ lot: lot.id, winner: null, price: b1, tie: b1 > 0 })
         lines.push(b1 > 0
-          ? `「${lot.title}」：双方出价相同（$${b1.toLocaleString('en-US')}），被维克多·奥尔洛夫以更高价截走。`
+          ? `「${lot.title}」：双方出价相同（$${b1.toLocaleString('en-US')}），${step.tie?.log ?? '流拍'}。`
           : `「${lot.title}」：无人出价，流拍。`)
         continue
       }
@@ -268,12 +307,18 @@ export function makeEngine(rt: ScenarioRuntime) {
 
   function advance(state: GameState, now: number) {
     leaveStep(state, now)
-    if (state.stepIndex + 1 < sc.flow.length) enterStep(state, state.stepIndex + 1, now)
+    if (state.stepIndex + 1 < sc.flow.length) {
+      enterStep(state, state.stepIndex + 1, now)
+    } else {
+      // 流程没有以 ending 收尾：就地结束，避免之后每个动作都重复执行 leaveStep 的结算
+      state.ended = true
+      state.deadline = null
+    }
   }
 
   function maybeAutoAdvance(state: GameState, now: number) {
     const step = stepAt(state)
-    if (!step || step.kind === 'ending') return
+    if (!step || step.kind === 'ending' || state.ended) return
     if (step.kind === 'finale') {
       if (rt.finale?.isDone(state)) advance(state, now)
       return
@@ -334,12 +379,27 @@ export function makeEngine(rt: ScenarioRuntime) {
     return state
   }
 
-  function setPresence(prev: GameState, seat: Seat, online: boolean, now: number): GameState {
+  function setPresence(prev: GameState, seat: Seat, online: boolean, now: number, reason?: 'left'): GameState {
     if (prev.seats[seat].online === online) return prev
     const state = structuredClone(prev)
     state.seats[seat].online = online
     const name = state.seats[seat].name ?? seat
-    log(state, now, 'DM', 'all', online ? `${name} 已重新连线。` : `${name} 断线了（可用原设备重新打开页面自动恢复）。`, 'system')
+    log(state, now, 'DM', 'all', online
+      ? `${name} 已重新连线。`
+      : reason === 'left'
+        ? `${name} 暂时离开了（在原设备上打开本页即可回到这局）。`
+        : `${name} 断线了（可用原设备重新打开页面自动恢复）。`, 'system')
+    return state
+  }
+
+  /** 大厅阶段离开：让出座位，新玩家可以补位 */
+  function vacateSeat(prev: GameState, seat: Seat, now: number): GameState {
+    if (prev.stepIndex !== -1) return prev
+    const state = structuredClone(prev)
+    const name = state.seats[seat].name
+    state.seats[seat] = emptySeat()
+    state.seats[otherSeat(seat)].ready = false
+    if (name) log(state, now, 'DM', 'all', `${name} 离开了房间，座位已空出。`, 'system')
     return state
   }
 
@@ -372,6 +432,7 @@ export function makeEngine(rt: ScenarioRuntime) {
         if (!role) return '没有这个角色'
         const holder = seatOfRole(state, role.id)
         if (holder && holder !== seat) return '该角色已被对方选择'
+        if (me.roleId === role.id) return
         me.roleId = role.id
         me.ready = false
         state.seats[otherSeat(seat)].ready = false
@@ -403,7 +464,7 @@ export function makeEngine(rt: ScenarioRuntime) {
 
       case 'search': {
         if (!step || step.kind !== 'search') return '现在不是搜证时间'
-        const def = clueById.get(String(action.clueId))
+        const def = clueOfSpot(state, action.spotId)
         if (!def || !def.location) return '这里没有可搜的东西'
         const spot = spotStatus(state, seat, def)
         if (spot === 'mine' || spot === 'taken') return '这里已经被搜过了'
@@ -460,6 +521,8 @@ export function makeEngine(rt: ScenarioRuntime) {
         if (!c || !def || c.destroyed) return '没有这条线索'
         if (c.owner !== seat) return '只能交出自己持有的线索'
         if (state.stepIndex < 0 || state.ended) return '现在不能交出线索'
+        // 终局里证据就是选票：转手会让"限一次"的道具再用一次，也能把牵连自己的物证塞给对方躲过搜身
+        if (step?.kind === 'finale') return '终局开始后证据已经封存，不能再交给对方'
         const other = otherSeat(seat)
         c.owner = other
         if (!c.seenBy.includes(other)) c.seenBy.push(other)
@@ -489,6 +552,9 @@ export function makeEngine(rt: ScenarioRuntime) {
         const attempts = me.caseAttempts[cf.id] ?? []
         if (attempts.some(a => a.correct)) return '你已经破解了这一案'
         if (attempts.length >= cf.maxAttempts) return '提交次数已用完'
+        if (typeof action.attemptsLeft === 'number' && action.attemptsLeft !== cf.maxAttempts - attempts.length) {
+          return '这份案卷刚刚已经递交过了，请看过结果再决定是否重交'
+        }
         const answers = action.answers && typeof action.answers === 'object' ? action.answers : {}
         const wrong = cf.questions.filter(q => answers[q.id] !== q.answer).length
         const correct = wrong === 0
@@ -606,13 +672,17 @@ export function makeEngine(rt: ScenarioRuntime) {
     return true
   }
 
+  /** 这个搜查点对本座位是否可达（不看是否已被搜走） */
+  function spotReachable(state: GameState, seat: Seat, def: ClueDef): boolean {
+    if (!reached(state, def.from)) return false
+    if (def.onlyRole && state.seats[seat].roleId !== def.onlyRole) return false
+    return evalCond(state, seat, def.requires)
+  }
+
   function spotStatus(state: GameState, seat: Seat, def: ClueDef): SpotView['status'] {
     const c = state.clues[def.id]
-    if (c) return c.owner === seat ? 'mine' : 'taken'
-    if (!reached(state, def.from)) return 'locked'
-    if (def.onlyRole && state.seats[seat].roleId !== def.onlyRole) return 'locked'
-    if (!evalCond(state, seat, def.requires)) return 'locked'
-    return 'open'
+    if (c) return c.owner === seat || c.foundBy === seat ? 'mine' : 'taken'
+    return spotReachable(state, seat, def) ? 'open' : 'locked'
   }
 
   function accuseFor(state: GameState, seat: Seat) {
@@ -628,7 +698,9 @@ export function makeEngine(rt: ScenarioRuntime) {
     const players = {} as SeatView['players']
     for (const s of SEATS) {
       const st = state.seats[s]
-      players[s] = { name: st.name, online: st.online, roleId: st.roleId, ready: st.ready, money: st.money }
+      players[s] = { name: st.name, online: st.online, roleId: st.roleId, ready: st.ready }
+      // 对方的余额会泄露案卷对错、指认得分：只在结局后公开
+      if (s === seat || state.ended) players[s].money = st.money
     }
 
     const chapters = (role?.script ?? [])
@@ -648,15 +720,16 @@ export function makeEngine(rt: ScenarioRuntime) {
     const inSearch = step?.kind === 'search'
     const spots: SpotView[] = []
     if (inSearch) {
-      for (const def of sc.clues) {
-        if (!def.location) continue
+      for (const def of spotClues) {
         const status = spotStatus(state, seat, def)
-        // 尚未解锁的二级搜证点不显示（避免剧透）；专属点对非本角色隐藏
+        // 尚未解锁的二级搜证点不显示（避免剧透）；专属点对非本角色隐藏。
+        // 被对方搜走的点，也只在"本来就对你开放"时才显示为"已被搜走"——否则等于告诉你对方拿到了什么
         if (status === 'locked' && (def.requires || def.onlyRole)) continue
         if (status === 'locked' && !reached(state, def.from)) continue
+        if (status === 'taken' && !spotReachable(state, seat, def)) continue
         spots.push({
-          clueId: def.id,
-          location: def.location,
+          spotId: spotIdOf(state, def.id),
+          location: def.location!,
           spot: def.spot ?? def.title,
           cost: def.cost ?? 1,
           status,
@@ -691,7 +764,7 @@ export function makeEngine(rt: ScenarioRuntime) {
     const clues: ClueView[] = []
     for (const def of sc.clues) {
       const c = state.clues[def.id]
-      if (!c || c.destroyed || !canSee(state, seat, def.id)) continue
+      if (!c || !canSee(state, seat, def.id)) continue
       clues.push({
         id: def.id,
         title: def.title,
@@ -713,7 +786,11 @@ export function makeEngine(rt: ScenarioRuntime) {
       ? accuseFor(state, seat).map(q => ({ id: q.id, prompt: q.prompt, options: q.options, multi: Array.isArray(q.answer) }))
       : []
 
-    const log = state.log.filter(e => e.to === 'all' || e.to === seat).slice(-200)
+    // 剧情、DM 私信全部保留；聊天只带最近 200 条（刷屏不会挤掉剧情）
+    const visible = state.log.filter(e => e.to === 'all' || e.to === seat)
+    const chats = visible.filter(e => e.kind === 'chat')
+    const chatFloor = chats.length > 200 ? chats[chats.length - 200].id : -Infinity
+    const log = visible.filter(e => e.kind !== 'chat' || e.id >= chatFloor)
 
     let auction: SeatView['auction'] = null
     if (step?.kind === 'auction' && state.auction) {
@@ -736,6 +813,7 @@ export function makeEngine(rt: ScenarioRuntime) {
               otherBid: a.bids[other]?.[r.lot] ?? 0,
             }))
           : null,
+        tieLabel: step.tie?.label ?? '平局 · 流拍',
       }
     }
 
@@ -799,11 +877,13 @@ export function makeEngine(rt: ScenarioRuntime) {
     createGame,
     joinSeat,
     setPresence,
+    vacateSeat,
     reduce,
     tick,
     nextDeadline,
     viewFor,
     // 供剧本模块与测试使用
-    helpers: { evalCond, canSee, grantClue, log, applyEffects, roleOf, seatOfRole, stepAt, reached, seatName },
+    spotIdOf,
+    helpers: { evalCond, canSee, grantClue, log, applyEffects, roleOf, seatOfRole, stepAt, reached, seatName, clueOfSpot },
   }
 }

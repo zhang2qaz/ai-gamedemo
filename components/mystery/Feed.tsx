@@ -13,7 +13,7 @@ function nameOf(view: SeatView, from: LogEntry['from']) {
   return role ? role.name : (p.name ?? from)
 }
 
-export default function Feed({ compact = false }: { compact?: boolean }) {
+export default function Feed({ compact = false, active = true }: { compact?: boolean; active?: boolean }) {
   const view = useMysteryStore(s => s.view)!
   const act = useMysteryStore(s => s.act)
   const [text, setText] = useState('')
@@ -24,10 +24,12 @@ export default function Feed({ compact = false }: { compact?: boolean }) {
     filter === 'all' ? true : filter === 'chat' ? e.kind === 'chat' : e.kind !== 'chat',
   )
 
+  // 有新记录、或从隐藏切到可见时滚到底（display:none 时设置 scrollTop 无效，所以切回来要再滚一次）
+  const lastId = entries[entries.length - 1]?.id ?? 0
   useEffect(() => {
     const el = box.current
-    if (el) el.scrollTop = el.scrollHeight
-  }, [entries.length])
+    if (el && active) el.scrollTop = el.scrollHeight
+  }, [lastId, active, filter])
 
   function send(t?: string) {
     const msg = (t ?? text).trim()
@@ -63,7 +65,7 @@ export default function Feed({ compact = false }: { compact?: boolean }) {
           onSubmit={e => { e.preventDefault(); send() }}
         >
           <input
-            className="mx-input !py-2 text-sm"
+            className="mx-input !py-2 sm:text-sm"
             value={text}
             maxLength={300}
             placeholder="对搭档说点什么…"

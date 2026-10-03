@@ -12,7 +12,7 @@ import type { FinaleModule } from '../../runtime'
 import { appendLog } from '../../log'
 import { CLUES } from './clues'
 import { ETHAN, MANDY } from './roles'
-import type { FinaleOrder, FinaleOutcome, FinaleView, RaceId } from './finaleTypes'
+import type { FinaleCopy, FinaleOrder, FinaleOutcome, FinaleView, RaceId } from './finaleTypes'
 
 export type Race = RaceId
 export type Who = 'mandy' | 'ethan' | 'price'
@@ -116,7 +116,8 @@ export type FinaleState = {
   immune: Who[]
   casts: CastRecord[]
   burned: { seat: Seat; card: string; round: number }[]
-  used: Record<Seat, string[]>
+  /** 用过的"限一次"道具（按道具记，不按人记：转手后不能再用） */
+  usedItems: string[]
   fled: Seat[]
   will: { state: 'none' | 'executed' | 'burned'; by: Seat | null }
   history: { round: number; lines: string[] }[]
@@ -175,7 +176,7 @@ function hasItem(state: GameState, seat: Seat, item: string) {
 }
 
 function itemAvailable(state: GameState, seat: Seat, item: string) {
-  return hasItem(state, seat, item) && !fs(state).used[seat].includes(item)
+  return hasItem(state, seat, item) && !fs(state).usedItems.includes(item)
 }
 
 function validateOrder(state: GameState, seat: Seat, raw: unknown): Order | string {
@@ -198,7 +199,7 @@ function validateOrder(state: GameState, seat: Seat, raw: unknown): Order | stri
   if (o.pr && typeof o.pr === 'object') {
     const race = (o.pr as { race?: unknown }).race
     const side = (o.pr as { side?: unknown }).side
-    if (!RACES.includes(race as Race) || (side !== 'truth' && side !== 'price')) return '舆论操作无效'
+    if (!RACES.includes(race as Race) || (side !== 'truth' && side !== 'claim')) return '舆论操作无效'
     if (state.seats[seat].money < PR_COST) return `舆论操作需要现金 $${PR_COST.toLocaleString('en-US')}`
     pr = { race: race as Race, side }
   }
@@ -261,7 +262,7 @@ function resolveRound(state: GameState, now: number) {
     for (const card of o.cast) {
       if (!hand.has(card) || isSpent(f, card) || card === o.burn) continue
       const useHeadline = headlineOk && o.headline === card
-      if (useHeadline) f.used[seat].push(ITEMS.headline)
+      if (useHeadline) f.usedItems.push(ITEMS.headline)
       castCard(state, f, seat, card, useHeadline, lines, gains)
     }
     if (o.pr && state.seats[seat].money >= PR_COST) {
@@ -297,7 +298,7 @@ function resolveRound(state: GameState, now: number) {
     gains[t.race] -= t.weight
     const c = state.clues[t.card]
     if (c) c.destroyed = true
-    f.used[seat].push(ITEMS.recount)
+    f.usedItems.push(ITEMS.recount)
     lines.push(`🔍 ${nameOf(state, seat)} 当场要求重新计票：${nameOf(state, otherSeat(seat))} 递交的「${title(t.card)}」被判无效（−${t.weight}）。`)
   }
 
@@ -368,8 +369,15 @@ function sheriffSearch(state: GameState, now: number) {
   const f = fs(state)
   const lines: string[] = []
   for (const seat of SEATS) {
-    if (f.fled.includes(seat)) continue
     const who = whoOfSeat(state, seat)
+    // 遗嘱原件在谁手里都会被找到并交给律师——出海的人也带不走它（它锁在庄园的书房里）
+    if (holdsWill(state, seat)) {
+      f.will = { state: 'executed', by: seat }
+      lines.push(f.fled.includes(seat)
+        ? `📜 ${WHO_LABEL[who]}没有带走遗嘱原件。警长在书房找到了它，交给了律师。`
+        : `📜 警长在${WHO_LABEL[who]}身上找到了遗嘱原件，交给了律师。`)
+    }
+    if (f.fled.includes(seat)) continue
     for (const card of handOf(state, seat)) {
       const meta = FINALE_CARDS[card]
       const kind = clueById.get(card)?.kind
@@ -377,10 +385,6 @@ function sheriffSearch(state: GameState, now: number) {
       f.truth[meta.race] += 1
       f.casts.push({ seat, card, race: meta.race, weight: 1, round: 4, headline: false, voided: false, found: true })
       lines.push(`🚔 警长从${WHO_LABEL[who]}身上搜出了「${title(card)}」→ ${RACE_INFO[meta.race].title} 真相 +1`)
-    }
-    if (holdsWill(state, seat)) {
-      f.will = { state: 'executed', by: seat }
-      lines.push(`📜 警长在${WHO_LABEL[who]}身上找到了遗嘱原件，交给了律师。`)
     }
   }
   if (lines.length === 0) lines.push('🚔 警长搜了你们的身，什么也没找到。')
@@ -456,6 +460,70 @@ function advanceAfterOrders(state: GameState, now: number) {
   }
 }
 
+/**
+ * 终局界面上所有带剧情的文字。客户端包里不能出现任何人物关系与真相
+ * （指认环节在终局之前，前端 JS 是任何人都能打开看的），所以统一由服务器下发。
+ */
+function finaleCopy(state: GameState, seat: Seat, f: FinaleState): FinaleCopy {
+  const me = whoOfSeat(state, seat)
+  const myRace = RACE_INFO[ownRace(me)].title
+  const otherRace = RACE_INFO[ownRace(me === 'mandy' ? 'ethan' : 'mandy')].title
+  const o = f.outcome
+  return {
+    tag: 'RECOUNT',
+    title: '黎明计票',
+    clocks: ['05:00', '05:20', '05:40'],
+    dealClock: '05:20 · 普莱斯的交易',
+    doneClock: '06:00 · 计票结束',
+    truthLabel: '真相',
+    claimLabel: '普莱斯',
+    claimTextLabel: '普莱斯的说法',
+    handHint: `你手里的证据（选票）· 每轮最多递交 ${MAX_CAST} 份、销毁 1 份。标「会被搜出」的若留到 06:00，会被警长从你身上搜出来。`,
+    searchableTag: '会被搜出',
+    waiting: '等待对方下令……（你们可以在记录里谈判）',
+    immune: '普莱斯答应过：在你的案子里，你是清白的（豁免）。',
+    will: {
+      title: '📜 吉迪恩的遗嘱原件在你手里',
+      hint: '交给律师即生效（不占递交名额）。留到 06:00 也会被警长找到并交给律师——出海也带不走它；烧掉，遗产就归普雷斯顿。',
+      keep: '先留着',
+      submit: '交给律师',
+      burn: '烧掉',
+      submitted: '把遗嘱交给律师',
+      burned: '烧掉遗嘱',
+    },
+    items: {
+      lawyer: '⚖️ 律师名片：结算时自动生效——一级谋杀降为较轻的罪名（只降一级，降不到不起诉）。',
+      headline: '🗞️ 头版（限一次）：',
+      recount: '🔍 布置重新计票（限一次）：揭晓时作废对方本轮递交的最强一张（优先指向你的），那张证据随之作废',
+      yacht: '🛥️ 出海逃亡：不再被起诉，但放弃遗产（本轮的其他命令照常执行）',
+    },
+    deal: {
+      intro: '走廊尽头，普莱斯医生压低声音，像所有人的好外公：\n"孩子，你我都知道今晚发生了什么。只要你点头，我会告诉警长**你**是清白的。至于另一个人……我会说出我\u2018看到\u2019的。"',
+      terms: [
+        `**接受**：你在「${myRace}」里豁免；普莱斯会在「${otherRace}」里指证对方（真相 +3，指向对方）；2000 年一案「普莱斯」+2。`,
+        '**拒绝**：如果你们两个都拒绝，普莱斯会乱了阵脚——2000 年一案「普莱斯」−4。',
+        '**但如果你们都接受**——他会把你们两个都卖掉：各自的案子真相 +2 并指向你们，2000 年一案「普莱斯」+3，谁也不豁免。',
+      ],
+      note: '对方收到的是同样的提议。你们可以先商量——但对方最后选什么，只有揭晓时才知道。',
+    },
+    historyLabels: { deal: '05:20 · 交易', sheriff: '06:00 · 警长' },
+    done: o
+      ? `计票结束。${o.prevails.R3 ? '2000 年一案重新立案。' : '2000 年一案维持"意外"。'}${o.priceArrested ? '普莱斯医生被捕。' : '普莱斯医生全身而退。'}（结局即将揭晓）`
+      : null,
+    rules: [
+      '三场计票：罗丝之死、吉迪恩之死、2000 年林梅之死。每场「真相」≥「普莱斯」即真相成立，否则按普莱斯的说法结案。',
+      '你**手里持有**的带终局标记的线索就是选票（公开过、但仍在你手里的也算）。终局开始后证据封存，不能再交给对方。',
+      `每轮同时秘密下令：最多递交 ${MAX_CAST} 份、销毁 1 份、舆论 1 次（$${PR_COST.toLocaleString('en-US')}，任一案件任一方 +1）。递交的证据会公开它指向谁；销毁是秘密的，结局时才公开。`,
+      `每轮揭晓后，普莱斯在「真相」增长最多的一案 +${REACTION}（平局优先 2000 年、罗丝、吉迪恩；都没增长则不动）。`,
+      '05:20 普莱斯的交易：见交易说明。',
+      '06:00 警长搜身：你手里仍持有的、牵连你自己的物证/文件/电子/媒体证据会被搜出（各计 1 票）。口供与证人证词搜不出来。出海的人不会被搜身。',
+      '起诉：你的案子（曼迪＝罗丝之死，伊森＝吉迪恩之死）真相成立、你被某张证据指向、且未被豁免 → 被起诉。若普莱斯也被指向，罪名减轻（过失致死 / 二级谋杀）。律师名片只降一级。',
+      '普莱斯被捕：2000 年一案真相成立，或你们的案子真相成立且指向了他。',
+      '遗嘱：交给律师，或在 06:00 被警长找到（谁拿着都一样，出海也带不走）即生效；烧掉则作废。伊森若因吉迪恩之死被起诉，依佛州"杀人者不得继承"规定失去份额；出海的人放弃遗产。',
+    ],
+  }
+}
+
 export const finaleModule: FinaleModule = {
   init(state, now) {
     const f: FinaleState = {
@@ -471,7 +539,7 @@ export const finaleModule: FinaleModule = {
       immune: [],
       casts: [],
       burned: [],
-      used: { P1: [], P2: [] },
+      usedItems: [],
       fled: [],
       will: { state: 'none', by: null },
       history: [],
@@ -485,10 +553,12 @@ export const finaleModule: FinaleModule = {
   act(state, seat, payload, now) {
     const f = fs(state)
     if (!payload || typeof payload !== 'object') return '无效操作'
-    const p = payload as { type?: string; order?: unknown; choice?: unknown }
+    const p = payload as { type?: string; order?: unknown; choice?: unknown; round?: unknown }
     if (f.phase === 'done') return '计票已经结束'
     if (p.type === 'order') {
       if (f.phase !== 'orders') return '现在不是下令的时候'
+      // 带了轮次就必须是当前轮：双击或网络重发的旧命令不能落到下一轮
+      if (p.round !== undefined && p.round !== f.round) return '那一轮已经结算了，命令没有生效'
       if (f.orders[seat]) return '你本轮已经锁定了命令'
       const o = validateOrder(state, seat, p.order)
       if (typeof o === 'string') return o
@@ -564,7 +634,7 @@ export const finaleModule: FinaleModule = {
     })
     const items = (Object.values(ITEMS) as string[])
       .filter(it => hasItem(state, seat, it))
-      .map(it => ({ id: it, title: title(it), icon: clueById.get(it)?.icon ?? '🎁', used: f.used[seat].includes(it) }))
+      .map(it => ({ id: it, title: title(it), icon: clueById.get(it)?.icon ?? '🎁', used: f.usedItems.includes(it) }))
     const other = otherSeat(seat)
     const mapCast = (c: CastRecord) => ({ id: c.card, title: title(c.card), race: c.race, weight: c.weight, round: c.round, voided: c.voided, found: !!c.found })
     const myRace = ownRace(me)
@@ -574,10 +644,9 @@ export const finaleModule: FinaleModule = {
       round: f.round,
       phase: f.phase,
       deadline: f.phase === 'done' ? null : f.deadline,
-      races: RACES.map(r => ({ id: r, title: RACE_INFO[r].title, cover: RACE_INFO[r].cover, truth: f.truth[r], price: f.price[r] })),
+      races: RACES.map(r => ({ id: r, title: RACE_INFO[r].title, claimText: RACE_INFO[r].cover, truth: f.truth[r], claim: f.price[r] })),
       hand,
       holdsWill: holdsWill(state, seat),
-      willState: f.will.state,
       items,
       money: state.seats[seat].money,
       prCost: PR_COST,
@@ -598,8 +667,9 @@ export const finaleModule: FinaleModule = {
       immune: f.immune.includes(me),
       fled: f.fled.includes(seat),
       outcome: f.outcome,
+      copy: finaleCopy(state, seat, f),
       actions: f.phase === 'orders' && !f.orders[seat]
-        ? [{ id: 'pass', label: '本轮不出手', payload: { type: 'order', order: EMPTY_ORDER } }]
+        ? [{ id: 'pass', label: '本轮不出手', payload: { type: 'order', round: f.round, order: EMPTY_ORDER } }]
         : f.phase === 'deal' && !f.deal[seat]
           ? [{ id: 'refuse', label: '拒绝交易', payload: { type: 'deal', choice: 'refuse' } }]
           : [],

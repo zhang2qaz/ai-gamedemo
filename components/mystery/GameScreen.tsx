@@ -30,6 +30,8 @@ export default function GameScreen() {
   const [seenStep, setSeenStep] = useState(view.step.id)
   const [seenClues, setSeenClues] = useState(view.clues.length)
   const [confirmLeave, setConfirmLeave] = useState(false)
+  // 点了「准备」到服务器回应之前不能再点（重复的一下会落到下一阶段，把你标成"已准备"）
+  const [readySent, setReadySent] = useState<string | null>(null)
 
   // 步骤切换时自动跳到对应面板（渲染期间根据 props 调整 state）
   if (view.step.id !== seenStep) {
@@ -43,6 +45,8 @@ export default function GameScreen() {
   const partnerRole = view.roles.find(r => r.id === partner.roleId)
   const me = view.players[view.seat]
   const k = view.step.kind
+  const readyKey = `${view.step.index}:${me.ready}`
+  const latestChapter = view.me.chapters[view.me.chapters.length - 1]?.id ?? ''
   const lastNews = useMemo(() => [...view.log].reverse().find(e => e.kind === 'system' || e.kind === 'event'), [view.log])
 
   const tabs: { id: Tab; label: string; dot?: boolean; show: boolean }[] = [
@@ -100,8 +104,12 @@ export default function GameScreen() {
                 </span>
                 <button
                   className={`mx-btn !py-2 text-sm ${me.ready ? 'mx-btn-ghost' : 'mx-btn-gold'}`}
-                  disabled={k === 'choice' && !view.me.choice?.chosen && !!view.me.choice}
-                  onClick={() => act({ type: 'ready', value: !me.ready })}
+                  disabled={(k === 'choice' && !view.me.choice?.chosen && !!view.me.choice) || readySent === readyKey}
+                  onClick={() => {
+                    setReadySent(readyKey)
+                    act({ type: 'ready', value: !me.ready })
+                    setTimeout(() => setReadySent(cur => (cur === readyKey ? null : cur)), 4000)
+                  }}
                 >
                   {me.ready ? '取消准备' : readyLabel(k)}
                 </button>
@@ -110,11 +118,12 @@ export default function GameScreen() {
           )}
 
           <div className={tab === 'stage' ? '' : 'hidden'}><Stage view={view} goto={setTab} /></div>
-          <div className={tab === 'script' ? '' : 'hidden'}><ScriptPanel view={view} /></div>
+          {/* 新章节到来时重新挂载，默认展开最新一章 */}
+          <div className={tab === 'script' ? '' : 'hidden'}><ScriptPanel key={latestChapter} view={view} /></div>
           <div className={tab === 'search' ? '' : 'hidden'}><SearchPanel view={view} /></div>
           <div className={tab === 'clues' ? '' : 'hidden'}><CluePanel view={view} /></div>
           <div className={tab === 'cases' ? '' : 'hidden'}><CasePanel view={view} /></div>
-          <div className={tab === 'feed' ? 'lg:hidden' : 'hidden'}><Feed compact /></div>
+          <div className={tab === 'feed' ? 'lg:hidden' : 'hidden'}><Feed compact active={tab === 'feed'} /></div>
         </section>
 
         <aside className="hidden lg:block sticky top-[150px] h-[calc(100dvh-170px)]">
@@ -126,7 +135,7 @@ export default function GameScreen() {
         <ConnectionBadge />
         {confirmLeave ? (
           <span className="flex gap-2 items-center">
-            确定离开？（可用同一设备重新进入恢复）
+            确定离开？（之后在本设备打开本页，可以回到这局）
             <button className="text-red-300" onClick={leave}>离开</button>
             <button onClick={() => setConfirmLeave(false)}>取消</button>
           </span>

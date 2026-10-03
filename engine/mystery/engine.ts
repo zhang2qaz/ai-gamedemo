@@ -11,6 +11,7 @@ const engine = makeEngine(runtime)
 export const createGame = engine.createGame
 export const joinSeat = engine.joinSeat
 export const setPresence = engine.setPresence
+export const vacateSeat = engine.vacateSeat
 export const reduce = engine.reduce
 export const tick = engine.tick
 export const nextDeadline = engine.nextDeadline

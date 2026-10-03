@@ -215,6 +215,21 @@ describe('客户端不得引用剧本正文（防止剧透进前端包）', () =
   const root = join(__dirname, '..', '..', '..')
   const files = [...walk(join(root, 'components', 'mystery')), ...walk(join(root, 'app', 'mystery')), join(root, 'store', 'mysteryStore.ts'), join(root, 'lib', 'mystery', 'client.ts')]
 
+  // 剧本专有名词：人物、线索标题与关键情节词。前端源码里一个都不能出现（终局等界面文字一律由服务器下发）
+  const FORBIDDEN = [...new Set([
+    ...SCENARIO.roles.flatMap(r => [r.name, r.enName.split(' ')[0]]),
+    ...SCENARIO.npcs.flatMap(n => n.name.replace(/医生|大个子/g, '').split(/[·"“”\s]+/)).filter(w => w.length >= 2),
+    ...SCENARIO.clues.filter(c => c.kind !== 'item').map(c => c.title).filter(t => t.length >= 3),
+    '罗丝', '吉迪恩', '林梅', '遗嘱', '地高辛', '洋地黄', '好外公', '生父', '灯塔', '弗兰克',
+  ])]
+  const clientFiles = [...files, join(root, 'lib', 'mystery', 'protocol.ts'), join(root, 'components', 'ModeSelect.tsx')]
+
+  test.each(clientFiles)('%s 不含剧本专有名词', (file) => {
+    const src = readFileSync(file, 'utf8')
+    const hits = FORBIDDEN.filter(w => src.includes(w))
+    expect(hits).toEqual([])
+  })
+
   test.each(files)('%s 只引用类型或无剧透模块', (file) => {
     const src = readFileSync(file, 'utf8')
     const imports = [...src.matchAll(/^import\s+(type\s+)?[^'"]*from\s+['"]([^'"]+)['"]/gm)]

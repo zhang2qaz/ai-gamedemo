@@ -41,10 +41,16 @@ class Bot {
   act(action: Extract<ClientMsg, { type: 'ACT' }>['action']) {
     if (VERBOSE) console.log(`[${this.name}] act ${JSON.stringify(action).slice(0, 80)}`)
     this.inFlight = true
-    this.send({ type: 'ACT', action })
+    this.send({ type: 'ACT', action, at: this.view?.step.index })
   }
 
   private onMsg(m: ServerMsg) {
+    if (m.type === 'ERROR' && m.reason === 'stale') {
+      // 阶段已推进、操作作废：等新的 VIEW 再决定
+      this.inFlight = false
+      this.schedule()
+      return
+    }
     if (m.type === 'ERROR') {
       this.errors.push(m.message)
       if (VERBOSE) console.log(`[${this.name}] ERROR ${m.message}`)
@@ -99,7 +105,7 @@ class Bot {
       const open = v.spots.filter(s => s.status === 'open' && s.cost <= v.me.ap)
       if (v.seat === 'P2') open.reverse()
       if (open.length) {
-        this.act({ type: 'search', clueId: open[0].clueId })
+        this.act({ type: 'search', spotId: open[0].spotId })
         return
       }
       for (const n of v.npcs) {

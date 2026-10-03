@@ -1,8 +1,14 @@
 import { makeEngine } from '../core'
 import { fixtureRuntime } from '../testFixture'
+import type { ScenarioRuntime } from '../runtime'
+import { MAX_CHAT_LOG } from '../log'
 import type { GameState, MysteryAction, Seat } from '../types'
 
 const E = makeEngine(fixtureRuntime)
+
+/** 测试用：线索 id → 本局的搜查点编号；搜查点 → 线索 id */
+const search = (st: GameState, clueId: string): MysteryAction => ({ type: 'search', spotId: E.spotIdOf(st, clueId) })
+const spotClue = (st: GameState, x: { spotId: string }) => E.helpers.clueOfSpot(st, x.spotId)?.id
 let now = 1_000_000
 
 function act(s: GameState, seat: Seat, a: MysteryAction) {
@@ -66,34 +72,34 @@ describe('剧本杀引擎（通用流程）', () => {
   test('搜证：扣行动点、线索私有、二级线索需前置、专属线索只对本角色开放', () => {
     let s = toSearch()
     let v1 = E.viewFor(s, 'P1', now)
-    expect(v1.spots.map(x => x.clueId).sort()).toEqual(['body', 'key'])
+    expect(v1.spots.map(x => spotClue(s, x)).sort()).toEqual(['body', 'key'])
     const v2 = E.viewFor(s, 'P2', now)
-    expect(v2.spots.map(x => x.clueId).sort()).toEqual(['body', 'diary', 'key'])
-    expect(act(s, 'P1', { type: 'search', clueId: 'diary' }).error).toBe('还不能搜这里')
+    expect(v2.spots.map(x => spotClue(s, x)).sort()).toEqual(['body', 'diary', 'key'])
+    expect(act(s, 'P1', search(s, 'diary')).error).toBe('还不能搜这里')
 
-    s = ok(s, 'P1', { type: 'search', clueId: 'key' })
+    s = ok(s, 'P1', search(s, 'key'))
     expect(s.seats.P1.ap).toBe(2)
     v1 = E.viewFor(s, 'P1', now)
     expect(v1.clues.find(c => c.id === 'key')?.holder).toBe('me')
     expect(E.viewFor(s, 'P2', now).clues.find(c => c.id === 'key')).toBeUndefined()
-    expect(E.viewFor(s, 'P2', now).spots.find(x => x.clueId === 'key')?.status).toBe('taken')
-    expect(act(s, 'P2', { type: 'search', clueId: 'key' }).error).toBe('这里已经被搜过了')
+    expect(E.viewFor(s, 'P2', now).spots.find(x => spotClue(s, x) === 'key')?.status).toBe('taken')
+    expect(act(s, 'P2', search(s, 'key')).error).toBe('这里已经被搜过了')
     // 二级线索解锁
-    expect(E.viewFor(s, 'P1', now).spots.some(x => x.clueId === 'safe')).toBe(true)
-    s = ok(s, 'P1', { type: 'search', clueId: 'safe' })
+    expect(E.viewFor(s, 'P1', now).spots.some(x => spotClue(s, x) === 'safe')).toBe(true)
+    s = ok(s, 'P1', search(s, 'safe'))
     expect(s.seats.P1.ap).toBe(0)
-    expect(act(s, 'P1', { type: 'search', clueId: 'body' }).error).toBe('行动点不足')
+    expect(act(s, 'P1', search(s, 'body')).error).toBe('行动点不足')
   })
 
   test('自动公开的线索双方可见', () => {
     let s = toSearch()
-    s = ok(s, 'P2', { type: 'search', clueId: 'body' })
+    s = ok(s, 'P2', search(s, 'body'))
     expect(E.viewFor(s, 'P1', now).clues.find(c => c.id === 'body')?.public).toBe(true)
   })
 
   test('公开与交出线索', () => {
     let s = toSearch()
-    s = ok(s, 'P1', { type: 'search', clueId: 'key' })
+    s = ok(s, 'P1', search(s, 'key'))
     expect(act(s, 'P2', { type: 'publish', clueId: 'key' }).error).toBe('只能公开自己持有的线索')
     s = ok(s, 'P1', { type: 'give', clueId: 'key' })
     expect(E.viewFor(s, 'P2', now).clues.find(c => c.id === 'key')?.holder).toBe('me')
@@ -108,7 +114,7 @@ describe('剧本杀引擎（通用流程）', () => {
     expect(q.map(x => x.id)).toEqual(['q1'])
     s = ok(s, 'P1', { type: 'ask', npcId: 'maid', questionId: 'q1' })
     expect(act(s, 'P1', { type: 'ask', npcId: 'maid', questionId: 'q1' }).error).toBe('你已经问过了')
-    s = ok(s, 'P1', { type: 'search', clueId: 'key' })
+    s = ok(s, 'P1', search(s, 'key'))
     q = E.viewFor(s, 'P1', now).npcs[0].questions
     expect(q.map(x => x.id)).toEqual(['q1', 'q2'])
     s = ok(s, 'P1', { type: 'ask', npcId: 'maid', questionId: 'q2' })
@@ -153,9 +159,80 @@ describe('剧本杀引擎（通用流程）', () => {
     let s = started()
     s = E.setPresence(s, 'P2', false, now)
     expect(E.viewFor(s, 'P1', now).players.P2.online).toBe(false)
-    expect(act(s, 'P1', { type: 'search', clueId: 'key' }).error).toBe('现在不是搜证时间')
+    expect(act(s, 'P1', search(s, 'key')).error).toBe('现在不是搜证时间')
     expect(act(s, 'P1', { type: 'pickRole', roleId: 'b' }).error).toBe('游戏已开始，不能更换角色')
     // @ts-expect-error 非法动作
     expect(act(s, 'P1', { type: 'hack' }).error).toBe('未知操作')
+  })
+})
+
+describe('引擎边界（审查修复回归）', () => {
+  function variant(patch: (sc: ScenarioRuntime['scenario']) => void) {
+    const sc = structuredClone(fixtureRuntime.scenario)
+    patch(sc)
+    return makeEngine({ ...fixtureRuntime, scenario: sc })
+  }
+  function startWith(E2: ReturnType<typeof makeEngine>) {
+    let s = E2.createGame('T', 1, now)
+    s = E2.joinSeat(s, 'P1', 'x', now)
+    s = E2.joinSeat(s, 'P2', 'y', now)
+    for (const [seat, role] of [['P1', 'a'], ['P2', 'b']] as const) s = E2.reduce(s, seat, { type: 'pickRole', roleId: role }, now).state
+    for (const seat of ['P1', 'P2'] as const) s = E2.reduce(s, seat, { type: 'ready', value: true }, now).state
+    return s
+  }
+
+  test('onEnter：全局效果（广播、setFlag、不带角色的发线索）只执行一次，线索双方都能看到', () => {
+    const E2 = variant(sc => {
+      sc.flow[1].onEnter = [{ dm: '全体注意', to: 'both' }, { setFlag: 'x', value: true }, { giveClue: 'testimony' }]
+    })
+    let s = startWith(E2)
+    s = E2.reduce(s, 'P1', { type: 'ready', value: true }, now).state
+    s = E2.reduce(s, 'P2', { type: 'ready', value: true }, now).state
+    expect(s.log.filter(e => e.text === '全体注意')).toHaveLength(1)
+    expect(s.flags.x).toBe(true)
+    for (const seat of ['P1', 'P2'] as const) expect(E2.viewFor(s, seat, now).clues.some(c => c.id === 'testimony')).toBe(true)
+  })
+
+  test('流程没有以 ending 收尾时，最后一步结束即结束游戏，不会反复结算', () => {
+    const E2 = variant(sc => {
+      sc.flow = sc.flow.filter(st => st.kind !== 'ending')
+      sc.accuse[0].bonus = 100
+    })
+    let s = startWith(E2)
+    for (let i = 0; i < 20 && !s.ended; i++) {
+      const k = E2.scenario.flow[s.stepIndex].kind
+      if (k === 'accuse') {
+        for (const seat of ['P1', 'P2'] as const) s = E2.reduce(s, seat, { type: 'accuse', answers: { killer: 'maid' } }, now).state
+      } else if (k === 'choice') {
+        s = E2.reduce(s, 'P1', { type: 'choose', optionId: 'no' }, now).state
+        s = E2.reduce(s, 'P2', { type: 'ready', value: true }, now).state
+      } else {
+        for (const seat of ['P1', 'P2'] as const) s = E2.reduce(s, seat, { type: 'ready', value: true }, now).state
+      }
+    }
+    expect(s.ended).toBe(true)
+    const money = s.seats.P1.money
+    for (let i = 0; i < 5; i++) s = E2.reduce(s, 'P1', { type: 'chat', text: 'hi' }, now).state
+    expect(s.seats.P1.money).toBe(money)
+  })
+
+  test('没配倒计时的指认 / 抉择也有兜底时限', () => {
+    let s = started()
+    s = ok(s, 'P1', { type: 'ready', value: true })
+    s = ok(s, 'P2', { type: 'ready', value: true }) // → read1
+    s = ok(s, 'P1', { type: 'ready', value: true })
+    s = ok(s, 'P2', { type: 'ready', value: true }) // → search1
+    s = ok(s, 'P1', { type: 'ready', value: true })
+    s = ok(s, 'P2', { type: 'ready', value: true }) // → choose
+    expect(E.scenario.flow[s.stepIndex].kind).toBe('choice')
+    expect(E.nextDeadline(s)).not.toBeNull()
+  })
+
+  test('刷聊天不会把剧情和私信挤出记录', () => {
+    let s = started()
+    for (let i = 0; i < MAX_CHAT_LOG + 50; i++) s = E.reduce(s, 'P1', { type: 'chat', text: `刷屏 ${i}` }, now).state
+    const v = E.viewFor(s, 'P2', now)
+    expect(v.log.some(e => e.text.includes('开场白'))).toBe(true)
+    expect(v.log.filter(e => e.kind === 'chat').length).toBeLessThanOrEqual(200)
   })
 })

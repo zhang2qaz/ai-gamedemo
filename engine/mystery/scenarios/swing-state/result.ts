@@ -31,9 +31,14 @@ function mandyEnding(o: Outcome): { title: string; text: string } {
       parts.push('检方认定：一个化名潜入庄园的女郎，为了报复蓄意投毒。你在法庭上说那是安眠药，没有人信。罗丝的照片被投在大屏幕上，你一直低着头。')
       break
     case 'reduced':
-      title = '被欺骗的手'
-      parts.push(!o.exposed.R1.includes('price') ? '检方本想以一级谋杀起诉你，凯斯勒律师在法庭上替你争到了"过失致死"。' : '你被以过失致死起诉。')
-      parts.push('陪审团听完了普莱斯如何骗你、如何算准了"你的右手边"。宣判那天，你对着法官说："我想替她去死。"')
+      if (o.exposed.R1.includes('price')) {
+        title = '被欺骗的手'
+        parts.push('你被以过失致死起诉。陪审团听完了普莱斯如何骗你、如何算准了"你的右手边"。宣判那天，你对着法官说："我想替她去死。"')
+      } else {
+        // 普莱斯没有被指向：只是律师把罪名降了一级
+        title = '律师的辩护'
+        parts.push('检方本想以一级谋杀起诉你，凯斯勒律师在法庭上替你争到了"过失致死"。他说你只是一只被人利用的手——可那个人是谁，法庭上没有一份证据说得出来。宣判那天，你对着法官说："我想替她去死。"')
+      }
       break
     default:
       title = o.prevails.R1 ? '无人知晓的那只手' : '心源性猝死'
@@ -83,10 +88,20 @@ function ethanEnding(o: Outcome): { title: string; text: string } {
   return { title, text: parts.join('\n\n') }
 }
 
+/** 头条必须和同页的"官方结论"一致：哪一案成立，就只写哪一案 */
 function headline(o: Outcome): string {
-  if (o.priceArrested && o.prevails.R3) return '《棕榈滩纪事报》头版：知名医生涉嫌 2000 年谋杀，庄园双尸案真相大白'
+  const both = o.prevails.R1 && o.prevails.R2
+  const charged = (['mandy', 'ethan'] as const).filter(w => o[w] === 'full' || o[w] === 'reduced').length
+  if (o.priceArrested && o.prevails.R3) {
+    return both
+      ? '《棕榈滩纪事报》头版：知名医生涉嫌 2000 年谋杀被捕，庄园双尸案真相大白'
+      : '《棕榈滩纪事报》头版：知名医生涉嫌 2000 年谋杀被捕，16 年前的"意外"重新立案'
+  }
   if (o.priceArrested) return '《棕榈滩纪事报》头版：吉迪恩·万斯的私人医生被捕'
-  if (o.mandy === 'full' || o.ethan === 'full') return '《棕榈滩纪事报》头版：大选之夜庄园命案，员工被控谋杀'
+  if (charged > 0) return `《棕榈滩纪事报》头版：大选之夜庄园命案，${charged === 2 ? '两人' : '一人'}被起诉`
+  if (both) return '《棕榈滩纪事报》头版：首富坠楼、未婚妻中毒，大选之夜双尸案凶手仍未落网'
+  if (o.prevails.R1) return '《棕榈滩纪事报》头版：首富大选之夜意外身亡，未婚妻同晚遭人下毒'
+  if (o.prevails.R2) return '《棕榈滩纪事报》头版：首富坠楼被认定为他杀，未婚妻同晚猝死'
   return '《棕榈滩纪事报》第 14 版：棕榈滩首富大选之夜意外身亡，未婚妻同晚猝死'
 }
 
@@ -141,7 +156,9 @@ export function buildResult(state: GameState): ResultView {
   const e = ethanEnding(o)
   const priceLine = o.priceArrested
     ? '哈兰·普莱斯医生在 06:40 被戴上手铐。他上警车前回头看了一眼灯塔。'
-    : '哈兰·普莱斯医生签完了两份死亡证明，开着他的奔驰离开了庄园。他还会去打周日的高尔夫。'
+    : o.prevails.R1 || o.prevails.R2
+      ? '哈兰·普莱斯医生做完笔录，开着他的奔驰离开了庄园——没有一份证据指向他。他还会去打周日的高尔夫。'
+      : '哈兰·普莱斯医生签完了两份死亡证明，开着他的奔驰离开了庄园。他还会去打周日的高尔夫。'
 
   const raceLine = (ok: boolean, yes: string, no: string) => (ok ? yes : no)
   const summary = [

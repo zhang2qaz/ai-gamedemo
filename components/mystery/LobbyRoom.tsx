@@ -10,6 +10,7 @@ export default function LobbyRoom() {
   const act = useMysteryStore(s => s.act)
   const leave = useMysteryStore(s => s.leave)
   const [copied, setCopied] = useState(false)
+  const [readySent, setReadySent] = useState<string | null>(null)
 
   const me = view.players[view.seat]
   const other = view.players[otherSeat(view.seat)]
@@ -67,7 +68,7 @@ export default function LobbyRoom() {
                 <button
                   key={r.id}
                   disabled={takenByOther}
-                  onClick={() => act({ type: 'pickRole', roleId: r.id })}
+                  onClick={() => { if (!mine) act({ type: 'pickRole', roleId: r.id }) }}
                   className={`text-left mx-panel p-4 transition-all ${mine ? 'ring-2' : 'hover:bg-white/5'} ${takenByOther ? 'opacity-40' : ''}`}
                   style={mine ? { boxShadow: `0 0 0 2px ${r.color}` } : undefined}
                 >
@@ -93,8 +94,13 @@ export default function LobbyRoom() {
           </div>
           <button
             className={`mx-btn w-full ${me.ready ? 'mx-btn-ghost' : 'mx-btn-gold'}`}
-            disabled={!me.roleId || !other.name}
-            onClick={() => act({ type: 'ready', value: !me.ready })}
+            disabled={!me.roleId || !other.name || readySent === `${me.ready}`}
+            onClick={() => {
+              const key = `${me.ready}`
+              setReadySent(key)
+              act({ type: 'ready', value: !me.ready })
+              setTimeout(() => setReadySent(cur => (cur === key ? null : cur)), 4000)
+            }}
           >
             {!other.name ? '等待搭档加入…' : !me.roleId ? '请先选择角色' : me.ready ? '取消准备' : '准备好了，开始'}
           </button>

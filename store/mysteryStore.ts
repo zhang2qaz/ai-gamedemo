@@ -5,6 +5,7 @@
 import { create } from 'zustand'
 import type { MysteryAction, Seat, SeatView } from '@/engine/mystery/types'
 import { MysteryClient, loadSession, saveSession } from '@/lib/mystery/client'
+import type { SavedSession } from '@/lib/mystery/client'
 import type { ServerMsg } from '@/lib/mystery/protocol'
 
 type Toast = { id: number; text: string; tone: 'error' | 'info' }
@@ -16,12 +17,18 @@ type MysteryStore = {
   code: string | null
   seat: Seat | null
   view: SeatView | null
+  /** 主动离开、尚未结束的一局（入口页提供"回到房间"） */
+  paused: SavedSession | null
   /** 本地时钟与服务器时钟的差（server - local），用于倒计时 */
   clockSkew: number
   toasts: Toast[]
   init: () => void
   create: (name: string) => void
   join: (code: string, name: string) => void
+  /** 回到主动离开的那一局 */
+  resume: () => void
+  /** 放弃主动离开的那一局 */
+  forget: () => void
   act: (action: MysteryAction) => void
   leave: () => void
   dismissToast: (id: number) => void
@@ -29,6 +36,8 @@ type MysteryStore = {
 
 let client: MysteryClient | null = null
 let toastSeq = 0
+/** 正在等待的进房请求：只接受与之对应的 WELCOME（离开后迟到的 WELCOME 要丢掉） */
+let pending: 'CREATE' | 'JOIN' | 'RESUME' | null = null
 
 export const useMysteryStore = create<MysteryStore>((set, get) => {
   function pushToast(text: string, tone: Toast['tone']) {
@@ -39,17 +48,32 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
 
   function onMessage(msg: ServerMsg) {
     switch (msg.type) {
-      case 'WELCOME':
+      case 'WELCOME': {
+        const st = get()
+        // 断线重连时客户端会自动 RESUME：已在同一房间里的 WELCOME 照常接受
+        if (!pending && !(st.joined && st.code === msg.code)) return
+        pending = null
         saveSession({ code: msg.code, token: msg.token })
         if (client) client.resumeWith = { code: msg.code, token: msg.token }
-        set({ joined: true, resuming: false, code: msg.code, seat: msg.seat })
+        set({
+          joined: true, resuming: false, paused: null, code: msg.code, seat: msg.seat,
+          view: st.view && st.view.code === msg.code ? st.view : null,
+        })
         break
-      case 'VIEW':
+      }
+      case 'VIEW': {
+        const st = get()
+        if (!st.joined || msg.view.code !== st.code) return
         set({ view: msg.view, clockSkew: msg.view.step.serverNow - Date.now() })
         break
+      }
       case 'ERROR':
+        // 过期操作（双击、迟到）已被服务器丢弃，界面已经是新阶段：不打扰玩家
+        if (msg.reason === 'stale') return
         if (msg.fatal) {
-          saveSession(null)
+          pending = null
+          // 被别的窗口顶下线：会话仍然有效（属于新窗口），不能删
+          if (msg.reason !== 'superseded') saveSession(null)
           if (client) client.resumeWith = null
           set({ joined: false, resuming: false, view: null, code: null, seat: null })
         }
@@ -68,6 +92,16 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     return client
   }
 
+  function startResume(saved: SavedSession) {
+    const c = ensureClient()
+    c.resumeWith = { code: saved.code, token: saved.token }
+    pending = 'RESUME'
+    set({ resuming: true, paused: null })
+    // 已连上时 onopen 不会再触发，需主动发送；否则由 onopen 自动发送
+    if (c.isOpen) c.send({ type: 'RESUME', code: saved.code, token: saved.token })
+    setTimeout(() => { if (!get().joined) set({ resuming: false }) }, 4000)
+  }
+
   return {
     online: false,
     joined: false,
@@ -75,24 +109,17 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     code: null,
     seat: null,
     view: null,
+    paused: null,
     clockSkew: 0,
     toasts: [],
 
     init: () => {
+      if (get().joined) return
       const saved = loadSession()
-      if (saved && !get().joined) {
-        if (!client) {
-          client = new MysteryClient()
-          client.onMessage(onMessage)
-          client.onStatus(online => set({ online }))
-        }
-        client.resumeWith = saved
-        set({ resuming: true })
-        // 已连上时 onopen 不会再触发，需主动发送；否则由 onopen 自动发送
-        if (client.isOpen) client.send({ type: 'RESUME', ...saved })
-        else client.connect()
-        setTimeout(() => { if (!get().joined) set({ resuming: false }) }, 4000)
+      if (saved && !saved.paused) {
+        startResume(saved)
       } else {
+        if (saved?.paused) set({ paused: saved })
         ensureClient()
       }
     },
@@ -100,24 +127,52 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     create: (name) => {
       const c = ensureClient()
       c.resumeWith = null
+      pending = 'CREATE'
       c.send({ type: 'CREATE', name })
     },
 
     join: (code, name) => {
       const c = ensureClient()
       c.resumeWith = null
+      pending = 'JOIN'
       c.send({ type: 'JOIN', code, name })
     },
 
+    resume: () => {
+      const p = get().paused
+      if (!p) return
+      saveSession({ code: p.code, token: p.token })
+      startResume(p)
+    },
+
+    forget: () => {
+      saveSession(null)
+      set({ paused: null })
+    },
+
     act: (action) => {
-      ensureClient().send({ type: 'ACT', action })
+      const at = get().view?.step.index
+      const sent = ensureClient().send({ type: 'ACT', action, at })
+      if (!sent) pushToast('网络未连接，这个操作没有发出。请等「已连线」后再试。', 'error')
     },
 
     leave: () => {
+      const { view, code } = get()
+      const saved = loadSession()
+      // 开局后、结局前离开：保留身份，入口页可以"回到房间"；大厅里离开则让出座位
+      const inGame = !!view && view.step.kind !== 'lobby' && !view.result
+      if (inGame && saved && saved.code === code) {
+        const p = { code: saved.code, token: saved.token, paused: true }
+        saveSession(p)
+        set({ paused: p })
+      } else {
+        saveSession(null)
+        set({ paused: null })
+      }
       client?.send({ type: 'LEAVE' })
-      saveSession(null)
+      pending = null
       if (client) client.resumeWith = null
-      set({ joined: false, view: null, code: null, seat: null })
+      set({ joined: false, resuming: false, view: null, code: null, seat: null })
     },
 
     dismissToast: (id) => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })),

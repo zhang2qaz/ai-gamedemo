@@ -75,7 +75,7 @@ export function ScriptPanel({ view }: { view: SeatView }) {
 
 // ───────────── 线索卡 ─────────────
 
-export function ClueCard({ clue, actions = true }: { clue: ClueView; actions?: boolean }) {
+export function ClueCard({ clue, actions = true, canGive = true }: { clue: ClueView; actions?: boolean; canGive?: boolean }) {
   const act = useMysteryStore(s => s.act)
   const [confirm, setConfirm] = useState<'publish' | 'give' | null>(null)
   return (
@@ -103,12 +103,12 @@ export function ClueCard({ clue, actions = true }: { clue: ClueView; actions?: b
                 </>
               : <button className="mx-btn mx-btn-blue !py-1.5 text-xs" onClick={() => setConfirm('publish')}>公开</button>
           )}
-          {confirm === 'give'
+          {canGive && (confirm === 'give'
             ? <>
                 <button className="mx-btn mx-btn-red !py-1.5 text-xs" onClick={() => { act({ type: 'give', clueId: clue.id }); setConfirm(null) }}>确认交给对方</button>
                 <button className="mx-btn mx-btn-ghost !py-1.5 text-xs !text-[var(--mx-paper-ink)] !bg-black/5" onClick={() => setConfirm(null)}>取消</button>
               </>
-            : confirm === null && <button className="mx-btn mx-btn-ghost !py-1.5 text-xs !text-[var(--mx-paper-ink)] !bg-black/5" onClick={() => setConfirm('give')}>交给对方</button>}
+            : confirm === null && <button className="mx-btn mx-btn-ghost !py-1.5 text-xs !text-[var(--mx-paper-ink)] !bg-black/5" onClick={() => setConfirm('give')}>交给对方</button>)}
         </div>
       )}
     </div>
@@ -117,6 +117,7 @@ export function ClueCard({ clue, actions = true }: { clue: ClueView; actions?: b
 
 export function CluePanel({ view }: { view: SeatView }) {
   const [filter, setFilter] = useState<'all' | 'mine' | 'public' | 'other'>('all')
+  const sealed = view.step.kind === 'finale'
   const list = useMemo(() => view.clues.filter(c =>
     filter === 'all' ? true
       : filter === 'mine' ? c.holder === 'me' && !c.public
@@ -133,9 +134,10 @@ export function CluePanel({ view }: { view: SeatView }) {
           </button>
         ))}
       </div>
+      {sealed && <div className="text-xs text-[var(--mx-muted)]">终局开始后证据已经封存：还能公开，但不能再交给对方。</div>}
       {list.length === 0 && <div className="text-center text-[var(--mx-muted)] py-10 text-sm">这里还没有线索。</div>}
       <div className="grid md:grid-cols-2 gap-3">
-        {list.map(c => <ClueCard key={c.id} clue={c} />)}
+        {list.map(c => <ClueCard key={c.id} clue={c} canGive={!sealed} />)}
       </div>
     </div>
   )
@@ -176,7 +178,7 @@ export function SearchPanel({ view }: { view: SeatView }) {
                 <div className="mt-2 space-y-1.5">
                   {spots.length === 0 && <div className="text-[11px] text-[var(--mx-muted)]">暂时没有可搜查之处</div>}
                   {spots.map(s => (
-                    <div key={s.clueId} className="flex items-center gap-2 text-[13px]">
+                    <div key={s.spotId} className="flex items-center gap-2 text-[13px]">
                       <span className={`flex-1 ${s.status === 'open' ? 'text-white/90' : 'text-white/40 line-through'}`}>
                         {s.exclusive && <span className="text-[var(--mx-gold)] mr-1" title="只有你的角色能查到">★</span>}
                         {s.spot}
@@ -185,7 +187,7 @@ export function SearchPanel({ view }: { view: SeatView }) {
                         <button
                           className="mx-btn mx-btn-gold !py-1 !px-2.5 text-xs"
                           disabled={!inSearch || view.me.ap < s.cost}
-                          onClick={() => act({ type: 'search', clueId: s.clueId })}
+                          onClick={() => act({ type: 'search', spotId: s.spotId })}
                         >
                           搜 · {s.cost}AP
                         </button>
@@ -257,6 +259,8 @@ export function SearchPanel({ view }: { view: SeatView }) {
 export function CasePanel({ view }: { view: SeatView }) {
   const act = useMysteryStore(s => s.act)
   const [answers, setAnswers] = useState<Record<string, Record<string, string>>>({})
+  // 已递交、等待结果的案卷：记下递交时的剩余次数，次数变了（有结果了）才能再交
+  const [sentAt, setSentAt] = useState<Record<string, number>>({})
 
   if (view.caseFiles.length === 0) return <div className="text-center text-[var(--mx-muted)] py-10 text-sm">暂无可递交的案卷。</div>
   return (
@@ -267,6 +271,7 @@ export function CasePanel({ view }: { view: SeatView }) {
       {view.caseFiles.map(cf => {
         const a = answers[cf.id] ?? {}
         const complete = cf.questions.every(q => a[q.id])
+        const waiting = sentAt[cf.id] === cf.attemptsLeft
         return (
           <div key={cf.id} className="mx-panel-2 p-3 space-y-2">
             <div className="flex items-center gap-2">
@@ -282,7 +287,7 @@ export function CasePanel({ view }: { view: SeatView }) {
                   <label key={q.id} className="block">
                     <span className="text-[12px] text-white/80">{q.prompt}</span>
                     <select
-                      className="mx-input !py-2 mt-1 text-sm"
+                      className="mx-input !py-2 mt-1 sm:text-sm"
                       value={a[q.id] ?? ''}
                       onChange={e => setAnswers(prev => ({ ...prev, [cf.id]: { ...a, [q.id]: e.target.value } }))}
                     >
@@ -298,10 +303,19 @@ export function CasePanel({ view }: { view: SeatView }) {
                   </span>
                   <button
                     className="mx-btn mx-btn-gold !py-1.5 text-xs"
-                    disabled={!cf.open || !complete || cf.attemptsLeft <= 0}
-                    onClick={() => act({ type: 'caseFile', caseId: cf.id, answers: a })}
+                    disabled={!cf.open || !complete || cf.attemptsLeft <= 0 || waiting}
+                    onClick={() => {
+                      setSentAt(prev => ({ ...prev, [cf.id]: cf.attemptsLeft }))
+                      act({ type: 'caseFile', caseId: cf.id, answers: a, attemptsLeft: cf.attemptsLeft })
+                      // 被拒绝或网络问题时，几秒后允许再交（服务器也会按剩余次数拦住重复提交）
+                      setTimeout(() => setSentAt(prev => {
+                        const next = { ...prev }
+                        delete next[cf.id]
+                        return next
+                      }), 5000)
+                    }}
                   >
-                    {cf.open ? '递交给 DM' : '未开放'}
+                    {!cf.open ? '未开放' : waiting ? '等待 DM 判定…' : '递交给 DM'}
                   </button>
                 </div>
               </>

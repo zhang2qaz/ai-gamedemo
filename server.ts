@@ -71,11 +71,29 @@ app.prepare().then(() => {
   // 剧本杀（2 人，多房间，服务器即 DM）
   const mysteryWss = new WebSocketServer({ noServer: true, maxPayload: 64 * 1024 })
   const mysteryHub = new MysteryHub()
+  // 心跳：30 秒没回 pong 的连接视为已断（手机休眠、切网后的"半开"连接），及时让对方看到离线
+  const mysteryAlive = new WeakMap<object, boolean>()
   mysteryWss.on('connection', (ws) => {
-    ws.on('message', (data) => mysteryHub.handleMessage(ws, data.toString()))
-    ws.on('close', () => mysteryHub.handleDisconnect(ws))
-    ws.on('error', () => mysteryHub.handleDisconnect(ws))
+    mysteryAlive.set(ws, true)
+    ws.on('pong', () => mysteryAlive.set(ws, true))
+    ws.on('message', (data) => {
+      mysteryAlive.set(ws, true)
+      mysteryHub.handleMessage(ws, data.toString())
+    })
+    ws.on('close', () => mysteryHub.handleClose(ws))
+    ws.on('error', () => mysteryHub.handleClose(ws))
   })
+  const mysteryHeartbeat = setInterval(() => {
+    for (const ws of mysteryWss.clients) {
+      if (!mysteryAlive.get(ws)) {
+        ws.terminate()
+        continue
+      }
+      mysteryAlive.set(ws, false)
+      try { ws.ping() } catch { /* 忽略 */ }
+    }
+  }, 30_000)
+  mysteryHeartbeat.unref()
 
   const localIp = getLocalIp()
   console.log(`\n🎮 弈战 多人联机服务器`)

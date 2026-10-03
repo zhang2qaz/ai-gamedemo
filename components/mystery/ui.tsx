@@ -41,7 +41,8 @@ export function Money({ value, className = '' }: { value: number; className?: st
 }
 
 /** 极简富文本：空行分段；以「## 」开头为小标题；**粗体** */
-export function RichText({ text, className = '' }: { text: string; className?: string }) {
+export function RichText({ text, className = '', inline = false }: { text: string; className?: string; inline?: boolean }) {
+  if (inline) return <span className={className}>{renderInline(text)}</span>
   const blocks = text.split(/\n{2,}|\r\n\r\n/)
   return (
     <div className={`mx-script ${className}`}>

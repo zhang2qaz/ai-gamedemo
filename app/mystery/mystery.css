@@ -86,6 +86,11 @@
   outline: none;
 }
 .mx-input:focus { border-color: rgba(232, 194, 106, 0.6); box-shadow: 0 0 0 2px rgba(232, 194, 106, 0.15); }
+/* iOS Safari 聚焦字号小于 16px 的输入框会自动放大页面且不缩回：默认 16px。
+   放在 components 层，组件上的 text-2xl / sm:text-sm 等工具类仍可覆盖 */
+@layer components {
+  .mx-input { font-size: 16px; }
+}
 
 .mx-chyron {
   display: flex;
