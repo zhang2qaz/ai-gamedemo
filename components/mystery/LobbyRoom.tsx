@@ -10,10 +10,13 @@ export default function LobbyRoom() {
   const act = useMysteryStore(s => s.act)
   const leave = useMysteryStore(s => s.leave)
   const [copied, setCopied] = useState(false)
-  const [readySent, setReadySent] = useState<string | null>(null)
+  // 等待服务器确认的"准备"目标值：回传了这个值就解除
+  const [readySent, setReadySent] = useState<{ target: boolean } | null>(null)
 
   const me = view.players[view.seat]
   const other = view.players[otherSeat(view.seat)]
+  if (readySent && me.ready === readySent.target) setReadySent(null)
+  const readyPending = !!readySent && me.ready !== readySent.target
   const link = typeof window !== 'undefined' ? `${window.location.origin}/mystery?room=${view.code}` : ''
 
   async function copy() {
@@ -94,12 +97,12 @@ export default function LobbyRoom() {
           </div>
           <button
             className={`mx-btn w-full ${me.ready ? 'mx-btn-ghost' : 'mx-btn-gold'}`}
-            disabled={!me.roleId || !other.name || readySent === `${me.ready}`}
+            disabled={!me.roleId || !other.name || readyPending}
             onClick={() => {
-              const key = `${me.ready}`
-              setReadySent(key)
-              act({ type: 'ready', value: !me.ready })
-              setTimeout(() => setReadySent(cur => (cur === key ? null : cur)), 4000)
+              const sent = { target: !me.ready }
+              setReadySent(sent)
+              act({ type: 'ready', value: sent.target })
+              setTimeout(() => setReadySent(cur => (cur === sent ? null : cur)), 4000)
             }}
           >
             {!other.name ? '等待搭档加入…' : !me.roleId ? '请先选择角色' : me.ready ? '取消准备' : '准备好了，开始'}

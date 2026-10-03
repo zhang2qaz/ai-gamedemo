@@ -10,8 +10,12 @@ type StatusHandler = (online: boolean) => void
 
 const SESSION_KEY = 'mystery:session'
 const PING_EVERY_MS = 20_000
-/** 这么久没收到任何消息（含 PONG），就认定连接已经"半开"，主动重连 */
-const STALE_AFTER_MS = 50_000
+/**
+ * 发出 PING 之后这么久没有任何回包，才认定连接"半开"、主动重连。
+ * 只看"上一个 PING 有没有回应"，不看距上一条消息多久：后台标签页的定时器会被浏览器节流到每分钟一次，
+ * 按绝对时间判断会把健康的连接误判成断线、反复重连。
+ */
+const PONG_TIMEOUT_MS = 10_000
 /** 切回页面 / 网络恢复时，超过这么久没消息就先探测一下 */
 const PROBE_AFTER_MS = 15_000
 const PROBE_TIMEOUT_MS = 5_000
@@ -48,6 +52,10 @@ export class MysteryClient {
   private pingTimer: ReturnType<typeof setInterval> | null = null
   private probeTimer: ReturnType<typeof setTimeout> | null = null
   private lastMessageAt = 0
+  /** 收到的消息总数（判断"发出 PING 之后有没有任何回包"，不依赖时钟精度） */
+  private received = 0
+  /** 最近一次心跳 PING：发出时刻与当时的消息计数（null = 没有在等回应） */
+  private pendingPing: { at: number; received: number } | null = null
   private closedByUser = false
   private listening = false
   /** 重连成功后自动发送（恢复身份） */
@@ -66,6 +74,7 @@ export class MysteryClient {
     ws.onopen = () => {
       this.retry = 0
       this.lastMessageAt = Date.now()
+      this.pendingPing = null
       this.emitStatus(true)
       if (this.resumeWith) this.rawSend({ type: 'RESUME', code: this.resumeWith.code, token: this.resumeWith.token })
       if (this.pendingIntent) {
@@ -77,6 +86,7 @@ export class MysteryClient {
     }
     ws.onmessage = (ev) => {
       this.lastMessageAt = Date.now()
+      this.received++
       let msg: ServerMsg
       try {
         msg = JSON.parse(ev.data as string)
@@ -142,10 +152,14 @@ export class MysteryClient {
   }
 
   private heartbeat() {
-    if (Date.now() - this.lastMessageAt > STALE_AFTER_MS) {
+    const now = Date.now()
+    const p = this.pendingPing
+    // 上一个 PING 发出后一直没有任何回包（PONG 或别的消息），而且已经等够了：判定为半开连接
+    if (p && this.received === p.received && now - p.at > PONG_TIMEOUT_MS) {
       this.forceReconnect()
       return
     }
+    this.pendingPing = { at: now, received: this.received }
     this.rawSend({ type: 'PING' })
   }
 
@@ -159,13 +173,18 @@ export class MysteryClient {
       return
     }
     if (this.ws.readyState !== WebSocket.OPEN || Date.now() - this.lastMessageAt < PROBE_AFTER_MS) return
-    const sentAt = Date.now()
+    const before = this.received
     this.rawSend({ type: 'PING' })
     if (this.probeTimer) clearTimeout(this.probeTimer)
     this.probeTimer = setTimeout(() => {
       this.probeTimer = null
-      if (this.lastMessageAt < sentAt) this.forceReconnect()
+      if (this.received === before) this.forceReconnect()
     }, PROBE_TIMEOUT_MS)
+  }
+
+  /** 取消尚未发出的建房 / 加入请求（改为恢复旧局时用，避免连上后两个请求先后执行） */
+  cancelIntent() {
+    this.pendingIntent = null
   }
 
   /** 丢掉疑似半开的连接，立刻重连（RESUME 会恢复身份） */
@@ -191,6 +210,7 @@ export class MysteryClient {
   }
 
   private stopTimers() {
+    this.pendingPing = null
     if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null }
     if (this.probeTimer) { clearTimeout(this.probeTimer); this.probeTimer = null }
   }

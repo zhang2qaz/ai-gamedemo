@@ -154,11 +154,15 @@ export function buildResult(state: GameState): ResultView {
 
   const m = mandyEnding(o)
   const e = ethanEnding(o)
+  // 普莱斯没被捕时，要区分"根本没人指向他"和"指向他的证据没能让那一案成立"
+  const pointedAtPrice = (['R1', 'R2', 'R3'] as const).some(r => o.exposed[r].includes('price'))
   const priceLine = o.priceArrested
     ? '哈兰·普莱斯医生在 06:40 被戴上手铐。他上警车前回头看了一眼灯塔。'
-    : o.prevails.R1 || o.prevails.R2
-      ? '哈兰·普莱斯医生做完笔录，开着他的奔驰离开了庄园——没有一份证据指向他。他还会去打周日的高尔夫。'
-      : '哈兰·普莱斯医生签完了两份死亡证明，开着他的奔驰离开了庄园。他还会去打周日的高尔夫。'
+    : pointedAtPrice
+      ? '哈兰·普莱斯医生做完笔录，开着他的奔驰离开了庄园。递到警长手里的那几份指向他的证据，没能让任何一案成立。他还会去打周日的高尔夫。'
+      : o.prevails.R1 || o.prevails.R2
+        ? '哈兰·普莱斯医生做完笔录，开着他的奔驰离开了庄园——没有一份证据指向他。他还会去打周日的高尔夫。'
+        : '哈兰·普莱斯医生签完了两份死亡证明，开着他的奔驰离开了庄园。他还会去打周日的高尔夫。'
 
   const raceLine = (ok: boolean, yes: string, no: string) => (ok ? yes : no)
   const summary = [

@@ -8,7 +8,10 @@ export type ClientMsg =
   | { type: 'CREATE'; name: string }
   | { type: 'JOIN'; code: string; name: string }
   | { type: 'RESUME'; code: string; token: string }
-  /** at：发出操作时客户端看到的步骤序号；与服务器不一致（阶段已推进）时操作作废，防止双击/迟到的操作落到下一阶段 */
+  /**
+   * at：发出操作时客户端看到的步骤序号；与服务器不一致（阶段已推进）时操作作废，防止双击/迟到的操作落到下一阶段。
+   * 只对与阶段绑定的操作生效（chat / publish / give / caseFile 跨阶段都合法，不检查）。
+   */
   | { type: 'ACT'; action: MysteryAction; at?: number }
   | { type: 'LEAVE' }
   | { type: 'PING' }
@@ -25,7 +28,10 @@ export type ErrorReason = 'stale' | 'superseded' | 'expired' | 'auth' | 'rate'
 export type ServerMsg =
   | { type: 'WELCOME'; code: string; seat: Seat; token: string }
   | { type: 'VIEW'; view: SeatView }
-  | { type: 'ERROR'; message: string; fatal?: boolean; reason?: ErrorReason }
+  /** action：被判过期（stale）的那个操作类型 */
+  | { type: 'ERROR'; message: string; fatal?: boolean; reason?: ErrorReason; action?: string }
+  /** 离开的确认：vacated=true 表示座位已让出（大厅），false 表示座位保留、可凭令牌回来（已开局） */
+  | { type: 'LEFT'; code: string; vacated: boolean }
   | { type: 'PONG' }
 
 export const MYSTERY_WS_PATH = '/ws-mystery'

@@ -17,6 +17,8 @@ type SeatConn = {
   ws: WebSocket | null
   /** 掉线时刻（在线时为 null） */
   offlineSince: number | null
+  /** 上一次发给这个座位的视图（去掉 serverNow）：没变就不发，否则"多收到一份一样的视图"会暴露对方的私密操作 */
+  lastView: string | null
 }
 
 type Room = {
@@ -48,11 +50,18 @@ const MSG_BURST = 30 // 每个连接每秒最多处理的消息数
 const CREATE_PER_MIN = 5 // 每个连接每分钟最多建房次数
 const JOIN_FAILS_PER_MIN = 10 // 每个连接每分钟最多加入失败次数（防止扫房间号）
 const TICK_MAX_RETRIES = 5
+/** 同一 IP（换连接也算）每分钟的上限：家庭网络多人共用一个出口，所以比单连接宽松 */
+const CREATE_PER_IP_MIN = 20
+const JOIN_FAILS_PER_IP_MIN = 30
+/** 跨阶段都合法的操作：不做阶段号检查 */
+const STEP_FREE_ACTIONS = new Set(['chat', 'publish', 'give', 'caseFile'])
 
 export class MysteryHub {
   private rooms = new Map<string, Room>()
   private wsRoom = new Map<WebSocket, { code: string; seat: Seat }>()
   private rate = new Map<WebSocket, ConnRate>()
+  private ipOf = new Map<WebSocket, string>()
+  private ipEvents = new Map<string, { creates: number[]; joinFails: number[] }>()
   private sweeper: ReturnType<typeof setInterval>
 
   constructor(private now: () => number = Date.now) {
@@ -73,10 +82,16 @@ export class MysteryHub {
     }
   }
 
+  /** 新连接：记下来源 IP（建房、加入失败按 IP 计数，换连接也绕不过去） */
+  attach(ws: WebSocket, ip: string) {
+    this.ipOf.set(ws, ip || 'unknown')
+  }
+
   /** socket 真正关闭（close / error）：标记离线并清掉限流记录 */
   handleClose(ws: WebSocket) {
     this.handleDisconnect(ws)
     this.rate.delete(ws)
+    this.ipOf.delete(ws)
   }
 
   private route(ws: WebSocket, raw: string) {
@@ -121,9 +136,10 @@ export class MysteryHub {
           this.send(ws, { type: 'ERROR', message: '无效操作' })
           return
         }
-        // 操作发出时的阶段已经过去（双击、网络迟到）：作废，不能落到新阶段上。聊天不受影响
-        if (typeof msg.at === 'number' && msg.at !== room.state.stepIndex && action.type !== 'chat') {
-          this.send(ws, { type: 'ERROR', message: '阶段已经变化，这个操作没有生效', reason: 'stale' })
+        // 操作发出时的阶段已经过去（双击、网络迟到）：作废，不能落到新阶段上。
+        // 聊天、公开、交出、递交案卷跨阶段都合法（引擎自己会校验），不检查
+        if (typeof msg.at === 'number' && msg.at !== room.state.stepIndex && !STEP_FREE_ACTIONS.has(String(action.type))) {
+          this.send(ws, { type: 'ERROR', message: '阶段已经推进，刚才的操作没有生效', reason: 'stale', action: String(action.type) })
           return
         }
         const result = reduce(room.state, ref.seat, action, this.now())
@@ -169,7 +185,10 @@ export class MysteryHub {
     const conn = room.seats[ref.seat]
     if (!conn || conn.ws !== ws) return
     const now = this.now()
-    if (room.state.stepIndex === -1) {
+    // 以服务器的状态为准告诉客户端：座位是让出了，还是保留着（客户端据此决定删不删本地令牌）
+    const vacated = room.state.stepIndex === -1
+    this.send(ws, { type: 'LEFT', code: room.code, vacated })
+    if (vacated) {
       delete room.seats[ref.seat]
       room.state = vacateSeat(room.state, ref.seat, now)
       if (SEATS.every(s => !room.seats[s])) {
@@ -194,7 +213,9 @@ export class MysteryHub {
     const r = this.rateOf(ws)
     const now = this.now()
     r.creates = r.creates.filter(t => now - t < 60_000)
-    if (r.creates.length >= CREATE_PER_MIN) {
+    const ip = this.ipEventsOf(ws)
+    ip.creates = ip.creates.filter(t => now - t < 60_000)
+    if (r.creates.length >= CREATE_PER_MIN || ip.creates.length >= CREATE_PER_IP_MIN) {
       this.send(ws, { type: 'ERROR', message: '建房太频繁，请稍后再试', reason: 'rate' })
       return
     }
@@ -210,6 +231,7 @@ export class MysteryHub {
       return
     }
     r.creates.push(now)
+    ip.creates.push(now)
     this.leave(ws)
     const seed = Math.floor(Math.random() * 0x7fffffff)
     const room: Room = {
@@ -235,13 +257,16 @@ export class MysteryHub {
     const r = this.rateOf(ws)
     const now = this.now()
     r.joinFails = r.joinFails.filter(t => now - t < 60_000)
-    if (r.joinFails.length >= JOIN_FAILS_PER_MIN) {
+    const ip = this.ipEventsOf(ws)
+    ip.joinFails = ip.joinFails.filter(t => now - t < 60_000)
+    if (r.joinFails.length >= JOIN_FAILS_PER_MIN || ip.joinFails.length >= JOIN_FAILS_PER_IP_MIN) {
       this.send(ws, { type: 'ERROR', message: '尝试太频繁，请一分钟后再试', reason: 'rate' })
       return
     }
+    const fail = () => { r.joinFails.push(now); ip.joinFails.push(now) }
     const room = this.rooms.get(code)
     if (!room) {
-      r.joinFails.push(now)
+      fail()
       this.send(ws, { type: 'ERROR', message: '房间不存在，请检查房间号' })
       return
     }
@@ -264,7 +289,7 @@ export class MysteryHub {
       }
     }
     if (!seat) {
-      r.joinFails.push(now)
+      fail()
       this.send(ws, { type: 'ERROR', message: '房间已满（本剧本限 2 人）。若你是掉线的玩家，请用原设备重新打开本页，会自动恢复。' })
       return
     }
@@ -306,6 +331,7 @@ export class MysteryHub {
     }
     conn.ws = ws
     conn.offlineSince = null
+    conn.lastView = null
     this.wsRoom.set(ws, { code, seat })
     this.send(ws, { type: 'WELCOME', code, seat, token: conn.token })
     room.state = setPresence(room.state, seat, true, this.now())
@@ -316,12 +342,13 @@ export class MysteryHub {
     const conn = room.seats[seat]
     if (!conn) return
     this.send(ws, { type: 'WELCOME', code: room.code, seat, token: conn.token })
-    this.send(ws, { type: 'VIEW', view: viewFor(room.state, seat, this.now()) })
+    conn.lastView = null
+    this.sendView(room, seat)
   }
 
   private seat(room: Room, seat: Seat, name: string, ws: WebSocket) {
     const token = randomUUID()
-    room.seats[seat] = { name, token, ws, offlineSince: null }
+    room.seats[seat] = { name, token, ws, offlineSince: null, lastView: null }
     this.wsRoom.set(ws, { code: room.code, seat })
     this.send(ws, { type: 'WELCOME', code: room.code, seat, token })
     room.state = joinSeat(room.state, seat, name, this.now())
@@ -372,11 +399,18 @@ export class MysteryHub {
   }
 
   private broadcastViews(room: Room) {
-    const now = this.now()
-    for (const seat of SEATS) {
-      const conn = room.seats[seat]
-      if (conn?.ws) this.send(conn.ws, { type: 'VIEW', view: viewFor(room.state, seat, now) })
-    }
+    for (const seat of SEATS) this.sendView(room, seat)
+  }
+
+  /** 只在这个座位的视图真的变了时才发（对方的私密操作不能让你"多收到一份"） */
+  private sendView(room: Room, seat: Seat) {
+    const conn = room.seats[seat]
+    if (!conn?.ws) return
+    const view = viewFor(room.state, seat, this.now())
+    const key = JSON.stringify({ ...view, step: { ...view.step, serverNow: 0 } })
+    if (key === conn.lastView) return
+    conn.lastView = key
+    this.send(conn.ws, { type: 'VIEW', view })
   }
 
   private dropRoom(room: Room) {
@@ -387,6 +421,11 @@ export class MysteryHub {
 
   private sweep(force = false) {
     const now = this.now()
+    for (const [ip, e] of this.ipEvents) {
+      e.creates = e.creates.filter(t => now - t < 60_000)
+      e.joinFails = e.joinFails.filter(t => now - t < 60_000)
+      if (!e.creates.length && !e.joinFails.length) this.ipEvents.delete(ip)
+    }
     for (const room of [...this.rooms.values()]) {
       const online = SEATS.some(s => room.seats[s]?.ws)
       if (online) continue
@@ -394,6 +433,16 @@ export class MysteryHub {
       const limit = force ? FORCE_IDLE_MS : room.state.stepIndex === -1 ? LOBBY_IDLE_MS : GAME_IDLE_MS
       if (idle > limit) this.dropRoom(room)
     }
+  }
+
+  private ipEventsOf(ws: WebSocket) {
+    const ip = this.ipOf.get(ws) ?? 'unknown'
+    let e = this.ipEvents.get(ip)
+    if (!e) {
+      e = { creates: [], joinFails: [] }
+      this.ipEvents.set(ip, e)
+    }
+    return e
   }
 
   private rateOf(ws: WebSocket): ConnRate {

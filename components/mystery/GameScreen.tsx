@@ -30,8 +30,8 @@ export default function GameScreen() {
   const [seenStep, setSeenStep] = useState(view.step.id)
   const [seenClues, setSeenClues] = useState(view.clues.length)
   const [confirmLeave, setConfirmLeave] = useState(false)
-  // 点了「准备」到服务器回应之前不能再点（重复的一下会落到下一阶段，把你标成"已准备"）
-  const [readySent, setReadySent] = useState<string | null>(null)
+  // 点了「准备」到服务器回应之前不能再点。记下发出时的阶段与期望值：服务器回传了这个值、或阶段变了，就解除等待
+  const [readySent, setReadySent] = useState<{ step: number; target: boolean } | null>(null)
 
   // 步骤切换时自动跳到对应面板（渲染期间根据 props 调整 state）
   if (view.step.id !== seenStep) {
@@ -45,7 +45,8 @@ export default function GameScreen() {
   const partnerRole = view.roles.find(r => r.id === partner.roleId)
   const me = view.players[view.seat]
   const k = view.step.kind
-  const readyKey = `${view.step.index}:${me.ready}`
+  if (readySent && (readySent.step !== view.step.index || me.ready === readySent.target)) setReadySent(null)
+  const readyPending = !!readySent && readySent.step === view.step.index && me.ready !== readySent.target
   const latestChapter = view.me.chapters[view.me.chapters.length - 1]?.id ?? ''
   const lastNews = useMemo(() => [...view.log].reverse().find(e => e.kind === 'system' || e.kind === 'event'), [view.log])
 
@@ -104,11 +105,13 @@ export default function GameScreen() {
                 </span>
                 <button
                   className={`mx-btn !py-2 text-sm ${me.ready ? 'mx-btn-ghost' : 'mx-btn-gold'}`}
-                  disabled={(k === 'choice' && !view.me.choice?.chosen && !!view.me.choice) || readySent === readyKey}
+                  disabled={(k === 'choice' && !view.me.choice?.chosen && !!view.me.choice) || readyPending}
                   onClick={() => {
-                    setReadySent(readyKey)
-                    act({ type: 'ready', value: !me.ready })
-                    setTimeout(() => setReadySent(cur => (cur === readyKey ? null : cur)), 4000)
+                    const sent = { step: view.step.index, target: !me.ready }
+                    setReadySent(sent)
+                    act({ type: 'ready', value: sent.target })
+                    // 出错（如网络未连）时允许重试
+                    setTimeout(() => setReadySent(cur => (cur === sent ? null : cur)), 4000)
                   }}
                 >
                   {me.ready ? '取消准备' : readyLabel(k)}

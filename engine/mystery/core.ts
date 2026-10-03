@@ -224,7 +224,8 @@ export function makeEngine(rt: ScenarioRuntime) {
   function applyEnterEffects(state: GameState, effects: Effect[] | undefined, now: number) {
     if (!effects?.length) return
     const perSeat = (e: Effect) =>
-      ('giveClue' in e && !!e.role) || 'setSeatFlag' in e || 'money' in e || ('dm' in e && e.to !== 'both')
+      ('giveClue' in e && (!!e.role || (e.to !== undefined && e.to !== 'both'))) ||
+      'setSeatFlag' in e || 'money' in e || ('dm' in e && e.to !== 'both')
     for (const s of SEATS) applyEffects(state, s, effects.filter(perSeat), now)
     const globals = effects.filter(e => !perSeat(e)).map(e => ('giveClue' in e && !e.to ? { ...e, to: 'both' as const } : e))
     applyEffects(state, SEATS[0], globals, now)
@@ -364,6 +365,7 @@ export function makeEngine(rt: ScenarioRuntime) {
       flags: {},
       log: [],
       logSeq: 0,
+      logSeqBy: { P1: 0, P2: 0 },
       auction: null,
       finale: null,
       ended: false,
@@ -476,7 +478,9 @@ export function makeEngine(rt: ScenarioRuntime) {
         grantClue(state, seat, def.id, now)
         const other = otherSeat(seat)
         const loc = sc.locations.find(l => l.id === def.location)
-        log(state, now, 'DM', other, `${seatName(state, seat)} 搜查了「${loc?.name ?? ''} · ${def.spot ?? def.title}」。`, 'dm')
+        // 对方自己也够得着的点才说出具体位置；专属点、未解锁的点只说地点（否则等于告诉对方你拿到了什么）
+        const place = def.spot && spotReachable(state, other, def) ? `「${loc?.name ?? ''} · ${def.spot}」` : `「${loc?.name ?? ''}」里的某处`
+        log(state, now, 'DM', other, `${seatName(state, seat)} 搜查了${place}。`, 'dm')
         return
       }
 
@@ -505,8 +509,10 @@ export function makeEngine(rt: ScenarioRuntime) {
       case 'publish': {
         const c = state.clues[String(action.clueId)]
         const def = clueById.get(String(action.clueId))
-        if (!c || !def || c.destroyed) return '没有这条线索'
+        // 先判归属、再判销毁：对方手里的牌烧没烧，错误信息不能有区别
+        if (!c || !def) return '没有这条线索'
         if (c.owner !== seat) return '只能公开自己持有的线索'
+        if (c.destroyed) return '没有这条线索'
         if (c.public) return '已经公开过了'
         if (state.stepIndex < 0 || state.ended) return '现在不能公开线索'
         c.public = true
@@ -518,8 +524,9 @@ export function makeEngine(rt: ScenarioRuntime) {
       case 'give': {
         const c = state.clues[String(action.clueId)]
         const def = clueById.get(String(action.clueId))
-        if (!c || !def || c.destroyed) return '没有这条线索'
+        if (!c || !def) return '没有这条线索'
         if (c.owner !== seat) return '只能交出自己持有的线索'
+        if (c.destroyed) return '没有这条线索'
         if (state.stepIndex < 0 || state.ended) return '现在不能交出线索'
         // 终局里证据就是选票：转手会让"限一次"的道具再用一次，也能把牵连自己的物证塞给对方躲过搜身
         if (step?.kind === 'finale') return '终局开始后证据已经封存，不能再交给对方'
@@ -787,7 +794,9 @@ export function makeEngine(rt: ScenarioRuntime) {
       : []
 
     // 剧情、DM 私信全部保留；聊天只带最近 200 条（刷屏不会挤掉剧情）
-    const visible = state.log.filter(e => e.to === 'all' || e.to === seat)
+    const visible = state.log
+      .filter(e => e.to === 'all' || e.to === seat)
+      .map(({ seq, ...e }) => ({ ...e, id: seq?.[seat] ?? e.id }))
     const chats = visible.filter(e => e.kind === 'chat')
     const chatFloor = chats.length > 200 ? chats[chats.length - 200].id : -Infinity
     const log = visible.filter(e => e.kind !== 'chat' || e.id >= chatFloor)

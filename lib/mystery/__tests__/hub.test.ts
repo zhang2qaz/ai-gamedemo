@@ -4,20 +4,25 @@ import { MysteryHub } from '../hub'
 import type { ClientMsg, ServerMsg } from '../protocol'
 
 let clock = 1_000_000
+let ipSeq = 0
 const hub = new MysteryHub(() => clock)
 afterAll(() => hub.dispose())
 
-type Fake = { ws: WebSocket; msgs: ServerMsg[]; closed: boolean }
+type Fake = { ws: WebSocket; msgs: ServerMsg[]; closed: boolean; ip?: string }
 
-function sock(): Fake {
-  const f: Fake = { ws: null as unknown as WebSocket, msgs: [], closed: false }
+function sock(ip?: string): Fake {
+  const f: Fake = { ws: null as unknown as WebSocket, msgs: [], closed: false, ip }
   f.ws = {
     send: (raw: string) => { f.msgs.push(JSON.parse(raw)) },
     close: () => { f.closed = true },
   } as unknown as WebSocket
   return f
 }
-const send = (f: Fake, m: ClientMsg) => hub.handleMessage(f.ws, JSON.stringify(m))
+const attached = new WeakSet<object>()
+const send = (f: Fake, m: ClientMsg) => {
+  if (!attached.has(f.ws as object)) { attached.add(f.ws as object); hub.attach(f.ws, f.ip ?? `10.0.0.${++ipSeq}`) }
+  hub.handleMessage(f.ws, JSON.stringify(m))
+}
 const last = <T extends ServerMsg['type']>(f: Fake, type: T) =>
   [...f.msgs].reverse().find(m => m.type === type) as Extract<ServerMsg, { type: T }> | undefined
 const tick = (ms = 1100) => { clock += ms }
@@ -151,5 +156,73 @@ describe('MysteryHub', () => {
     const { a } = room()
     const v = last(a, 'VIEW')!.view
     expect(v.players.P2.money).toBeUndefined()
+  })
+})
+
+describe('MysteryHub（第二轮修复）', () => {
+  function started() {
+    const { a, b, code } = room()
+    send(a, { type: 'ACT', action: { type: 'pickRole', roleId: 'mandy' } })
+    send(b, { type: 'ACT', action: { type: 'pickRole', roleId: 'ethan' } })
+    send(a, { type: 'ACT', action: { type: 'ready', value: true } })
+    send(b, { type: 'ACT', action: { type: 'ready', value: true } })
+    return { a, b, code }
+  }
+
+  test('离开有确认：大厅里 vacated=true，开局后 vacated=false', () => {
+    const r1 = room()
+    send(r1.b, { type: 'LEAVE' })
+    expect(last(r1.b, 'LEFT')).toEqual({ type: 'LEFT', code: r1.code, vacated: true })
+    const r2 = started()
+    send(r2.b, { type: 'LEAVE' })
+    expect(last(r2.b, 'LEFT')).toEqual({ type: 'LEFT', code: r2.code, vacated: false })
+  })
+
+  test('对方的私密操作（答错案卷）不会让你多收到一份视图', () => {
+    const { a, b } = started()
+    // 推进到搜证一
+    for (let guard = 0; guard < 20; guard++) {
+      const v = last(a, 'VIEW')!.view
+      if (v.step.id === 'search1') break
+      tick()
+      if (v.step.kind === 'auction' && !v.auction?.results) {
+        for (const f of [a, b]) send(f, { type: 'ACT', action: { type: 'bid', bids: {} } })
+        continue
+      }
+      for (const f of [a, b]) send(f, { type: 'ACT', action: { type: 'ready', value: true } })
+    }
+    expect(last(a, 'VIEW')!.view.step.id).toBe('search1')
+    const views = () => b.msgs.filter(m => m.type === 'VIEW').length
+    const before = views()
+    tick()
+    send(a, { type: 'ACT', action: { type: 'caseFile', caseId: 'cf_rose', answers: { cause: 'heart', vehicle: 'dinner', claim: 'possible' } } })
+    expect(last(a, 'VIEW')!.view.caseFiles.find(c => c.id === 'cf_rose')!.attemptsLeft).toBe(1)
+    expect(views()).toBe(before)
+    // 双方都看得见的变化照常推送
+    send(a, { type: 'ACT', action: { type: 'ready', value: true } })
+    expect(views()).toBe(before + 1)
+  })
+
+  test('公开 / 交出 / 递交案卷跨阶段合法：不做阶段号检查；被判过期的操作会带上操作类型', () => {
+    const { a } = started()
+    tick()
+    send(a, { type: 'ACT', action: { type: 'publish', clueId: 'nope' }, at: -1 })
+    expect(last(a, 'ERROR')?.reason).not.toBe('stale')
+    send(a, { type: 'ACT', action: { type: 'search', spotId: 'x' }, at: -1 })
+    expect(last(a, 'ERROR')).toMatchObject({ reason: 'stale', action: 'search' })
+  })
+
+  test('换连接也绕不过加入失败的限流（按 IP 计）', () => {
+    let blocked = 0
+    for (let c = 0; c < 5; c++) {
+      const x = sock('203.0.113.9')
+      for (let i = 0; i < 8; i++) {
+        tick(50)
+        send(x, { type: 'JOIN', code: 'QQQ' + 'ABCDEFGH'[i], name: '扫' })
+      }
+      blocked += x.msgs.filter(m => m.type === 'ERROR' && m.reason === 'rate').length
+    }
+    // 40 次里最多 30 次真正去查房间号
+    expect(blocked).toBeGreaterThanOrEqual(10)
   })
 })

@@ -65,7 +65,7 @@ export default function Feed({ compact = false, active = true }: { compact?: boo
           onSubmit={e => { e.preventDefault(); send() }}
         >
           <input
-            className="mx-input !py-2 sm:text-sm"
+            className="mx-input !py-2 lg:text-sm"
             value={text}
             maxLength={300}
             placeholder="对搭档说点什么…"

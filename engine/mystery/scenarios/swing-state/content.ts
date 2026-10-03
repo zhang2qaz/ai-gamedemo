@@ -123,8 +123,8 @@ export const CASE_FILES: CaseFileDef[] = [
         { id: 'room', label: '她房间里的水杯' }, { id: 'gideon_pills', label: '吉迪恩药瓶里的药片' },
       ], answer: 'toast' },
       { id: 'claim', prompt: '普莱斯说"她大概三点钟听到噩耗，一下子就过去了"——这可能吗？', options: [
-        { id: 'possible', label: '可能' },
-        { id: 'impossible', label: '不可能：01:58 之后再没有人、没有电话联系过她，03:12 被发现时已出现成片尸斑——她死在噩耗传开之前' },
+        { id: 'possible', label: '可能：噩耗诱发了心脏骤停' },
+        { id: 'impossible', label: '不可能：她死在噩耗传开之前' },
       ], answer: 'impossible' },
     ],
   },
@@ -139,10 +139,10 @@ export const CASE_FILES: CaseFileDef[] = [
       { id: 'alone', prompt: '坠落时塔顶还有别人吗？', options: [
         { id: 'yes', label: '有' }, { id: 'no', label: '没有，他是自己掉下去的' },
       ], answer: 'yes' },
-      { id: 'exclude', prompt: '同样知道安保通用码的麦克和路易斯，为什么可以排除？', options: [
-        { id: 'radio', label: '对讲基站的发话记录和安保室、门岗录像显示，那段时间他们一直在各自岗位上' },
-        { id: 'size', label: '他们的体型和目击者描述不符，仅此而已' },
-        { id: 'motive', label: '他们没有动机' },
+      { id: 'exclude', prompt: '安保人员麦克和路易斯，为什么可以排除？', options: [
+        { id: 'radio', label: '有记录：对讲和录像显示他们一直在岗' },
+        { id: 'size', label: '看体型：和目击者描述的身形不符' },
+        { id: 'motive', label: '没动机：他们没理由害老板' },
         { id: 'cant', label: '无法排除' },
       ], answer: 'radio' },
     ],
@@ -156,9 +156,9 @@ export const CASE_FILES: CaseFileDef[] = [
         { id: 'bar', label: '吧台' }, { id: 'victor', label: '维克多带来的' },
       ], answer: 'price_bag' },
       { id: 'how', prompt: '毒酒为什么落到了罗丝手里？', options: [
-        { id: 'swap', label: '有人在祝酒时调换了杯子' },
-        { id: 'mirror', label: '"放进你右手边那杯"——面对面递托盘时，下药者的右手边恰是吉迪恩的左手边，而吉迪恩只拿自己右边那杯' },
-        { id: 'rose_chose', label: '罗丝自己拿错了' }, { id: 'gave', label: '吉迪恩把自己那杯递给了罗丝' },
+        { id: 'swap', label: '调包：祝酒时有人趁乱换了杯子' },
+        { id: 'mirror', label: '左右颠倒：面对面递托盘，下药者的"右边"是另一只杯子' },
+        { id: 'rose_chose', label: '拿错：罗丝自己拿了吉迪恩那杯' }, { id: 'gave', label: '让杯：吉迪恩把自己那杯递给了罗丝' },
       ], answer: 'mirror' },
       { id: 'knew', prompt: '下药的人知道那是毒药吗？', options: [
         { id: 'knew', label: '知道' }, { id: 'deceived', label: '不知道，以为是安眠药' },

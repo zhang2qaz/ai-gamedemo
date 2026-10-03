@@ -287,7 +287,7 @@ export function CasePanel({ view }: { view: SeatView }) {
                   <label key={q.id} className="block">
                     <span className="text-[12px] text-white/80">{q.prompt}</span>
                     <select
-                      className="mx-input !py-2 mt-1 sm:text-sm"
+                      className="mx-input !py-2 mt-1 lg:text-sm"
                       value={a[q.id] ?? ''}
                       onChange={e => setAnswers(prev => ({ ...prev, [cf.id]: { ...a, [q.id]: e.target.value } }))}
                     >

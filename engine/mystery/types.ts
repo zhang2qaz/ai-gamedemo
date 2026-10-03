@@ -237,12 +237,15 @@ export type Scenario = {
 // ───────────────────────── 运行时状态 ─────────────────────────
 
 export type LogEntry = {
+  /** 视图里是"该座位自己的"连续序号（不能用全房间序号：缺号会暴露对方收到了私信） */
   id: number
   ts: number
   from: Seat | 'DM'
   to: Seat | 'all'
   text: string
   kind: 'chat' | 'dm' | 'system' | 'event'
+  /** 服务器内部：每个可见座位各自的序号 */
+  seq?: Partial<Record<Seat, number>>
 }
 
 export type ClueState = {
@@ -288,6 +291,8 @@ export type GameState = {
   flags: Record<string, FlagValue>
   log: LogEntry[]
   logSeq: number
+  /** 每个座位各自的日志序号 */
+  logSeqBy?: Record<Seat, number>
   /** 拍卖状态（当前步骤为 auction 时） */
   auction: AuctionState | null
   /** 剧本特定的终局状态 */

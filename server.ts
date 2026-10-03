@@ -73,7 +73,11 @@ app.prepare().then(() => {
   const mysteryHub = new MysteryHub()
   // 心跳：30 秒没回 pong 的连接视为已断（手机休眠、切网后的"半开"连接），及时让对方看到离线
   const mysteryAlive = new WeakMap<object, boolean>()
-  mysteryWss.on('connection', (ws) => {
+  mysteryWss.on('connection', (ws, req) => {
+    // 来源 IP（建房 / 加入失败按 IP 限流）。部署在反向代理（如 Railway）后面时取 X-Forwarded-For 的第一跳
+    const fwd = req.headers['x-forwarded-for']
+    const ip = (Array.isArray(fwd) ? fwd[0] : fwd)?.split(',')[0].trim() || req.socket.remoteAddress || 'unknown'
+    mysteryHub.attach(ws, ip)
     mysteryAlive.set(ws, true)
     ws.on('pong', () => mysteryAlive.set(ws, true))
     ws.on('message', (data) => {

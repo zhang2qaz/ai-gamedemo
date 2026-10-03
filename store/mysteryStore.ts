@@ -50,8 +50,9 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     switch (msg.type) {
       case 'WELCOME': {
         const st = get()
-        // 断线重连时客户端会自动 RESUME：已在同一房间里的 WELCOME 照常接受
-        if (!pending && !(st.joined && st.code === msg.code)) return
+        // 已离开房间后迟到的 WELCOME 要丢掉；只要还在房间里（含断线重连的自动 RESUME），
+        // 就以服务器为准——服务器只会因为本连接的请求发 WELCOME，连接已经绑到了这个座位
+        if (!pending && !st.joined) return
         pending = null
         saveSession({ code: msg.code, token: msg.token })
         if (client) client.resumeWith = { code: msg.code, token: msg.token }
@@ -67,9 +68,26 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
         set({ view: msg.view, clockSkew: msg.view.step.serverNow - Date.now() })
         break
       }
+      case 'LEFT': {
+        // 以服务器为准：座位让出了就删掉本地令牌；座位还保留（比如离开时恰好开局了）就留着，入口页可以回来
+        const saved = loadSession()
+        if (!saved || saved.code !== msg.code) return
+        if (msg.vacated) {
+          saveSession(null)
+          if (get().paused?.code === msg.code) set({ paused: null })
+        } else {
+          const p = { code: saved.code, token: saved.token, paused: true }
+          saveSession(p)
+          if (!get().joined) set({ paused: p })
+        }
+        return
+      }
       case 'ERROR':
-        // 过期操作（双击、迟到）已被服务器丢弃，界面已经是新阶段：不打扰玩家
-        if (msg.reason === 'stale') return
+        // 过期操作（双击、迟到）已被服务器丢弃，界面已经是新阶段："准备"不打扰玩家，其余操作提示一下
+        if (msg.reason === 'stale') {
+          if (msg.action && msg.action !== 'ready') pushToast(msg.message, 'info')
+          return
+        }
         if (msg.fatal) {
           pending = null
           // 被别的窗口顶下线：会话仍然有效（属于新窗口），不能删
@@ -94,6 +112,8 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
 
   function startResume(saved: SavedSession) {
     const c = ensureClient()
+    // 离线时先点过「创建 / 加入」又改成恢复旧局：丢掉那个还没发出的请求
+    c.cancelIntent()
     c.resumeWith = { code: saved.code, token: saved.token }
     pending = 'RESUME'
     set({ resuming: true, paused: null })
@@ -159,12 +179,13 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     leave: () => {
       const { view, code } = get()
       const saved = loadSession()
-      // 开局后、结局前离开：保留身份，入口页可以"回到房间"；大厅里离开则让出座位
-      const inGame = !!view && view.step.kind !== 'lobby' && !view.result
-      if (inGame && saved && saved.code === code) {
+      // 先把令牌留着（标记为暂离），等服务器的 LEFT 确认：大厅里座位让出了才删。
+      // 不能只看本地画面——离开的瞬间对方可能刚好点了开局。结局后离开就没必要保留了
+      const ended = !!view?.result
+      if (!ended && saved && saved.code === code) {
         const p = { code: saved.code, token: saved.token, paused: true }
         saveSession(p)
-        set({ paused: p })
+        set({ paused: view && view.step.kind !== 'lobby' ? p : null })
       } else {
         saveSession(null)
         set({ paused: null })

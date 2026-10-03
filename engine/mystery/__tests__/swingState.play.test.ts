@@ -488,3 +488,57 @@ describe('代码审查修复（回归测试）', () => {
     expect(mEnd.title).toBe('律师的辩护')
   })
 })
+
+describe('第二轮审查修复（回归测试）', () => {
+  test('日志按座位各自编号：对方收到私信，你这边的编号也不会缺号', () => {
+    let s = toFinale()
+    s = order(s, 'P1', { burn: fv(s, 'P1').hand[0].id })
+    s = order(s, 'P2', {})
+    for (const seat of ['P1', 'P2'] as Seat[]) {
+      const ids = E.viewFor(s, seat, now).log.map(e => e.id)
+      for (let i = 1; i < ids.length; i++) expect(ids[i]).toBe(ids[i - 1] + 1)
+      expect(JSON.stringify(E.viewFor(s, seat, now).log)).not.toContain('"seq"')
+    }
+  })
+
+  test('探测不出对方烧了哪张：对方手里烧过 / 没烧的牌，交出与公开的报错一模一样', () => {
+    let s = until(start(), 'search1')
+    s = searchAll(s, 'P1')
+    const mine = E.viewFor(s, 'P1', now).clues.filter(c => c.holder === 'me' && !c.id.startsWith('item_'))
+    for (const c of mine.slice(0, 2)) if (!c.public) s = ok(s, 'P1', { type: 'publish', clueId: c.id })
+    s = until(s, 'finale')
+    const hand = fv(s, 'P1').hand.map(h => h.id).filter(id => mine.slice(0, 2).some(c => c.id === id))
+    expect(hand.length).toBe(2)
+    s = order(s, 'P1', { burn: hand[0] })
+    s = order(s, 'P2', {})
+    for (const type of ['give', 'publish'] as const) {
+      expect(err(s, 'P2', { type, clueId: hand[0] })).toBe(err(s, 'P2', { type, clueId: hand[1] }))
+    }
+  })
+
+  test('搜证播报：对方够不着的点（专属 / 未解锁）只说地点，不说具体搜查点', () => {
+    let s = until(start(), 'search1')
+    s = ok(s, 'P2', search(s, 'door_log'))
+    const last = E.viewFor(s, 'P1', now).log.filter(e => e.kind === 'dm').at(-1)!.text
+    const def = E.scenario.clues.find(c => c.id === 'door_log')!
+    expect(last).not.toContain(def.spot!)
+    expect(last).toMatch(/里的某处/)
+    // 公共点照常说清楚位置
+    s = ok(s, 'P2', search(s, 'earpiece'))
+    const pub = E.viewFor(s, 'P1', now).log.filter(e => e.kind === 'dm').at(-1)!.text
+    expect(pub).toContain(E.scenario.clues.find(c => c.id === 'earpiece')!.spot!)
+  })
+
+  test('普莱斯结局句：有证据指向他但没成立时，不能说"没有一份证据指向他"', () => {
+    let s = toFinale()
+    s = order(order(s, 'P1', {}), 'P2', {})
+    s = deal(deal(s, 'P1', 'refuse'), 'P2', 'refuse')
+    s = order(order(s, 'P1', {}), 'P2', {})
+    s = order(order(s, 'P1', {}), 'P2', {})
+    const st = structuredClone(s)
+    const f = st.finale as FinaleState
+    f.outcome = { ...f.outcome!, prevails: { R1: true, R2: false, R3: false }, exposed: { R1: [], R2: ['price'], R3: ['price'] }, priceArrested: false, mandy: 'none', ethan: 'none' }
+    const r = buildResult(st)
+    for (const e of r.endings) expect(e.text).not.toMatch(/没有一份证据指向他/)
+  })
+})

@@ -193,6 +193,14 @@ describe('引擎边界（审查修复回归）', () => {
     for (const seat of ['P1', 'P2'] as const) expect(E2.viewFor(s, seat, now).clues.some(c => c.id === 'testimony')).toBe(true)
   })
 
+  test('onEnter：显式 to:self 的发线索对每个座位各执行一次', () => {
+    const E2 = variant(sc => { sc.flow[1].onEnter = [{ giveClue: 'testimony', to: 'self' }] })
+    let s = startWith(E2)
+    s = E2.reduce(s, 'P1', { type: 'ready', value: true }, now).state
+    s = E2.reduce(s, 'P2', { type: 'ready', value: true }, now).state
+    for (const seat of ['P1', 'P2'] as const) expect(E2.viewFor(s, seat, now).clues.some(c => c.id === 'testimony')).toBe(true)
+  })
+
   test('流程没有以 ending 收尾时，最后一步结束即结束游戏，不会反复结算', () => {
     const E2 = variant(sc => {
       sc.flow = sc.flow.filter(st => st.kind !== 'ending')

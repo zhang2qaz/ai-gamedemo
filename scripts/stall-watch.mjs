@@ -6,11 +6,15 @@
 // 任何一项变化都算"有进展"，计时清零。
 //
 // 用法：
-//   node scripts/stall-watch.mjs [--idle 300] [--interval 30] [--pid 1234] [--kill] <文件或目录>...
+//   node scripts/stall-watch.mjs [--idle 300] [--interval 30] [--pid 1234] [--kill] [--done-file 路径] <文件或目录>...
+//
+// "任务结束"的信号（二选一，必须给，否则任务正常结束后看门狗会误报 STALL）：
+//   --pid        进程退出即结束（后台 Bash 命令用这个）
+//   --done-file  这个文件出现且非空即结束（Workflow / 子代理：用它的结果输出文件 tasks/<任务ID>.output）
 //
 // 输出（每行一个事件，适合交给 Claude Code 的 Monitor 当事件流）：
 //   STALL ...  连续 --idle 秒无进展（加了 --kill 会先结束 --pid 进程）。退出码 2
-//   DONE ...   --pid 进程已经结束。退出码 0
+//   DONE ...   任务已经结束。退出码 0
 // 正常进展时不输出任何东西。
 // =====================
 
@@ -23,6 +27,7 @@ let idle = 300
 let interval = 30
 let pid = null
 let kill = false
+let doneFile = null
 const paths = []
 for (let i = 0; i < args.length; i++) {
   const a = args[i]
@@ -30,8 +35,9 @@ for (let i = 0; i < args.length; i++) {
   else if (a === '--interval') interval = Number(args[++i])
   else if (a === '--pid') pid = Number(args[++i])
   else if (a === '--kill') kill = true
+  else if (a === '--done-file') doneFile = args[++i]
   else if (a === '-h' || a === '--help') {
-    console.log('用法：node scripts/stall-watch.mjs [--idle 300] [--interval 30] [--pid PID] [--kill] <文件或目录>...')
+    console.log('用法：node scripts/stall-watch.mjs [--idle 300] [--interval 30] [--pid PID] [--kill] [--done-file 路径] <文件或目录>...')
     process.exit(0)
   } else paths.push(a)
 }
@@ -82,7 +88,17 @@ const stamp = () => new Date().toTimeString().slice(0, 8)
 let last = signature()
 let lastChange = Date.now()
 
+function doneFileReady() {
+  if (!doneFile) return false
+  try { return statSync(doneFile).size > 0 } catch { return false }
+}
+
 const timer = setInterval(() => {
+  if (doneFileReady()) {
+    console.log(`${stamp()} DONE 结果文件已生成：${doneFile}`)
+    clearInterval(timer)
+    process.exit(0)
+  }
   if (pid && !alive(pid)) {
     console.log(`${stamp()} DONE 进程 ${pid} 已结束`)
     clearInterval(timer)
