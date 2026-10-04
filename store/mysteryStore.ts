@@ -41,6 +41,7 @@ let client: MysteryClient | null = null
 let toastSeq = 0
 /** 正在等待的进房请求：只接受与之对应的 WELCOME（离开后迟到的 WELCOME 要丢掉） */
 let pending: 'CREATE' | 'JOIN' | 'RESUME' | null = null
+let syncingStorage = false
 
 export const useMysteryStore = create<MysteryStore>((set, get) => {
   function pushToast(text: string, tone: Toast['tone']) {
@@ -142,6 +143,24 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
   }
 
 
+  /**
+   * 别的标签页改了共享会话（localStorage 的 storage 事件只会在"别的"标签页触发）：
+   * 本页不在房间里时，按共享会话重新算入口页横幅——
+   * - 共享会话是别的令牌 / 没了：横幅过时，收起；
+   * - 同一枚令牌、不是暂离：那一局正在另一个窗口里进行（只给"在此窗口继续"，也不让本页另开新局覆盖它）；
+   * - 同一枚令牌、暂离：普通的"回到房间"横幅。
+   */
+  function syncFromStorage() {
+    const st = get()
+    if (st.joined || st.resuming) return
+    const cur = loadSession()
+    if (!cur) {
+      if (st.paused) set({ paused: null, pausedElsewhere: false })
+      return
+    }
+    set({ paused: { code: cur.code, token: cur.token, ...(cur.paused ? { paused: true } : {}) }, pausedElsewhere: !cur.paused })
+  }
+
   function startResume(saved: SavedSession) {
     const c = ensureClient()
     // 改主意回到这个座位：撤回尚未确认的放弃
@@ -169,6 +188,12 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     toasts: [],
 
     init: () => {
+      if (!syncingStorage && typeof window !== 'undefined') {
+        syncingStorage = true
+        window.addEventListener('storage', e => {
+          if (e.key === null || e.key === 'mystery:session') syncFromStorage()
+        })
+      }
       if (get().joined) return
       const saved = loadSession()
       if (saved && !saved.paused) {
@@ -202,14 +227,13 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     resume: () => {
       const p = get().paused
       if (!p) return
-      if (get().pausedElsewhere) {
-        // 横幅可能已经过时：那一局也许已在另一个窗口里离开、放弃，或者那边开了新局
-        const cur = loadSession()
-        if (!cur || cur.token !== p.token) {
-          set({ paused: null, pausedElsewhere: false })
-          pushToast('那一局已在另一个窗口里结束或放弃了', 'info')
-          return
-        }
+      // 横幅可能已经过时：那一局也许已在另一个窗口里离开、放弃，或者那边开了新局。
+      // 只有本设备记着的仍是这枚令牌时才回去（否则会把放弃了的局拉回来，还覆盖另一个窗口的会话）
+      const cur = loadSession()
+      if (!cur || cur.token !== p.token) {
+        set({ paused: null, pausedElsewhere: false })
+        pushToast('那一局已在另一个窗口里结束、放弃，或那边开了新局', 'info')
+        return
       }
       saveSession({ code: p.code, token: p.token })
       startResume(p)
