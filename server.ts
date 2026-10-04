@@ -24,6 +24,8 @@ import { clientIp, trustProxyFromEnv } from './lib/mystery/clientIp'
 const dev = process.env.DEV_MODE === '1'  // 默认 production；DEV_MODE=1 启用 HMR + 详细错误
 const listenHost = '0.0.0.0'
 const port = parseInt(process.env.PORT || '3000', 10)
+// 只接受站内路径（以单个 / 开头），避免被配成跳到别的网站
+const homePath = /^\/(?!\/)[\w\-/]*$/.test(process.env.HOME_PATH ?? '') ? process.env.HOME_PATH! : ''
 
 const app = next({ dev, hostname: listenHost, port })
 const handle = app.getRequestHandler()
@@ -44,6 +46,20 @@ function getLocalIp(): string {
 app.prepare().then(() => {
   const server = createServer((req, res) => {
     const parsedUrl = parse(req.url ?? '/', true)
+
+    // 健康检查（云托管平台用来确认服务已启动）
+    if (parsedUrl.pathname === '/healthz') {
+      res.writeHead(200, { 'Content-Type': 'text/plain' })
+      res.end('ok')
+      return
+    }
+
+    // 部署到网上时可以让首页直接进入某个游戏（如 HOME_PATH=/mystery），网址更短、更好分享
+    if (homePath && parsedUrl.pathname === '/') {
+      res.writeHead(302, { Location: homePath + (parsedUrl.search ?? ''), 'Cache-Control': 'no-store' })
+      res.end()
+      return
+    }
 
     // API: 获取网络信息
     if (parsedUrl.pathname === '/api/network-info') {

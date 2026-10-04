@@ -24,6 +24,10 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 `/mystery` 是一个 2 人联机、电脑当 DM 的剧本杀，需要用 `npm run start:mp`（或 `DEV_MODE=1 npx tsx server.ts`）启动才有联机。玩法与开局方式见 [docs/mystery/README.md](docs/mystery/README.md)（无剧透）。
 
+一键免费放到网上（登录 Render 后点「Deploy Blueprint」，几分钟后得到一个谁都能打开的网址，详见上面的说明文档）：
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/zhang2qaz/ai-gamedemo/tree/claude/trump-era-murder-mystery-ypz5xa)
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

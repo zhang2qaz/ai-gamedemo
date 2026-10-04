@@ -3,6 +3,23 @@
 > 2016 年美国大选之夜，佛罗里达州棕榈滩的海葡萄庄园。2 人联机，电脑当 DM，约 2.5 小时。
 > 本页不含剧透，可以放心给玩家看。**`swing-state-bible.md` 是作者 / DM 用的剧本圣经，含全部真相，玩家请勿打开。**
 
+## 放到网上，做成谁都能打开的网址（不用懂代码，免费）
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/zhang2qaz/ai-gamedemo/tree/claude/trump-era-murder-mystery-ypz5xa)
+
+1. 点上面的按钮（或打开 <https://render.com/deploy?repo=https://github.com/zhang2qaz/ai-gamedemo/tree/claude/trump-era-murder-mystery-ypz5xa>）。
+2. 用 GitHub 或 Google 账号登录 Render（免费，不用绑银行卡）。
+3. 页面会列出一个叫 **swing-state-mystery** 的服务。名字栏随便填（比如 `jubensha`），点最下面的蓝色按钮 **Deploy Blueprint**（有时叫 **Apply**）。
+4. 等 5 分钟左右，点 **swing-state-mystery**，等状态变成绿色的 **Live**，页面最上面那行 `https://swing-state-mystery…onrender.com` 就是游戏网址。点开就能玩，发给朋友，对方也能直接打开。
+
+须知：
+
+- 免费版 15 分钟没人用会"睡着"，下次打开要等大约 1 分钟才醒（页面一直在加载，耐心等一下就好）；玩的过程中不会睡。
+- 网站重启时（例如游戏更新后自动重新部署，或 Render 偶尔维护），正在进行的那一局会中断，需要重新开一局。
+- 免费版每月有 5GB 流量，够玩很多局。
+
+技术细节：配置在根目录的 `render.yaml`（新加坡机房、单实例；首页直接跳到 `/mystery`；`/healthz` 健康检查；`TRUST_PROXY=1`）。这个分支以后有新提交，网站会自动更新。
+
 ## 最简单的玩法（不用懂代码，Mac 电脑）
 
 1. 点这个链接下载游戏：<https://github.com/zhang2qaz/ai-gamedemo/archive/refs/heads/claude/trump-era-murder-mystery-ypz5xa.zip>，下载好后双击解压。
@@ -31,9 +48,9 @@ npm run start:mp          # 先 next build，再用 tsx server.ts 启动（默�
 2. 把房间号（或带 `?room=房间号` 的链接）发给玩家乙，乙输入昵称加入。首页也有入口卡片。
 3. 两人各选一个角色（曼迪 / 伊森），都点「准备好了，开始」。
 
-部署到 Railway 时，`railway.json` 已经是 `npm run build` + `npm start`（即 `tsx server.ts`），不需要额外配置。
+部署到 Render 见上文的按钮（`render.yaml`）；部署到 Railway 时，`railway.json` 已经是 `npm run build` + `npm start`（即 `tsx server.ts`），不需要额外配置。可选环境变量 `HOME_PATH=/mystery`：打开首页直接跳到剧本杀。
 
-建房、加入失败按来源 IP 限流。转发头（`X-Forwarded-For`）客户端可以伪造，所以默认只认 TCP 对端地址；Railway 上会自动信任它的代理。如果你部署在别的反向代理（Nginx 等）后面，请设置环境变量 `TRUST_PROXY=1`（取 `X-Forwarded-For` 最右一跳，即代理追加的地址），否则所有玩家会被当成同一个 IP；只有当代理会覆盖写入 `X-Real-IP` 时才用 `TRUST_PROXY=real-ip`。
+建房、加入失败按来源 IP 限流。转发头（`X-Forwarded-For`）客户端可以伪造，所以默认只认 TCP 对端地址；Railway 上会自动信任它的代理，`render.yaml` 里也已设好 `TRUST_PROXY=1`。如果你部署在别的反向代理（Nginx 等）后面，请设置环境变量 `TRUST_PROXY=1`（取 `X-Forwarded-For` 最右一跳，即代理追加的地址），否则所有玩家会被当成同一个 IP；只有当代理会覆盖写入 `X-Real-IP` 时才用 `TRUST_PROXY=real-ip`。
 
 ## 电脑 DM 做什么
 

@@ -1,0 +1,23 @@
+# 一键部署到 Render（免费）：点 README 里的「Deploy to Render」按钮，或打开
+# https://render.com/deploy?repo=https://github.com/zhang2qaz/ai-gamedemo/tree/claude/trump-era-murder-mystery-ypz5xa
+# 剧本杀的房间存在内存里，所以只能开 1 个实例（免费版本来就是 1 个）。
+services:
+  - type: web
+    name: swing-state-mystery
+    runtime: node
+    plan: free
+    region: singapore
+    branch: claude/trump-era-murder-mystery-ypz5xa
+    buildCommand: npm ci && npm run build
+    # 直接在一个进程里加载 tsx（比 npm start 少两层进程，省约 120MB 内存；免费版只有 512MB）
+    startCommand: node --import tsx server.ts
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Render 前面有反向代理：按 X-Forwarded-For 最右一跳识别玩家来源 IP（见 lib/mystery/clientIp.ts）
+      - key: TRUST_PROXY
+        value: "1"
+      # 打开网址首页直接进入剧本杀
+      - key: HOME_PATH
+        value: /mystery
