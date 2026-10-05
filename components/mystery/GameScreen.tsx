@@ -237,7 +237,6 @@ function AutoReader({ view }: { view: SeatView }) {
   const speech = useSpeech()
   const lastLog = useRef<number | null>(null)
   const seenClues = useRef<Set<string> | null>(null)
-  const k = view.step.kind
   useEffect(() => {
     const maxLog = view.log.reduce((n, e) => Math.max(n, e.id), 0)
     const known = seenClues.current
@@ -251,7 +250,8 @@ function AutoReader({ view }: { view: SeatView }) {
     const partnerName = view.roles.find(r => r.id === view.players[partner].roleId)?.name ?? '搭档'
     for (const e of view.log) {
       if (e.id <= lastLog.current) continue
-      const read = e.kind === 'dm' || (e.kind === 'event' && k !== 'finale') || (e.kind === 'chat' && e.from === partner)
+      // 终局开始后，揭晓的经过由终局面板自己朗读（同一段不念两遍）
+      const read = e.kind === 'dm' || (e.kind === 'event' && !view.finale) || (e.kind === 'chat' && e.from === partner)
       if (!read) continue
       sp?.enqueue({ id: `log:${e.id}`, label: e.kind === 'chat' ? `${partnerName}说` : 'DM', text: e.kind === 'chat' ? `${partnerName}说：${e.text}` : e.text })
     }
@@ -262,6 +262,6 @@ function AutoReader({ view }: { view: SeatView }) {
       sp?.enqueue({ id: `clue:${c.id}`, label: c.title, text: `${c.title}。\n${c.text}` })
     }
     lastLog.current = maxLog
-  }, [speech.auto, view.log, view.clues, view.seat, view.players, view.roles, k])
+  }, [speech.auto, view.log, view.clues, view.seat, view.players, view.roles, view.finale])
   return null
 }

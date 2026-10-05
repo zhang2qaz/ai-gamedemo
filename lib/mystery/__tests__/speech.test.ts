@@ -14,6 +14,16 @@ describe('朗读文本整理', () => {
     expect(toSpeechText('11/07 22:14')).toBe('11月7日 22点14分')
     expect(toSpeechText('出生日期：04/12/1990')).toBe('出生日期：1990年4月12日')
     expect(toSpeechText('酬金 $3,000')).toBe('酬金 3000美元')
+    expect(toSpeechText('01:58 打给伊森，通话 0:41')).toBe('1点58分 打给伊森，通话 41秒')
+    expect(toSpeechText('第 2/3 轮')).toBe('第 2/3 轮')
+    expect(toSpeechText('吉迪恩·万斯')).toBe('吉迪恩万斯')
+    expect(toSpeechText('第 1 轮 · 05:00')).toBe('第 1 轮，5点整')
+  })
+
+  test('不使用旧版 Safari 不支持的正则写法（后行断言会让整个页面打不开）', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'speech.ts'), 'utf8') as string
+    expect(src).not.toMatch(/\(\?<[=!]/)
   })
 
   test('按句切开，长句再按逗号切，标点碎片并入前一句', () => {
@@ -61,18 +71,21 @@ g.window = {
   localStorage: { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => { mem.set(k, v) } },
 }
 
+const made: { stop(): void }[] = []
 function freshSpeaker() {
   let sp!: NonNullable<ReturnType<typeof import('../speech')['getSpeaker']>>
   jest.isolateModules(() => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     sp = (require('../speech') as typeof import('../speech')).getSpeaker()!
   })
+  made.push(sp)
   return sp
 }
 /** 当前这句念完 */
 const finish = () => spoken[spoken.length - 1].onend?.()
 
 beforeEach(() => { spoken.length = 0; mem.clear() })
+afterEach(() => { for (const sp of made.splice(0)) sp.stop() })
 
 describe('朗读播放器', () => {
   test('一句一句念完整段，念完就停', () => {
@@ -142,12 +155,30 @@ describe('朗读播放器', () => {
     expect(again.state.current).toBeNull()
   })
 
-  test('念出错（不是被打断）时接着往下念，不会卡住', () => {
+  test('念出错（不是被打断）时接着往下念，不会卡住；被别的程序打断就停在这一句，等"继续"', () => {
     const sp = freshSpeaker()
     sp.play({ id: 'a', label: '甲', text: '一。二。' })
     spoken[0].onerror?.({ error: 'synthesis-failed' })
     expect(sp.state.index).toBe(1)
     spoken[1].onerror?.({ error: 'interrupted' })
     expect(sp.state.current?.id).toBe('a')
+    expect(sp.state.paused).toBe(true)
+    sp.resume()
+    expect(spoken[spoken.length - 1].text).toBe('二。')
+  })
+
+  test('浏览器一直不报"念完了"：到点自动接着念下一句，不会卡住', () => {
+    jest.useFakeTimers()
+    try {
+      const sp = freshSpeaker()
+      sp.play({ id: 'a', label: '甲', text: '一。二。' })
+      jest.advanceTimersByTime(8_000)
+      expect(sp.state.index).toBe(1)
+      expect(spoken.map(u => u.text)).toEqual(['一。', '二。'])
+      jest.advanceTimersByTime(30_000)
+      expect(sp.state.current).toBeNull()
+    } finally {
+      jest.useRealTimers()
+    }
   })
 })

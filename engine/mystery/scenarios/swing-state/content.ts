@@ -49,7 +49,7 @@ export const FINALE_TEXT = `05:00。普雷斯顿拍了拍手："六点，警长�
 
 普莱斯医生在大厅另一头整理袖口，冲你们微微一笑。他刚给警长打过电话——他们是二十年的老朋友。
 
-乔安把你们拉到窗边，压低声音："警长来了只看证据。**谁的证据攒够了，他就带走谁。**你们手里的东西，决定了天亮以后谁戴上手铐。"`
+乔安把你们拉到窗边，压低声音："警长来了只看两样东西：你们交给他的证据，还有他的老朋友普莱斯说的话。**谁的证据攒够了，他就带走谁。**你们手里的东西，决定了天亮以后谁戴上手铐。"`
 
 export const FLOW: StepDef[] = [
   { id: 'prologue', kind: 'story', title: '序幕 · 大选之夜', text: PROLOGUE, seconds: 300 },
@@ -66,7 +66,7 @@ export const FLOW: StepDef[] = [
     id: 'auction', kind: 'auction', title: '21:30 · 慈善拍卖', text: AUCTION_TEXT, seconds: 420,
     tie: { log: '被维克多·奥利维拉以更高的价钱截走', label: '平局 · 被维克多截走' },
     lots: [
-      { id: 'lot_lawyer', title: '罗伊·凯斯勒律师的一年法律顾问', desc: '棕榈滩最贵的刑辩律师。【终局】你的格子多一格：警长要多一份证据才会带走你。', item: 'item_lawyer', min: 500 },
+      { id: 'lot_lawyer', title: '罗伊·凯斯勒律师的一年法律顾问', desc: '棕榈滩最贵的刑辩律师。【终局】你要多填一格，警长才会带走你。', item: 'item_lawyer', min: 500 },
       { id: 'lot_headline', title: '《棕榈滩纪事报》头版专访', desc: '乔安亲自执笔。【终局】你交出的一份证据算两份（限一次）。', item: 'item_headline', min: 500 },
       { id: 'lot_recount', title: '2000 年重新计票纪念放大镜', desc: '棕榈滩县计票员用过的放大镜。【终局】对方这一轮交出的证据作废（限一次）。', item: 'item_recount', min: 500 },
       { id: 'lot_yacht', title: '"第二次机会号"游艇周末', desc: '附钥匙，码头就在庄园西侧。【终局】第三轮可以出海：警长带不走你，但放弃遗产。', item: 'item_yacht', min: 500 },

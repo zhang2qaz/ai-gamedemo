@@ -5,6 +5,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { RATES, getSpeaker } from '@/lib/mystery/speech'
+import { useMysteryStore } from '@/store/mysteryStore'
 import type { ReadItem, SpeechSnapshot } from '@/lib/mystery/speech'
 
 const OFF: SpeechSnapshot = { supported: false, current: null, sentences: [], index: 0, paused: false, queued: 0, rate: 1, auto: false, voiceName: null }
@@ -53,18 +54,21 @@ export function SpeakButton({ id, label, text, size = 'md', tone = 'dark', class
   )
 }
 
-/** 自动朗读：打开了「自动朗读」时，新出现的内容会自动念（每段只念一次） */
+/** 自动朗读：打开了「自动朗读」时，新出现的内容会自动念（每个房间里每段只念一次；换一局重新算） */
 const autoDone = new Set<string>()
 export function useAutoRead(item: ReadItem | null) {
   const s = useSpeech()
+  const room = useMysteryStore(st => st.code) ?? ''
   const id = item?.id
   const label = item?.label
   const text = item?.text
   useEffect(() => {
-    if (!s.auto || id === undefined || label === undefined || text === undefined || autoDone.has(id)) return
-    autoDone.add(id)
+    if (!s.auto || id === undefined || label === undefined || text === undefined) return
+    const key = `${room}|${id}`
+    if (autoDone.has(key)) return
+    autoDone.add(key)
     getSpeaker()?.enqueue({ id, label, text })
-  }, [s.auto, id, label, text])
+  }, [s.auto, room, id, label, text])
 }
 
 /** 底部朗读条：正在读哪一段、哪一句（大字），以及暂停、上一句、下一句、停止 */
@@ -74,8 +78,9 @@ export function SpeechBar() {
   const sp = getSpeaker()!
   const sentence = s.sentences[s.index] ?? ''
   return (
-    <div className="fixed bottom-0 inset-x-0 z-40 px-2 pb-2 pointer-events-none" role="region" aria-label="朗读">
-      <div className="max-w-3xl mx-auto pointer-events-auto rounded-2xl border border-amber-300/40 bg-[#141b33]/95 backdrop-blur shadow-2xl p-3">
+    // 电脑上靠左放，不挡住右侧的聊天框；手机上铺满底部
+    <div className="fixed bottom-0 inset-x-0 lg:right-auto lg:left-4 lg:w-[min(640px,calc(100vw-420px))] z-40 px-2 lg:px-0 pb-2 pointer-events-none" role="region" aria-label="朗读">
+      <div className="max-w-3xl mx-auto lg:mx-0 pointer-events-auto rounded-2xl border border-amber-300/40 bg-[#141b33]/95 backdrop-blur shadow-2xl p-3">
         <div className="flex items-center gap-2 text-[11px] text-amber-200/90">
           <span className="font-black">🔊 正在读：{s.current.label}</span>
           <span className="ml-auto font-mono">{s.index + 1} / {s.sentences.length}{s.queued > 0 ? ` · 还有 ${s.queued} 段` : ''}</span>

@@ -18,12 +18,13 @@ function label(qid: string, v: string | string[] | undefined) {
   return ids.map(id => q.options.find(o => o.id === id)?.label ?? id).join('、') || '未作答'
 }
 
-type SelfFate = 'free' | 'vouched' | 'fled' | 'taken_reduced' | 'taken'
+type SelfFate = 'free' | 'vouched' | 'fled' | 'confessed' | 'taken_reduced' | 'taken'
 
 function fateOf(o: Outcome, who: 'mandy' | 'ethan'): SelfFate {
   if (o.fled[who]) return 'fled'
+  if (o.taken[who] && o.confessed[who]) return 'confessed'
   if (o.taken[who]) return o.taken.price ? 'taken_reduced' : 'taken'
-  return o.vouched[who] ? 'vouched' : 'free'
+  return o.savedByVouch[who] ? 'vouched' : 'free'
 }
 
 function mandyEnding(o: Outcome): { title: string; text: string } {
@@ -38,6 +39,12 @@ function mandyEnding(o: Outcome): { title: string; text: string } {
       title = '一级谋杀'
       parts.push('警长把你带走了。检方认定：一个化名潜入庄园的女郎，为了报复蓄意投毒。你在法庭上说那是安眠药，没有人信——给你药的那个人，那天早上开着奔驰离开了庄园。罗丝的照片被投在大屏幕上，你一直低着头。')
       break
+    case 'confessed':
+      title = o.taken.price ? '说出一切' : '一个人的认罪'
+      parts.push(o.taken.price
+        ? '你把一切都告诉了警长：那只小瓶、那句"你右手边"、23:27 的备餐间。普莱斯医生上了同一辆警车。检方认定你是被人利用的，你以过失致死认罪。宣判那天，你对着法官说："我想替她去死。"'
+        : '你把一切都告诉了警长。普莱斯医生只是叹了口气："这孩子受了刺激。"证据不够，警长只带走了你。你以过失致死认罪——给你那瓶药的人，那天早上开着奔驰离开了庄园。')
+      break
     case 'taken_reduced':
       title = '被欺骗的手'
       parts.push(o.priceFor.rose
@@ -46,7 +53,7 @@ function mandyEnding(o: Outcome): { title: string; text: string } {
       break
     case 'vouched':
       title = '欠下的人情'
-      parts.push('普莱斯医生对警长说，你整晚都和他在一起。你走出庄园的大门，没有人拦你。可你知道，从今往后，你的命攥在那个人手里——你亲手递出去的那杯酒，他记得清清楚楚。')
+      parts.push('普莱斯医生对警长说："她只是个端盘子的孩子，我可以担保。"警长没有带走你。你走出庄园的大门，没有人拦你。可你知道，从今往后，你的命攥在那个人手里——你亲手递出去的那杯酒，他记得清清楚楚。')
       break
     default:
       title = o.raised.rose ? '无人知晓的那只手' : '心源性猝死'
@@ -77,6 +84,12 @@ function ethanEnding(o: Outcome): { title: string; text: string } {
       title = '一级谋杀'
       parts.push('警长把你带走了。门禁记录、断掉的耳麦、手腕上的抓痕……检方说这是一场蓄谋的复仇：你提前关掉了摄像头。你没有辩解。你只是一遍一遍听那条 41 秒的留言："别恨他。"')
       break
+    case 'confessed':
+      title = '自首'
+      parts.push(o.taken.price
+        ? '你对警长说："是我推的。"你把那封匿名信、关掉的摄像头、塔上的那几分钟全都说了出来。警长顺着那封信查下去，普莱斯医生上了同一辆警车。你被以二级谋杀定罪。宣判时你想起父亲：你们父子，都替同一个人背了锅——可这一次，你没有沉默。'
+        : '你对警长说："是我推的。"你把那封匿名信、关掉的摄像头、塔上的那几分钟全都说了出来。可那封信没有署名，普莱斯医生站在一旁，一句话也没说。你被以二级谋杀定罪。')
+      break
     case 'taken_reduced':
       title = '受人教唆'
       parts.push(o.priceFor.gideon
@@ -85,7 +98,7 @@ function ethanEnding(o: Outcome): { title: string; text: string } {
       break
     case 'vouched':
       title = '欠下的人情'
-      parts.push('普莱斯医生对警长说，两点以后你一直在他旁边。警长没有再问。你自由了——可从今往后，每一次见到那个人，你都得对他笑。')
+      parts.push('普莱斯医生对警长说："这孩子一直在塔下等着，我可以担保。"警长没有再问。你自由了——可从今往后，每一次见到那个人，你都得对他笑。')
       break
     default:
       title = o.raised.gideon ? '塔上的影子' : '醉酒失足'
@@ -135,19 +148,20 @@ export function buildResult(state: GameState): ResultView {
       got: isCorrect(q.answer, acc[q.id]),
     }))
     const fate = fateOf(o, isMandy ? 'mandy' : 'ethan')
-    const freePoints = fate === 'free' || fate === 'vouched' ? 20 : fate === 'taken_reduced' ? 10 : fate === 'fled' ? 5 : 0
+    const reduced = (fate === 'taken_reduced' || fate === 'confessed') && o.taken.price
+    const freePoints = fate === 'free' || fate === 'vouched' ? 20 : reduced ? 10 : fate === 'fled' ? 5 : 0
     const freeLabel = fate === 'free' ? '天亮后平安离开'
-      : fate === 'vouched' ? '天亮后平安离开（普莱斯替你作证）'
-        : fate === 'taken_reduced' ? '被警长带走，但普莱斯医生也被带走（从轻判决）'
-          : fate === 'fled' ? '出海逃亡' : '被警长带走'
+      : fate === 'vouched' ? '天亮后平安离开（普莱斯保了你）'
+        : reduced ? `被警长带走${fate === 'confessed' ? '（认罪）' : ''}，但普莱斯医生也被带走（从轻判决）`
+          : fate === 'fled' ? '出海逃亡' : `被警长带走${fate === 'confessed' ? '（认罪）' : ''}`
     items.push({ label: isMandy ? '母亲的真相（2000 年的证据交到警长手里，普莱斯医生被带走）' : '父亲的清白（2000 年的证据交到警长手里，普莱斯医生被带走）', points: 20, got: o.meiReopened })
     items.push({ label: `自身：${freeLabel}`, points: freePoints > 0 ? freePoints : 20, got: freePoints > 0 })
     if (isMandy) {
-      items.push({ label: '让灯塔上那个人付出代价（伊森被带走，或普莱斯医生因吉迪恩之死的证据被带走）', points: 15, got: o.taken.ethan || (o.taken.price && o.priceFor.gideon) })
+      items.push({ label: '让灯塔上那个人付出代价（伊森被警长带走）', points: 15, got: o.taken.ethan })
       items.push({ label: '拿到他留给你的东西（继承遗产）', points: 15, got: o.mandyInherits })
     } else {
-      items.push({ label: '让毒死母亲的人付出代价（曼迪被带走，或普莱斯医生因罗丝之死的证据被带走）', points: 15, got: o.taken.mandy || (o.taken.price && o.priceFor.rose) })
-      items.push({ label: '"弗兰克·科尔之子"的名字被宣读（遗嘱被找到）', points: 15, got: o.will === 'executed' })
+      items.push({ label: '让毒死母亲的人付出代价（曼迪被警长带走）', points: 15, got: o.taken.mandy })
+      items.push({ label: '"弗兰克·科尔之子"拿到遗产（遗嘱被找到，而且你没被带走、没出海）', points: 15, got: o.ethanInherits })
     }
     const cashPoints = Math.floor(state.seats[seat].money / 1000)
     items.push({ label: `剩余现金 $${state.seats[seat].money.toLocaleString('en-US')}（每 $1,000 计 1 分）`, points: cashPoints, got: cashPoints > 0 })
@@ -164,7 +178,7 @@ export function buildResult(state: GameState): ResultView {
   // 普莱斯没被带走时，要区分"有证据指向他但还不够"和"根本没人指向他"
   const pointedAtPrice = o.priceFor.rose || o.priceFor.gideon || o.priceFor.mei
   const priceLine = o.taken.price
-    ? '哈兰·普莱斯医生在 06:40 被戴上手铐。他上警车前回头看了一眼灯塔。'
+    ? '06:00，哈兰·普莱斯医生被戴上手铐。他上警车前回头看了一眼灯塔。'
     : pointedAtPrice
       ? '哈兰·普莱斯医生做完笔录，开着他的奔驰离开了庄园。交到警长手里的那几份指向他的证据，还差一点。他还会去打周日的高尔夫。'
       : o.counts.price > 0
@@ -177,7 +191,8 @@ export function buildResult(state: GameState): ResultView {
     switch (fateOf(o, who)) {
       case 'fled': return '出海逃亡'
       case 'taken': case 'taken_reduced': return '被警长带走'
-      case 'vouched': return '平安离开（普莱斯替' + (who === 'mandy' ? '她' : '他') + '作证）'
+      case 'confessed': return '认罪，被警长带走'
+      case 'vouched': return '平安离开（普莱斯保了' + (who === 'mandy' ? '她' : '他') + '）'
       default: return '平安离开'
     }
   }
@@ -209,9 +224,10 @@ export function buildResult(state: GameState): ResultView {
 const EMPTY_OUTCOME: Outcome = {
   taken: { mandy: false, ethan: false, price: false },
   fled: { mandy: false, ethan: false },
-  vouched: { mandy: false, ethan: false },
+  confessed: { mandy: false, ethan: false },
+  savedByVouch: { mandy: false, ethan: false },
   counts: { mandy: 0, ethan: 0, price: 0 },
-  lines: { mandy: 3, ethan: 3, price: 5 },
+  lines: { mandy: 3, ethan: 3, price: 6 },
   raised: { rose: false, gideon: false, mei: false },
   priceFor: { rose: false, gideon: false, mei: false },
   meiReopened: false,

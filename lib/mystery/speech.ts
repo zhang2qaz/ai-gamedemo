@@ -40,8 +40,10 @@ export function toSpeechText(raw: string): string {
     .replace(EMOJI, '')
     // 美式日期：11/7/00、04/12/1990 → 年月日
     .replace(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/g, (_, m, d, y) => `${y}年${+m}月${+d}日`)
-    // 11/07 → 11月7日
-    .replace(/\b(\d{1,2})\/(\d{1,2})\b/g, (_, m, d) => `${+m}月${+d}日`)
+    // 两位数的月/日：11/07 → 11月7日（"2/3" 这类分数不动）
+    .replace(/\b(\d{2})\/(\d{2})\b/g, (_, m, d) => (+m >= 1 && +m <= 12 && +d >= 1 && +d <= 31 ? `${+m}月${+d}日` : `${m}/${d}`))
+    // 时长：0:41 → 41秒
+    .replace(/\b0:(\d{2})\b/g, (_, s) => `${+s}秒`)
     // 钟点：02:40、23:30:12 → 2点40分、23点30分12秒
     .replace(/\b(\d{1,2}):(\d{2})(?::(\d{2}))?\b/g, (_, h, m, s) => {
       const min = +m === 0 ? '整' : `${+m < 10 ? '零' : ''}${+m}分`
@@ -52,14 +54,17 @@ export function toSpeechText(raw: string): string {
     .replace(/\$\s?([\d,]+)/g, (_, n) => `${n.replace(/,/g, '')}美元`)
     .replace(/[【】]/g, ' ')
     .replace(/→/g, '，')
-    .replace(/[·•]/g, '，')
+    // 人名中间的点（吉迪恩·万斯）不停顿；两边有空格的点是分隔符，停一下
+    .replace(/\s+[·•]\s+/g, '，')
+    .replace(/•/g, '，')
+    .replace(/·/g, '')
     .replace(/[ \t]+/g, ' ')
   t = t.split('\n').map(l => l.trim()).filter(Boolean).join('\n')
   return t.trim()
 }
 
 /** 按句切开：句号、问号、叹号、分号、换行；太长的句子再按逗号切，太短的并到下一句 */
-export function splitSentences(text: string, max = 60): string[] {
+export function splitSentences(text: string, max = 40): string[] {
   const parts: string[] = []
   for (const line of text.split('\n')) {
     // 直引号分不清前后，不当作句尾；只有纯标点的碎片才并到前一句
@@ -69,7 +74,8 @@ export function splitSentences(text: string, max = 60): string[] {
       if (!p) continue
       if (p.length <= max) { parts.push(p); continue }
       let buf = ''
-      for (const c of p.split(/(?<=[，,、：:])/)) {
+      // 不用后行断言（旧版 Safari 不支持，会让整个页面打不开）
+      for (const c of p.match(/[^，,、：:]+[，,、：:]*|[，,、：:]+/g) ?? [p]) {
         if (buf && (buf + c).length > max) { parts.push(buf); buf = '' }
         buf += c
       }
@@ -100,7 +106,10 @@ export function pickVoice(voices: { name: string; lang: string; localService?: b
     else if (/普通话|中文|Chinese|Mandarin/i.test(name)) score = 6
     if (score < 0) continue
     if (/Natural|Neural|Premium|Enhanced|增强|高品质/i.test(name)) score += 5
-    if (/Xiaoxiao|Xiaoyi|Yunxi|Yunjian|Tingting|Lili|Yu-shu|普通话/i.test(name)) score += 2
+    if (/Xiaoxiao|Xiaoyi|Yunxi|Yunjian|Tingting|Lili|Yu-shu|Huihui|Kangkang|Yaoyao/i.test(name)) score += 2
+    // 本机声音更稳；Chrome 的 Google 在线声音念到十几秒会自己停住
+    if (v.localService) score += 2
+    if (/Google/i.test(name)) score -= 3
     if (score > bestScore) { best = v; bestScore = score }
   }
   return best
@@ -122,6 +131,8 @@ class Speaker {
   private queue: ReadItem[] = []
   /** 每次开始 / 停止都换一个令牌：旧句子的 onend 迟到时不会接着往下念 */
   private token = 0
+  /** 当前这句的保险计时器 */
+  private guard: ReturnType<typeof setTimeout> | null = null
   private voice: unknown = null
 
   constructor() {
@@ -204,8 +215,18 @@ class Speaker {
     u.rate = this.snap.rate
     // 个别浏览器给的声音对象不合规：设不上就用默认的中文声音，不能因此卡住
     try { if (this.voice) u.voice = this.voice } catch { this.voice = null }
-    const done = () => {
+    // 保险：有的浏览器念完一句不报"念完了"（比如 Chrome 的在线声音念到十几秒会卡住），到点就接着念下一句
+    const text = this.snap.sentences[index]
+    this.clearGuard()
+    const guard = this.guard = setTimeout(() => {
       if (token !== this.token || this.snap.paused) return
+      this.synth()?.cancel()
+      done()
+    }, 6000 + (text.length * 400) / this.snap.rate)
+    const done = () => {
+      clearTimeout(guard)
+      if (token !== this.token || this.snap.paused) return
+      this.token++
       if (index + 1 < this.snap.sentences.length) {
         this.set({ index: index + 1 })
         this.say(index + 1)
@@ -214,10 +235,18 @@ class Speaker {
       }
     }
     u.onend = done
-    // 出错（例如被别的声音打断）也接着往下念，不要卡住
     u.onerror = (e: unknown) => {
       const err = (e as { error?: string })?.error
-      if (err === 'interrupted' || err === 'canceled') return
+      if (err === 'interrupted' || err === 'canceled') {
+        clearTimeout(guard)
+        // 我们自己打断时都会先换令牌；令牌没变说明是别的程序抢走了声音：停在这一句，点"继续"接着念
+        if (token === this.token && !this.snap.paused) {
+          this.token++
+          this.set({ paused: true })
+        }
+        return
+      }
+      // 其他错误也接着往下念，不要卡住
       done()
     }
     this.set({ index })
@@ -233,12 +262,19 @@ class Speaker {
     const nxt = this.queue.shift()
     if (nxt) { this.start(nxt); return }
     this.token++
+    this.clearGuard()
     this.set({ current: null, sentences: [], index: 0, paused: false, queued: 0 })
+  }
+
+  private clearGuard() {
+    if (this.guard) clearTimeout(this.guard)
+    this.guard = null
   }
 
   stop() {
     this.queue = []
     this.token++
+    this.clearGuard()
     this.synth()?.cancel()
     this.set({ current: null, sentences: [], index: 0, paused: false, queued: 0 })
   }
@@ -247,6 +283,7 @@ class Speaker {
   pause() {
     if (!this.snap.current) return
     this.token++
+    this.clearGuard()
     this.synth()?.cancel()
     this.set({ paused: true })
   }

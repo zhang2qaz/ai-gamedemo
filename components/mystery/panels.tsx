@@ -43,8 +43,9 @@ export function ScriptPanel({ view }: { view: SeatView }) {
         <div className="mx-panel-2 p-3">
           <div className="flex items-center mb-1.5">
             <div className="text-xs font-black text-[var(--mx-gold)] flex-1">你的私人目标</div>
-            <SpeakButton id="script:goals" label="你的私人目标" size="sm" text={view.me.goals.map(g => `${g.points}分：${g.text}`).join('\n')} />
+            <SpeakButton id="script:goals" label="你的私人目标" size="sm" text={`你的私人目标。\n${view.me.goals.map(g => `${g.points}分：${g.text}`).join('\n')}\n具体怎么算分，到最后的环节会告诉你。`} />
           </div>
+          <div className="text-[11px] text-[var(--mx-muted)] mb-1.5">具体怎么算分，到最后的环节会告诉你。</div>
           <ul className="space-y-1">
             {view.me.goals.map(g => (
               <li key={g.id} className="text-[13px] text-white/85 flex gap-2">

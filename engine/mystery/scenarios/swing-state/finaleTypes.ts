@@ -17,16 +17,16 @@ export type FinaleOrder = {
 
 /** 名单上的一格 */
 export type FinaleMark = {
-  /** 这一格是怎么来的：证据 / 普莱斯的指证（他被带走就作废）/ 普莱斯慌了说漏嘴 */
-  kind: 'card' | 'testimony' | 'panic'
+  /** 这一格是怎么来的：证据 / 交易时被告的（他被带走就擦掉）/ 交易时他自己说漏嘴 */
+  kind: 'card' | 'accused' | 'panic'
   /** 文字说明，例如证据标题 */
   label: string
-  /** 谁交出的：我 / 对方 / 普莱斯 */
-  by: 'me' | 'other' | 'price'
+  /** 谁交出的：我 / 对方 / 交易时来的 */
+  by: 'me' | 'other' | 'deal'
   round: number
   /** 「头版」翻倍出来的那一格 */
   double: boolean
-  /** 这一格不算了（被放大镜作废，或普莱斯被带走后他的话作废） */
+  /** 这一格不算了（被放大镜作废，或普莱斯被带走后他说的话作废） */
   void: boolean
 }
 
@@ -36,13 +36,15 @@ export type FinalePerson = {
   avatar: string
   color: string
   isMe: boolean
-  /** 满多少格会被警长带走 */
+  /** 满多少格会被带走（已经算上律师名片和普莱斯的"保"） */
   line: number
+  /** line 的组成：基本格数 + 律师名片 + 普莱斯保他 */
+  lineParts: { base: number; lawyer: number; vouch: number }
   marks: FinaleMark[]
   /** 现在算数的格数 */
   count: number
-  /** 普莱斯答应替他作证（普莱斯被带走就作废） */
-  vouched: boolean
+  /** 交出了自己的自白（认罪）：06:00 一定会被带走 */
+  confessed: boolean
   fled: boolean
   /** 06:00 结算后才有 */
   taken: boolean | null
@@ -54,9 +56,13 @@ export type FinaleCard = {
   icon: string
   /** 这份证据说的是哪件事 */
   about: string
-  /** 指向谁（交出去就给谁填一格） */
+  /** 交出去给谁填格（自白：给普莱斯填 2 格） */
   points: Who[]
-  /** 证据正文（方便当场重读 / 朗读） */
+  /** 自白：交出去就是这个人认罪 */
+  confessor: Who | null
+  /** 为什么指向他（一句话） */
+  why: string
+  /** 证据正文 */
   text: string
 }
 
@@ -81,20 +87,26 @@ export type FinaleCopy = {
   doneClock: string
   /** 规则要点（一条一句） */
   rules: string[]
+  /** 这一局怎么算分（只给自己看，终局时才给出准确条件） */
+  goals: { points: number; text: string }[]
   pickHint: string
   waiting: string
   noCards: string
   deal: { intro: string; terms: string[]; note: string; accept: string; refuse: string }
-  vouched: string
-  testimonyHint: string
+  legend: { me: string; other: string; accused: string; panic: string }
+  /** "普莱斯医生保了"（朗读用）/ "普莱斯保"（格子旁的小字） */
+  vouchedBy: string
+  vouchShort: string
   done: string | null
 }
 
 export type FinaleOutcome = {
   taken: Record<Who, boolean>
   fled: { mandy: boolean; ethan: boolean }
-  /** 普莱斯的担保最后算数 */
-  vouched: { mandy: boolean; ethan: boolean }
+  /** 交出了自己的自白（认罪） */
+  confessed: { mandy: boolean; ethan: boolean }
+  /** 普莱斯的"保"最后算数，而且正是它让这个人没被带走 */
+  savedByVouch: { mandy: boolean; ethan: boolean }
   counts: Record<Who, number>
   lines: Record<Who, number>
   /** 交给警长（没被作废）的证据，分别涉及哪几件事 */
