@@ -137,7 +137,7 @@ function joanEnding(o: Outcome): { title: string; text: string } {
       break
     case 'vouched':
       title = '欠下的人情'
-      parts.push('普莱斯医生对警长说："默瑟小姐整晚都站在我旁边。"警长没有带走你。你自由了——可你知道，从今往后，你再也写不了他。')
+      parts.push('普莱斯医生对警长说："默瑟小姐两点二十以后一直站在我旁边。"警长没有带走你。你自由了——可你知道，从今往后，你再也写不了他。')
       break
     default:
       title = o.meiReopened ? '十六年后的头版' : o.taken.price ? '今晚的头版' : '被压下的稿子'
