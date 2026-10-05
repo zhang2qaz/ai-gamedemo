@@ -350,28 +350,32 @@ export function makeEngine(rt: ScenarioRuntime) {
       return
     }
     const seats = seatsIn(state)
+    // 放弃了的人：每一步都按"不操作"算完成（不出价、不作答、已准备）
+    const gone = (s: Seat) => !!state.seats[s].abandoned
     if (step.kind === 'accuse') {
+      for (const s of seats) if (gone(s) && !state.seats[s].accuse) state.seats[s].accuse = {}
       if (seats.every(s => state.seats[s].accuse)) advance(state, now)
       return
     }
     if (step.kind === 'auction') {
+      if (state.auction && !state.auction.results) for (const s of seats) if (gone(s) && !state.auction.bids[s]) state.auction.bids[s] = {}
       if (state.auction && !state.auction.results && seats.every(s => state.auction!.bids[s])) {
         resolveAuction(state, step, now)
         for (const s of seats) state.seats[s].ready = false
         return
       }
-      if (state.auction?.results && seats.every(s => state.seats[s].ready)) advance(state, now)
+      if (state.auction?.results && seats.every(s => state.seats[s].ready || gone(s))) advance(state, now)
       return
     }
     if (step.kind === 'choice') {
       const allChosen = seats.every(s => {
         const r = roleOf(state, s)
-        return !r || !step.choice?.[r.id] || !!state.seats[s].choices[step.id]
+        return gone(s) || !r || !step.choice?.[r.id] || !!state.seats[s].choices[step.id]
       })
-      if (allChosen && seats.every(s => state.seats[s].ready)) advance(state, now)
+      if (allChosen && seats.every(s => state.seats[s].ready || gone(s))) advance(state, now)
       return
     }
-    if (seats.every(s => state.seats[s].ready)) advance(state, now)
+    if (seats.every(s => state.seats[s].ready || gone(s))) advance(state, now)
   }
 
   // ───────────── 对外 API ─────────────
@@ -412,6 +416,8 @@ export function makeEngine(rt: ScenarioRuntime) {
     if (prev.seats[seat].online === online) return prev
     const state = structuredClone(prev)
     state.seats[seat].online = online
+    // 放弃了又回来了：重新算作在玩
+    if (online) delete state.seats[seat].abandoned
     // 大厅里掉线就取消准备：离线的座位不能被对方"一键开局"，否则开局后可能再也没人能回到这个座位
     if (!online && state.stepIndex === -1) state.seats[seat].ready = false
     const name = state.seats[seat].name ?? seat
@@ -436,7 +442,11 @@ export function makeEngine(rt: ScenarioRuntime) {
     if (prev.stepIndex === -1 || prev.ended) return prev
     const state = structuredClone(prev)
     state.seats[seat].online = false
-    log(state, now, 'DM', 'all', `${state.seats[seat].name ?? seat} 放弃了这一局，不会再回来了。`, 'system')
+    state.seats[seat].abandoned = true
+    log(state, now, 'DM', 'all', `${state.seats[seat].name ?? seat} 放弃了这一局，不会再回来了。之后的每一步都不用等这个人。`, 'system')
+    // 剩下的人可能已经都选好了：现在就往下走
+    if (stepAt(state)?.kind === 'finale') rt.finale?.poke?.(state, now)
+    maybeAutoAdvance(state, now)
     return state
   }
 
@@ -586,7 +596,11 @@ export function makeEngine(rt: ScenarioRuntime) {
         if (!other) return '请选择交给谁'
         c.owner = other
         if (!c.seenBy.includes(other)) c.seenBy.push(other)
-        log(state, now, 'DM', 'all', `${seatName(state, seat)} 把「${def.title}」交给了 ${seatName(state, other)}。`, 'event')
+        // 标题只告诉交的人和收的人；其他人只知道"交了一份"（3–4 人局里别人的手牌不能漏出去）
+        for (const s of seatsIn(state)) {
+          const known = s === seat || s === other
+          log(state, now, 'DM', s, `${seatName(state, seat)} 把${known ? `「${def.title}」` : '一份线索'}交给了 ${seatName(state, other)}。`, 'event')
+        }
         return
       }
 
@@ -773,7 +787,7 @@ export function makeEngine(rt: ScenarioRuntime) {
     const players: SeatView['players'] = {}
     for (const s of seats) {
       const st = state.seats[s]
-      players[s] = { name: st.name, online: st.online, roleId: st.roleId, ready: st.ready }
+      players[s] = { name: st.name, online: st.online, roleId: st.roleId, ready: st.ready, ...(st.abandoned ? { abandoned: true } : {}) }
       // 别人的余额会泄露案卷对错、指认得分：只在结局后公开
       if (s === seat || state.ended) players[s]!.money = st.money
     }

@@ -114,7 +114,7 @@ export default function GameScreen() {
                     const p = view.players[s]
                     return (
                       <span key={s} className={p?.ready ? 'text-emerald-400' : 'text-[var(--mx-muted)]'}>
-                        {seatName(view, s)}：{p?.online ? (p.ready ? '已准备' : '进行中') : '离线'}
+                        {seatName(view, s)}：{p?.abandoned ? '已放弃' : p?.online ? (p.ready ? '已准备' : '进行中') : '离线'}
                       </span>
                     )
                   })}

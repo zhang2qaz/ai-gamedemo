@@ -4,7 +4,7 @@ import { SCENARIO_META } from '@/engine/mystery/scenarios/meta'
 import './mystery.css'
 
 export const metadata: Metadata = {
-  title: `${SCENARIO_META.title} · 双人线上剧本杀`,
+  title: `${SCENARIO_META.title} · ${SCENARIO_META.players}线上剧本杀`,
   description: SCENARIO_META.subtitle,
 }
 

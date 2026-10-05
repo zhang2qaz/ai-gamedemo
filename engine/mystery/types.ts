@@ -280,6 +280,8 @@ export type SeatState = {
   choices: Record<string, string>
   caseAttempts: Record<string, CaseAttempt[]>
   accuse: Record<string, string | string[]> | null
+  /** 开局后彻底放弃了（不会再回来）：之后每一步都按"不操作"算完成，别人不用等他 */
+  abandoned?: boolean
 }
 
 export type GameState = {
@@ -401,7 +403,7 @@ export type SeatView = {
   scenario: { id: string; title: string; subtitle: string; tagline: string; intro: string; era: string; duration: string }
   roles: { id: string; name: string; enName: string; title: string; avatar: string; color: string; publicProfile: string; optional: boolean }[]
   /** 只有 seats 里的座位。money 只对自己（以及结局后）下发：别人的余额会泄露案卷对错与指认得分 */
-  players: Partial<Record<Seat, { name: string | null; online: boolean; roleId: string | null; ready: boolean; money?: number }>>
+  players: Partial<Record<Seat, { name: string | null; online: boolean; roleId: string | null; ready: boolean; money?: number; abandoned?: boolean }>>
   step: {
     index: number
     total: number

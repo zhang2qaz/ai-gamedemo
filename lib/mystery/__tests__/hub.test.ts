@@ -101,6 +101,24 @@ describe('MysteryHub', () => {
     expect(last(e, 'WELCOME')?.seat).toBe('P2')
   })
 
+  test('大厅里有人坐下后走掉：1 分钟后服务器自动让出他的座位，剩下的人能开局', () => {
+    const { a, b, c } = room()
+    const d = sock()
+    send(d, { type: 'JOIN', code: last(a, 'WELCOME')!.code, name: '丁' })
+    hub.handleClose(d.ws)
+    send(a, { type: 'ACT', action: { type: 'pickRole', roleId: 'mandy' } })
+    send(b, { type: 'ACT', action: { type: 'pickRole', roleId: 'ethan' } })
+    send(c, { type: 'ACT', action: { type: 'pickRole', roleId: 'joan' } })
+    for (const f of [a, b, c]) send(f, { type: 'ACT', action: { type: 'ready', value: true } })
+    expect(last(a, 'VIEW')!.view.step.index).toBe(-1)
+    tick(61_000)
+    ;(hub as unknown as { sweep(): void }).sweep()
+    expect(last(a, 'VIEW')!.view.players.P4).toBeUndefined()
+    // 让座会取消准备：大家再点一次就开局
+    for (const f of [a, b, c]) send(f, { type: 'ACT', action: { type: 'ready', value: true } })
+    expect(last(a, 'VIEW')!.view.step.index).toBe(0)
+  })
+
   test('LEAVE / 建房不会清零限流计数', () => {
     tick()
     const x = sock()

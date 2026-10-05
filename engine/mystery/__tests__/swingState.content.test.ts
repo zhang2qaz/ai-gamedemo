@@ -215,6 +215,9 @@ describe('《摇摆州》唯一解', () => {
         const sols = solveAll(PUZZLE, { limit: 200, clueFilter: id => have.has(id) })
         expect(new Set(sols.map(s => s.roseVisitor))).toEqual(new Set(['joan']))
         expect(new Set(sols.map(s => s.safeIntruder))).toEqual(new Set(['preston']))
+        // 没有维克多的证词（或普雷斯顿本人的话）就锁定不了：保险箱面板本身只说明"有人试过"
+        const noVictor = solveAll(PUZZLE, { limit: 200, clueFilter: id => have.has(id) && !['v_preston', 'preston_admit', 'preston_safe'].includes(id) })
+        expect(new Set(noVictor.map(s => s.safeIntruder)).size).toBeGreaterThan(1)
       }
     }
   })

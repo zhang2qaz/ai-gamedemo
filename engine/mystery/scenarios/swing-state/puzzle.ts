@@ -87,10 +87,11 @@ export const PUZZLE: Puzzle = {
 
     // ── 另外两个人的秘密 ──
     { id: 'visit_told', clues: ['joan_rose'], vars: ['roseVisitor'], desc: '乔安亲口说：一点半罗丝叫她去房间，她没有叫救护车', test: a => a.roseVisitor === 'joan' },
-    { id: 'visit_clip', clues: ['press_clip', 'guestbook'], vars: ['roseVisitor'], desc: '罗丝床脚有一枚记者证卡扣，刻着"J.M."——今晚的宾客里只有乔安·默瑟是记者', test: a => a.roseVisitor === 'joan' },
+    { id: 'visit_clip', clues: ['press_clip', 'guestbook', 'hector_joan'], vars: ['roseVisitor'], desc: '罗丝床脚有一枚刻着"J.M."的记者证卡扣（今晚的客人里只有乔安·默瑟是记者）；一点四十赫克托正好碰见她从那层下来——那时罗丝已经快不行了', test: a => a.roseVisitor === 'joan' },
     { id: 'visit_stairs', clues: ['hector_joan'], vars: ['roseVisitor'], desc: '一点四十赫克托碰见乔安从罗丝那层下来，她说罗丝"喝多了，睡了"——她见过罗丝', test: a => a.roseVisitor === 'joan' },
     { id: 'safe_late', clues: ['safe_log'], vars: ['safeIntruder'], desc: '保险箱面板 03:14 还有一次密码错误——曼迪两点半之后，又有人来试过', test: a => a.safeIntruder !== 'nobody' },
-    { id: 'safe_window', clues: ['v_preston', 'safe_log'], vars: ['safeIntruder'], desc: '03:10—03:20 普雷斯顿一个人去了只有书房和化妆间的北翼，回来满头大汗；03:14 正是那次试密码', test: a => a.safeIntruder === 'preston' },
+    { id: 'safe_window', clues: ['v_preston', 'safe_log'], vars: ['safeIntruder'], desc: '03:14 有人试了密码，面板被布擦过、留着男士古龙水味；03:10—03:20 普雷斯顿一个人去了只有书房和化妆间的北翼，回来满头大汗、手帕攥成一团（曼迪是女的；普莱斯、伊森那时在员工楼和大厅之间，维克多留在露台）', test: a => a.safeIntruder === 'preston' },
+    { id: 'safe_admit', clues: ['preston_admit'], vars: ['safeIntruder'], desc: '三人局里拿维克多的证词去问普雷斯顿，他承认试了老密码', test: a => a.safeIntruder === 'preston' },
     { id: 'safe_told', clues: ['preston_safe'], vars: ['safeIntruder'], desc: '普雷斯顿自己承认 03:14 试了老密码 1107', test: a => a.safeIntruder === 'preston' },
   ],
 }

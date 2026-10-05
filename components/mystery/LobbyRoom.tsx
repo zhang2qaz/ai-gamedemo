@@ -20,6 +20,14 @@ export default function LobbyRoom() {
   const enough = seated >= view.minPlayers
   // 必须有人演的角色里还没人选的
   const missing = view.roles.filter(r => !r.optional && !Object.values(view.players).some(p => p?.roleId === r.id))
+  // 大家在等谁（不点名的话，一直不选角色的人会让整个房间卡住却没人知道为什么）
+  const waitingOn = view.seats.filter(s => s !== view.seat).flatMap(s => {
+    const p = view.players[s]
+    if (!p?.name) return []
+    if (!p.online) return [`${p.name}（离线）`]
+    if (!p.roleId) return [`${p.name}（还没选角色）`]
+    return p.ready ? [] : [`${p.name}（还没准备）`]
+  })
   if (readySent && me.ready === readySent.target) setReadySent(null)
   const readyPending = !!readySent && me.ready !== readySent.target
   const link = typeof window !== 'undefined' ? `${window.location.origin}/mystery?room=${view.code}` : ''
@@ -55,11 +63,11 @@ export default function LobbyRoom() {
             const role = p ? view.roles.find(r => r.id === p.roleId) : undefined
             return (
               <div key={s} className={`mx-panel-2 p-3 min-w-0 ${s === view.seat ? 'ring-1 ring-[var(--mx-gold)]/50' : ''} ${p?.name ? '' : 'opacity-60'}`}>
-                <div className="text-[10px] text-[var(--mx-muted)] font-bold">{s === view.seat ? '你' : `${i + 1} 号座位${i >= view.minPlayers ? '（可空）' : ''}`}</div>
-                <div className="font-bold text-white truncate">{p?.name ?? '等待加入…'}</div>
+                <div className="text-[10px] text-[var(--mx-muted)] font-bold">{s === view.seat ? '你' : `${i + 1} 号座位`}</div>
+                <div className="font-bold text-white truncate">{p?.name ?? (enough ? '空位（可以不坐人）' : '等待加入…')}</div>
                 <div className="text-xs mt-1 text-white/70 truncate">{role ? `${role.avatar} ${role.name}` : p?.name ? '尚未选角' : ''}</div>
                 <div className={`text-[11px] mt-1 ${p?.ready ? 'text-emerald-400' : 'text-[var(--mx-muted)]'}`}>
-                  {p?.name ? (p.ready ? '✓ 已准备' : p.online ? '未准备' : '离线') : ''}
+                  {p?.name ? (p.ready ? '✓ 已准备' : p.online ? '未准备' : '离线（1–2 分钟后自动让出座位）') : ''}
                 </div>
               </div>
             )
@@ -108,6 +116,9 @@ export default function LobbyRoom() {
             ⚠️ <b>人到齐了再点准备。</b>所有人都点了「准备好了」就会马上开局，开局以后就不能再有人加入了。
             {view.seats.length < view.maxPlayers && ` 现在 ${seated} 个人；最多可以 ${view.maxPlayers} 个人一起玩。`}
           </div>
+          {waitingOn.length > 0 && (
+            <div className="text-xs text-white/70">还在等：{waitingOn.join('、')}</div>
+          )}
           {enough && missing.length > 0 && (
             <div className="text-xs text-red-300">还没人选：{missing.map(r => r.name).join('、')}（这个角色必须有人演）</div>
           )}

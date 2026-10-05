@@ -14,6 +14,8 @@ export type FinaleModule = {
   tick(state: GameState, now: number): boolean
   /** 下一次需要 tick 的时间 */
   deadline(state: GameState): number | null
+  /** 有人放弃后重新检查：剩下的人都选好了就往下走（可选） */
+  poke?(state: GameState, now: number): void
   /** 终局是否结束（结束后引擎进入下一步骤） */
   isDone(state: GameState): boolean
   /** 给某座位看的终局视图（必须隐藏对方的秘密信息） */

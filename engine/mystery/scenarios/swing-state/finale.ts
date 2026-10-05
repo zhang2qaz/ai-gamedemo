@@ -661,6 +661,21 @@ function finaleText(id: string) {
   return (clueById.get(id)?.text ?? '').replace(/\n?（代价：[^）]*）/g, '').trim()
 }
 
+/** 还在玩的人（放弃了的人每一步都按"不交 / 拒绝"算，别人不用等他） */
+function activeSeats(state: GameState) {
+  return state.roster.filter(s => !state.seats[s].abandoned)
+}
+
+/** 还在玩的人都选好了，就往下走 */
+function proceedIfAllDone(state: GameState, now: number) {
+  const f = fs(state)
+  if (!f || f.phase === 'done') return
+  const act = activeSeats(state)
+  if (f.phase === 'intro' && act.every(s => f.introReady.includes(s))) startOrders(state, now, 1)
+  else if (f.phase === 'orders' && act.every(s => f.orders[s])) advanceAfterOrders(state, now)
+  else if (f.phase === 'deal' && act.every(s => f.deal[s])) finishDeal(state, now)
+}
+
 function tellOthers(state: GameState, seat: Seat, now: number, text: string) {
   for (const s of state.roster) if (s !== seat) appendLog(state, now, 'DM', s, text, 'dm')
 }
@@ -701,7 +716,7 @@ export const finaleModule: FinaleModule = {
         f.introReady.push(seat)
         tellOthers(state, seat, now, `${nameOf(state, seat)}已经看懂规则了。`)
       }
-      if (state.roster.every(s => f.introReady.includes(s))) startOrders(state, now, 1)
+      proceedIfAllDone(state, now)
       return
     }
     if (p.type === 'order') {
@@ -713,7 +728,7 @@ export const finaleModule: FinaleModule = {
       if (typeof o === 'string') return o
       f.orders[seat] = o
       tellOthers(state, seat, now, `${nameOf(state, seat)}已经选好了第 ${f.round} 轮。`)
-      if (state.roster.every(s => f.orders[s])) advanceAfterOrders(state, now)
+      proceedIfAllDone(state, now)
       return
     }
     if (p.type === 'deal') {
@@ -729,10 +744,14 @@ export const finaleModule: FinaleModule = {
       }
       f.deal[seat] = { choice: p.choice, target }
       tellOthers(state, seat, now, `${nameOf(state, seat)}已经回复了普莱斯。`)
-      if (state.roster.every(s => f.deal[s])) finishDeal(state, now)
+      proceedIfAllDone(state, now)
       return
     }
     return '未知操作'
+  },
+
+  poke(state, now) {
+    proceedIfAllDone(state, now)
   },
 
   tick(state, now) {
@@ -813,7 +832,7 @@ export const finaleModule: FinaleModule = {
       hand,
       items,
       mySubmitted: submitted(seat),
-      waitingFor: state.roster.filter(s => s !== seat && !submitted(s)).map(s => nameOf(state, s)),
+      waitingFor: activeSeats(state).filter(s => s !== seat && !submitted(s)).map(s => nameOf(state, s)),
       reveals: f.reveals,
       deal: f.phase === 'deal' || f.dealResult
         ? {

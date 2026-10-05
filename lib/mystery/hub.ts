@@ -517,6 +517,23 @@ export class MysteryHub {
     this.send(conn.ws, { type: 'VIEW', view })
   }
 
+  /**
+   * 大厅里掉线超过 1 分钟的座位自动让出：3–4 人局里只要有一个人坐下后走掉，
+   * 剩下的人就永远凑不齐"全员准备"，又没有办法请他离开
+   */
+  private reclaimLobbySeats(room: Room, now: number) {
+    if (room.state.stepIndex !== -1) return
+    let changed = false
+    for (const s of SEATS) {
+      const c = room.seats[s]
+      if (!c || c.ws || c.offlineSince === null || now - c.offlineSince <= LOBBY_RECLAIM_MS) continue
+      delete room.seats[s]
+      room.state = vacateSeat(room.state, s, now)
+      changed = true
+    }
+    if (changed) this.afterChange(room)
+  }
+
   private dropRoom(room: Room) {
     if (room.timer) clearTimeout(room.timer)
     room.timer = null
@@ -532,7 +549,10 @@ export class MysteryHub {
     }
     for (const room of [...this.rooms.values()]) {
       const online = SEATS.some(s => room.seats[s]?.ws)
-      if (online) continue
+      if (online) {
+        this.reclaimLobbySeats(room, now)
+        continue
+      }
       const idle = now - room.lastActivity
       const limit = force ? FORCE_IDLE_MS : room.state.stepIndex === -1 ? LOBBY_IDLE_MS : GAME_IDLE_MS
       if (idle > limit) this.dropRoom(room)

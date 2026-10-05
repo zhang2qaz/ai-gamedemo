@@ -662,6 +662,57 @@ describe('《摇摆州》四人局：普雷斯顿', () => {
   })
 })
 
+describe('3–4 人局审查修复（回归测试）', () => {
+  test('有人中途彻底放弃：剩下的人不用等倒计时，每一步都照常往下走；终局里他算"不交 / 拒绝"', () => {
+    let s = until(start(), 'search1')
+    s = E.abandonSeat(s, 'P3', now)
+    expect(E.viewFor(s, 'P1', now).players.P3!.abandoned).toBe(true)
+    s = ok(ok(s, 'P1', { type: 'ready', value: true }), 'P2', { type: 'ready', value: true })
+    expect(stepId(s)).toBe('debate1')
+    // 拍卖、盘凶也不用等他：只有剩下的两个人在操作
+    for (let guard = 0; stepId(s) !== 'finale'; guard++) {
+      if (guard > 40) throw new Error('卡住了')
+      const k = E.scenario.flow[s.stepIndex].kind
+      const at = s.stepIndex
+      for (const seat of ['P1', 'P2'] as Seat[]) {
+        if (s.stepIndex !== at) break
+        if (k === 'auction' && !s.auction?.results) s = ok(s, seat, { type: 'bid', bids: {} })
+        else if (k === 'accuse') s = ok(s, seat, { type: 'accuse', answers: {} })
+        else s = ok(s, seat, { type: 'ready', value: true })
+      }
+    }
+    expect(s.seats.P3.accuse).toEqual({})
+    s = ready(ready(s, 'P1'), 'P2')
+    expect(fv(s, 'P1').phase).toBe('orders')
+    expect(fv(s, 'P1').waitingFor).toEqual(['伊森'])
+    s = order(order(s, 'P1', {}), 'P2', {})
+    expect(fv(s, 'P1').round).toBe(2)
+    s = order(order(s, 'P1', {}), 'P2', {})
+    s = deal(deal(s, 'P1', 'refuse'), 'P2', 'refuse')
+    expect(fv(s, 'P1').deal!.result!.panic).toBe(true)
+    s = order(order(s, 'P1', {}), 'P2', {})
+    expect(stepId(s)).toBe('ending')
+  })
+
+  test('别人都选好了才有人放弃：放弃的那一刻就揭晓，不用等倒计时', () => {
+    let s = toRound1()
+    s = order(order(s, 'P1', {}), 'P2', {})
+    expect(fv(s, 'P1').round).toBe(1)
+    s = E.abandonSeat(s, 'P3', now)
+    expect(fv(s, 'P1').round).toBe(2)
+  })
+
+  test('交出线索：标题只告诉交的人和收的人，第三个人只知道"交了一份"', () => {
+    let s = until(start(), 'search1')
+    s = ok(s, 'P1', { type: 'give', clueId: 'a_confess', to: 'P2' })
+    const line = (seat: Seat) => E.viewFor(s, seat, now).log.filter(e => e.text.includes('交给了')).at(-1)!.text
+    expect(line('P1')).toContain('「曼迪的自白」')
+    expect(line('P2')).toContain('「曼迪的自白」')
+    expect(line('P3')).toBe('曼迪 把一份线索交给了 伊森。')
+    expect(JSON.stringify(E.viewFor(s, 'P3', now))).not.toContain('曼迪的自白')
+  })
+})
+
 describe('代码审查修复（回归测试）', () => {
   test('别人的现金不下发（会泄露案卷对错与指认得分），结局后才公开', () => {
     let s = until(start(), 'search1')

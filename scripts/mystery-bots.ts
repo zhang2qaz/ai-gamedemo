@@ -15,6 +15,10 @@ const VERBOSE = process.argv.includes('--verbose')
 const TIMEOUT_MS = 120_000
 const argPlayers = process.argv.indexOf('--players')
 const PLAYERS = argPlayers > 0 ? Number(process.argv[argPlayers + 1]) : 3
+if (PLAYERS !== 3 && PLAYERS !== 4) {
+  console.error('❌ --players 只能是 3 或 4')
+  process.exit(1)
+}
 
 class Bot {
   ws!: WebSocket
