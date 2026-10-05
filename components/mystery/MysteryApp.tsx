@@ -6,6 +6,7 @@ import EntryScreen from './EntryScreen'
 import LobbyRoom from './LobbyRoom'
 import GameScreen from './GameScreen'
 import { Toasts } from './ui'
+import { SpeechBar, useSpeech } from './Speech'
 
 function subscribeNoop() {
   return () => {}
@@ -15,6 +16,7 @@ export default function MysteryApp() {
   const init = useMysteryStore(s => s.init)
   const joined = useMysteryStore(s => s.joined)
   const view = useMysteryStore(s => s.view)
+  const speech = useSpeech()
 
   // 仅在客户端渲染（依赖 localStorage / WebSocket）
   const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false)
@@ -28,9 +30,11 @@ export default function MysteryApp() {
   else screen = <GameScreen />
 
   return (
-    <div className="mx-root">
+    // 朗读条盖在页面底部：读的时候给页面底下留出位置，最下面的按钮也能滚上来
+    <div className={`mx-root ${speech.current ? 'pb-44' : ''}`}>
       <Toasts />
       {screen}
+      {mounted && <SpeechBar />}
     </div>
   )
 }

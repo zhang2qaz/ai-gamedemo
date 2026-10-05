@@ -28,7 +28,7 @@ export function Countdown({ deadline, label = '剩余' }: { deadline: number | n
   const urgent = left <= 30
   return (
     <span
-      className={`font-mono text-sm font-bold tabular-nums px-2 py-0.5 rounded-md ${urgent ? 'bg-red-600/80 text-white mx-flash' : 'bg-white/10 text-white'}`}
+      className={`font-mono text-sm font-bold tabular-nums px-2 py-0.5 rounded-md whitespace-nowrap ${urgent ? 'bg-red-600/80 text-white mx-flash' : 'bg-white/10 text-white'}`}
       title="阶段倒计时（到时 DM 自动推进）"
     >
       ⏱ {label} {formatClock(left)}

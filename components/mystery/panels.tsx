@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useMysteryStore } from '@/store/mysteryStore'
 import type { ClueView, SeatView } from '@/engine/mystery/types'
 import { Money, RichText } from './ui'
+import { SpeakButton } from './Speech'
 
 const KIND_LABEL: Record<ClueView['kind'], string> = {
   document: '文件',
@@ -31,15 +32,19 @@ export function ScriptPanel({ view }: { view: SeatView }) {
       {role && (
         <div className="flex items-center gap-3 mx-panel-2 p-3">
           <div className="text-4xl">{role.avatar}</div>
-          <div>
+          <div className="flex-1">
             <div className="font-black text-white text-lg" style={{ color: role.color }}>{role.name}</div>
             <div className="text-[11px] text-[var(--mx-muted)]">{role.enName} · {role.title}</div>
           </div>
+          <SpeakButton id="script:role" label="你的角色" size="sm" text={`你扮演的是${role.name}，${role.title}。`} />
         </div>
       )}
       {view.me.goals.length > 0 && (
         <div className="mx-panel-2 p-3">
-          <div className="text-xs font-black text-[var(--mx-gold)] mb-1.5">你的私人目标</div>
+          <div className="flex items-center mb-1.5">
+            <div className="text-xs font-black text-[var(--mx-gold)] flex-1">你的私人目标</div>
+            <SpeakButton id="script:goals" label="你的私人目标" size="sm" text={view.me.goals.map(g => `${g.points}分：${g.text}`).join('\n')} />
+          </div>
           <ul className="space-y-1">
             {view.me.goals.map(g => (
               <li key={g.id} className="text-[13px] text-white/85 flex gap-2">
@@ -52,16 +57,19 @@ export function ScriptPanel({ view }: { view: SeatView }) {
       )}
       {chapters.map(ch => (
         <div key={ch.id} className="mx-paper overflow-hidden">
-          <button
-            className="w-full flex items-center justify-between px-4 py-3 text-left"
-            onClick={() => setOpen(current === ch.id ? '' : ch.id)}
-          >
-            <span className="mx-serif font-black text-[15px]">{ch.title}</span>
-            <span className="flex items-center gap-2">
-              {ch.isNew && <span className="mx-stamp text-[10px] text-red-700">NEW</span>}
-              <span className="text-xs opacity-60">{current === ch.id ? '收起' : '展开'}</span>
-            </span>
-          </button>
+          <div className="flex items-center gap-2 pr-3">
+            <button
+              className="flex-1 flex items-center justify-between px-4 py-3 text-left"
+              onClick={() => setOpen(current === ch.id ? '' : ch.id)}
+            >
+              <span className="mx-serif font-black text-[15px]">{ch.title}</span>
+              <span className="flex items-center gap-2">
+                {ch.isNew && <span className="mx-stamp text-[10px] text-red-700">NEW</span>}
+                <span className="text-xs opacity-60">{current === ch.id ? '收起' : '展开'}</span>
+              </span>
+            </button>
+            <SpeakButton id={`chapter:${ch.id}`} label={ch.title} text={`${ch.title}。\n${ch.text}`} tone="light" />
+          </div>
           {current === ch.id && (
             <div className="px-4 pb-5 mx-serif text-[15px]">
               <RichText text={ch.text} />
@@ -91,6 +99,7 @@ export function ClueCard({ clue, actions = true, canGive = true }: { clue: ClueV
             {clue.holder === 'other' && <span className="text-[10px] opacity-70">在对方手中</span>}
           </div>
         </div>
+        <SpeakButton id={`clue:${clue.id}`} label={clue.title} text={`${clue.title}。\n${clue.text}`} size="sm" tone="light" />
       </div>
       <div className="mt-2 mx-serif text-[14px] leading-7 whitespace-pre-wrap">{clue.text}</div>
       {actions && clue.holder === 'me' && (
@@ -170,10 +179,16 @@ export function SearchPanel({ view }: { view: SeatView }) {
               <div key={loc.id} className="mx-panel-2 p-3">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">{loc.icon}</span>
-                  <div>
+                  <div className="flex-1">
                     <div className="font-black text-white">{loc.name}</div>
                     <div className="text-[11px] text-[var(--mx-muted)] leading-4">{loc.desc}</div>
                   </div>
+                  <SpeakButton
+                    id={`loc:${loc.id}`}
+                    label={loc.name}
+                    size="sm"
+                    text={`${loc.name}。${loc.desc}\n${spots.length ? `可以搜：${spots.map(s => `${s.spot}${s.status === 'open' ? `，要${s.cost}点行动点` : s.status === 'mine' ? '，你已经搜过了' : '，已经被搜走了'}`).join('；')}。` : '暂时没有可以搜的地方。'}`}
+                  />
                 </div>
                 <div className="mt-2 space-y-1.5">
                   {spots.length === 0 && <div className="text-[11px] text-[var(--mx-muted)]">暂时没有可搜查之处</div>}
@@ -221,7 +236,10 @@ export function SearchPanel({ view }: { view: SeatView }) {
                 </button>
                 {open && (
                   <div className="px-3 pb-3 space-y-2">
-                    <p className="text-[12px] text-white/60 leading-5">{n.profile}</p>
+                    <div className="flex items-start gap-2">
+                      <p className="flex-1 text-[12px] text-white/60 leading-5">{n.profile}</p>
+                      <SpeakButton id={`npc:${n.id}`} label={n.name} size="sm" text={`${n.name}，${n.title}。${n.profile}`} />
+                    </div>
                     {n.questions.length === 0 && <div className="text-[12px] text-[var(--mx-muted)]">暂时没有可以问的。找到相关证据后再来。</div>}
                     {n.questions.map(q => (
                       <div key={q.id} className="rounded-lg bg-black/25 p-2.5">
@@ -230,6 +248,12 @@ export function SearchPanel({ view }: { view: SeatView }) {
                             {q.present && <span className="text-[11px] text-[var(--mx-gold)] mr-1">[出示：{q.present.title}]</span>}
                             {q.ask}
                           </div>
+                          <SpeakButton
+                            id={`q:${n.id}:${q.id}`}
+                            label={n.name}
+                            size="sm"
+                            text={`问：${q.present ? `（出示${q.present.title}）` : ''}${q.ask}${q.answer ? `\n${n.name}回答：${q.answer}` : `\n问一次要${q.cost}点行动点。`}`}
+                          />
                           {!q.asked && (
                             <button
                               className="mx-btn mx-btn-blue !py-1 !px-2.5 text-xs shrink-0"
@@ -278,7 +302,15 @@ export function CasePanel({ view }: { view: SeatView }) {
               <div className="font-black text-white flex-1">{cf.title}</div>
               <span className="text-xs">酬金 <Money value={cf.reward} /></span>
             </div>
-            <div className="text-[12px] text-white/60">{cf.desc}</div>
+            <div className="flex items-start gap-2">
+              <div className="flex-1 text-[12px] text-white/60">{cf.desc}</div>
+              <SpeakButton
+                id={`case:${cf.id}`}
+                label={cf.title}
+                size="sm"
+                text={`${cf.title}。${cf.desc}\n${cf.questions.map((q, i) => `第${i + 1}题，${q.prompt}。选项有：${q.options.map(o => o.label).join('；')}。`).join('\n')}`}
+              />
+            </div>
             {cf.solved ? (
               <div className="text-emerald-300 text-sm font-bold">✅ 已破解，酬金已领取</div>
             ) : (
@@ -336,7 +368,12 @@ export function ChoicePanel({ view }: { view: SeatView }) {
   if (!c) return <div className="text-center text-[var(--mx-muted)] py-10 text-sm">此阶段你无需抉择，等待对方……</div>
   return (
     <div className="space-y-3">
-      <div className="mx-paper p-4 mx-serif text-[15px] leading-7 whitespace-pre-wrap">{c.prompt}</div>
+      <div className="mx-paper p-4 mx-serif text-[15px] leading-7 whitespace-pre-wrap">
+        <div className="flex justify-end mb-1">
+          <SpeakButton id={`choice:${view.step.id}`} label="抉择" tone="light" text={`${c.prompt}\n${c.options.map(o => `${o.label}${o.desc ? `：${o.desc}` : ''}`).join('\n')}`} />
+        </div>
+        {c.prompt}
+      </div>
       <div className="grid gap-2">
         {c.options.map(o => {
           const chosen = c.chosen === o.id
@@ -386,7 +423,10 @@ export function AccusePanel({ view }: { view: SeatView }) {
       </div>
       {view.accuse.map((q, i) => (
         <div key={q.id} className="mx-panel-2 p-3">
-          <div className="text-[13px] font-bold text-white mb-2">{i + 1}. {q.prompt}{q.multi && <span className="text-[11px] text-[var(--mx-gold)] ml-1">（可多选）</span>}</div>
+          <div className="flex items-start gap-2 mb-2">
+            <div className="flex-1 text-[13px] font-bold text-white">{i + 1}. {q.prompt}{q.multi && <span className="text-[11px] text-[var(--mx-gold)] ml-1">（可多选）</span>}</div>
+            <SpeakButton id={`accuse:${q.id}`} label={`第 ${i + 1} 题`} size="sm" text={`第${i + 1}题：${q.prompt}${q.multi ? '（可以选好几个）' : ''}。选项有：${q.options.map(o => o.label).join('；')}。`} />
+          </div>
           <div className="grid sm:grid-cols-2 gap-1.5">
             {q.options.map(o => {
               const v = answers[q.id]
@@ -430,7 +470,8 @@ export function ResultPanel({ view }: { view: SeatView }) {
     <div className="space-y-3">
       <div className="mx-chyron">
         <span className="mx-chyron-tag">FINAL</span>
-        <span className="px-3 py-1.5 text-sm font-bold text-white">{r.headline}</span>
+        <span className="px-3 py-1.5 text-sm font-bold text-white flex-1">{r.headline}</span>
+        <span className="pr-2 self-center"><SpeakButton id="result:headline" label="头条" size="sm" text={r.headline} /></span>
       </div>
       <div className="flex gap-1.5">
         <button className="mx-tab" data-active={tab === 'ending'} onClick={() => setTab('ending')}>结局</button>
@@ -442,7 +483,10 @@ export function ResultPanel({ view }: { view: SeatView }) {
           {r.endings.map(e => (
             <div key={e.seat} className="mx-paper p-4">
               <div className="text-[11px] opacity-60">{e.roleName}{e.seat === view.seat ? '（你）' : ''}</div>
-              <div className="mx-serif font-black text-lg mb-2">{e.title}</div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="mx-serif font-black text-lg flex-1">{e.title}</div>
+                <SpeakButton id={`ending:${e.seat}`} label={`${e.roleName}的结局`} tone="light" text={`${e.roleName}的结局：${e.title}。\n${e.text}`} />
+              </div>
               <div className="mx-serif text-[15px]"><RichText text={e.text} /></div>
             </div>
           ))}
@@ -460,7 +504,10 @@ export function ResultPanel({ view }: { view: SeatView }) {
         <div className="space-y-3">
           {r.truth.map((t, i) => (
             <div key={i} className="mx-paper p-4">
-              <div className="mx-serif font-black text-[16px] mb-2">{t.title}</div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="mx-serif font-black text-[16px] flex-1">{t.title}</div>
+                <SpeakButton id={`truth:${i}`} label={t.title} size="sm" tone="light" text={`${t.title}。\n${t.text}`} />
+              </div>
               <div className="mx-serif text-[15px]"><RichText text={t.text} /></div>
             </div>
           ))}
@@ -472,6 +519,7 @@ export function ResultPanel({ view }: { view: SeatView }) {
             <div key={s.seat} className="mx-panel-2 p-3">
               <div className="flex items-center mb-2">
                 <div className="font-black text-white flex-1">{s.roleName}{s.seat === view.seat ? '（你）' : ''}</div>
+                <SpeakButton id={`score:${s.seat}`} label={`${s.roleName}的得分`} size="sm" className="mr-2" text={`${s.roleName}一共${s.total}分。\n${s.items.filter(it => it.got).map(it => `${it.label}，${it.points}分`).join('\n')}`} />
                 <div className="font-mono text-2xl font-black text-[var(--mx-gold)]">{s.total}</div>
               </div>
               <ul className="space-y-1">

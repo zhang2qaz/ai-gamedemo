@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useMysteryStore } from '@/store/mysteryStore'
 import type { SeatView } from '@/engine/mystery/types'
 import { Money, RichText } from './ui'
+import { SpeakButton } from './Speech'
 
 export default function AuctionPanel({ view }: { view: SeatView }) {
   const act = useMysteryStore(s => s.act)
@@ -30,11 +31,27 @@ export default function AuctionPanel({ view }: { view: SeatView }) {
 
   return (
     <div className="space-y-3">
-      {view.step.text && <div className="mx-paper p-4 mx-serif text-[14px]"><RichText text={view.step.text} /></div>}
+      {view.step.text && (
+        <div className="mx-paper p-4 mx-serif text-[14px]">
+          <div className="flex justify-end mb-1"><SpeakButton id={`step:${view.step.id}`} label={view.step.title} text={view.step.text} tone="light" /></div>
+          <RichText text={view.step.text} />
+        </div>
+      )}
 
       {a.results ? (
         <div className="space-y-2">
-          <div className="text-sm font-black text-[var(--mx-gold)]">🔨 拍卖结果</div>
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-black text-[var(--mx-gold)] flex-1">🔨 拍卖结果</div>
+            <SpeakButton
+              id="auction:results"
+              label="拍卖结果"
+              size="sm"
+              text={() => a.lots.map(l => {
+                const r = a.results!.find(x => x.lot === l.id)!
+                return `${l.title}：${r.winner === 'me' ? `你拍到了，花了${r.price}美元` : r.winner === 'other' ? '对方拍到了' : r.tie ? a.tieLabel : '没人要'}。`
+              }).join('\n')}
+            />
+          </div>
           {a.lots.map(l => {
             const r = a.results!.find(x => x.lot === l.id)!
             return (
@@ -76,6 +93,7 @@ export default function AuctionPanel({ view }: { view: SeatView }) {
                       <div className="font-black text-white leading-5">{l.title}</div>
                       <div className="text-[12px] text-white/65 leading-5 mt-0.5">{l.desc}</div>
                       <div className="text-[11px] text-[var(--mx-gold)] mt-0.5">道具：{l.itemTitle} · 起拍 <Money value={l.min} /></div>
+                      <SpeakButton id={`lot:${l.id}`} label={l.title} size="sm" className="mt-1" text={`${l.title}。${l.desc}。拍到会得到道具：${l.itemTitle}。起拍价${l.min}美元。`} />
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5">

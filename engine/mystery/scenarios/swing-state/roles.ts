@@ -269,10 +269,10 @@ export const ROLES: RoleDef[] = [
       { id: 'act3', title: '第三幕 · 信', text: mandyAct3, from: 'act3' },
     ],
     goals: [
-      { id: 'm_truth', text: '让母亲林梅之死真相大白（终局中 2000 年一案"真相成立"）', points: 20 },
-      { id: 'm_free', text: '天亮后不被起诉（只以过失致死被起诉得 10 分；出海逃亡得 5 分）', points: 20, from: 'act2' },
-      { id: 'm_tower', text: '让灯塔上那个人付出代价（吉迪恩一案"真相成立"，且推人者被起诉，或幕后主使因此被捕）', points: 15, from: 'act2' },
-      { id: 'm_inherit', text: '拿到他留给你的东西（遗嘱生效且你继承）', points: 15, from: 'act3' },
+      { id: 'm_truth', text: '让母亲林梅之死真相大白（终局里，至少一份 2000 年那一夜的证据交到警长手里，而且它指向的人被警长带走）', points: 20 },
+      { id: 'm_free', text: '天亮后不被警长带走（被带走了、但把那瓶药交给你的人也被带走，得 10 分；出海逃亡得 5 分）', points: 20, from: 'act2' },
+      { id: 'm_tower', text: '让灯塔上那个人付出代价（推人的人被警长带走；或者背后指使推人的人，因为吉迪恩之死的证据被警长带走）', points: 15, from: 'act2' },
+      { id: 'm_inherit', text: '拿到他留给你的东西（遗嘱被找到、交给律师，而且你没有出海）', points: 15, from: 'act3' },
     ],
   },
   {
@@ -290,10 +290,10 @@ export const ROLES: RoleDef[] = [
       { id: 'act3', title: '第三幕 · 留言', text: ethanAct3, from: 'act3' },
     ],
     goals: [
-      { id: 'e_truth', text: '为父亲弗兰克洗清污名（终局中 2000 年一案"真相成立"）', points: 20 },
-      { id: 'e_free', text: '天亮后不被起诉（只以二级谋杀被起诉得 10 分；出海逃亡得 5 分）', points: 20, from: 'act2' },
-      { id: 'e_rose', text: '让毒死母亲的人付出代价（罗丝一案"真相成立"，且下毒者被起诉，或幕后主使因此被捕）', points: 15, from: 'act2' },
-      { id: 'e_inherit', text: '让"弗兰克·科尔之子"的名字在律师面前被宣读（遗嘱生效）', points: 15, from: 'act3' },
+      { id: 'e_truth', text: '为父亲弗兰克洗清污名（终局里，至少一份 2000 年那一夜的证据交到警长手里，而且它指向的人被警长带走）', points: 20 },
+      { id: 'e_free', text: '天亮后不被警长带走（被带走了、但写匿名信给你的人也被带走，得 10 分；出海逃亡得 5 分）', points: 20, from: 'act2' },
+      { id: 'e_rose', text: '让毒死母亲的人付出代价（下毒的人被警长带走；或者背后指使下毒的人，因为罗丝之死的证据被警长带走）', points: 15, from: 'act2' },
+      { id: 'e_inherit', text: '让"弗兰克·科尔之子"的名字在律师面前被宣读（遗嘱被找到、交给律师）', points: 15, from: 'act3' },
     ],
   },
 ]

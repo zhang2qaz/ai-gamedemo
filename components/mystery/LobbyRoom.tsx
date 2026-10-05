@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useMysteryStore } from '@/store/mysteryStore'
 import { SEATS, otherSeat } from '@/engine/mystery/types'
 import { ConnectionBadge } from './ui'
+import { SpeakButton, SpeechSettings } from './Speech'
 
 export default function LobbyRoom() {
   const view = useMysteryStore(s => s.view)!
@@ -32,7 +33,7 @@ export default function LobbyRoom() {
       <div className="w-full max-w-3xl space-y-5 mx-in">
         <div className="flex items-center justify-between text-xs text-[var(--mx-muted)]">
           <button onClick={leave} className="hover:text-white">← 离开房间</button>
-          <ConnectionBadge />
+          <span className="flex items-center gap-2"><SpeechSettings /><ConnectionBadge /></span>
         </div>
 
         <div className="mx-panel p-5 text-center space-y-2">
@@ -68,8 +69,8 @@ export default function LobbyRoom() {
               const mine = me.roleId === r.id
               const takenByOther = other.roleId === r.id
               return (
+                <div key={r.id} className="relative">
                 <button
-                  key={r.id}
                   disabled={takenByOther}
                   onClick={() => { if (!mine) act({ type: 'pickRole', roleId: r.id }) }}
                   className={`text-left mx-panel p-4 transition-all ${mine ? 'ring-2' : 'hover:bg-white/5'} ${takenByOther ? 'opacity-40' : ''}`}
@@ -84,8 +85,10 @@ export default function LobbyRoom() {
                     {mine && <span className="ml-auto text-xs font-bold" style={{ color: r.color }}>你的角色</span>}
                     {takenByOther && <span className="ml-auto text-xs text-[var(--mx-muted)]">搭档已选</span>}
                   </div>
-                  <p className="text-sm text-white/75 leading-6 mt-3 mx-serif whitespace-pre-line">{r.publicProfile}</p>
+                  <p className="text-sm text-white/75 leading-6 mt-3 mx-serif whitespace-pre-line pb-6">{r.publicProfile}</p>
                 </button>
+                <SpeakButton id={`role:${r.id}`} label={r.name} size="sm" className="absolute right-3 bottom-3" text={`${r.name}，${r.title}。\n${r.publicProfile}`} />
+                </div>
               )
             })}
           </div>

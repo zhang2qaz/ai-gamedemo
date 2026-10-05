@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useMysteryStore } from '@/store/mysteryStore'
 import { SCENARIO_META } from '@/engine/mystery/scenarios/meta'
 import { ConnectionBadge } from './ui'
+import { SpeakButton, SpeechSettings } from './Speech'
 
 const NAME_KEY = 'mystery:name'
 
@@ -64,6 +65,10 @@ export default function EntryScreen() {
         </div>
 
         <div className="mx-panel p-4 text-sm leading-7 text-white/80 mx-serif whitespace-pre-line">
+          <div className="flex justify-end mb-1 whitespace-normal gap-2">
+            <SpeakButton id="entry:intro" label="游戏介绍" text={`${m.title}。${m.subtitle}。\n${m.intro}`} />
+            <SpeechSettings />
+          </div>
           {m.intro}
         </div>
 

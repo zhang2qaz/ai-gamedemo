@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMysteryStore } from '@/store/mysteryStore'
 import type { LogEntry, SeatView } from '@/engine/mystery/types'
+import { SpeakButton } from './Speech'
 
 const QUICK = ['我先说说我知道的', '你在撒谎', '证据呢？', '我们交换线索吧', '先别急着公开', '我同意']
 
@@ -87,22 +88,36 @@ function Entry({ e, view }: { e: LogEntry; view: SeatView }) {
     return (
       <div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
         <div className={`max-w-[85%] rounded-2xl px-3 py-1.5 ${mine ? 'bg-[var(--mx-blue)]/30 rounded-br-sm' : 'bg-white/8 bg-white/10 rounded-bl-sm'}`}>
-          <div className="text-[10px] font-bold mb-0.5" style={{ color: role?.color }}>{nameOf(view, e.from)} · {time}</div>
+          <div className="text-[10px] font-bold mb-0.5 flex items-center gap-1" style={{ color: role?.color }}>
+            <span className="flex-1">{nameOf(view, e.from)} · {time}</span>
+            {!mine && <SpeakButton id={`log:${e.id}`} label={`${nameOf(view, e.from)}说`} size="sm" text={`${nameOf(view, e.from)}说：${e.text}`} />}
+          </div>
           <div className="text-white/90 whitespace-pre-wrap break-words">{e.text}</div>
         </div>
       </div>
     )
   }
   if (e.kind === 'system') {
-    return <div className="text-[12px] text-[var(--mx-gold)]/90 whitespace-pre-wrap border-l-2 border-[var(--mx-gold)]/50 pl-2">{e.text}</div>
+    return (
+      <div className="text-[12px] text-[var(--mx-gold)]/90 whitespace-pre-wrap border-l-2 border-[var(--mx-gold)]/50 pl-2 flex gap-1">
+        <span className="flex-1">{e.text}</span><SpeakButton id={`log:${e.id}`} label="DM" size="sm" className="self-start" text={e.text} />
+      </div>
+    )
   }
   if (e.kind === 'event') {
-    return <div className="text-[12px] text-red-200 whitespace-pre-wrap border-l-2 border-[var(--mx-red)] pl-2">{e.text}</div>
+    return (
+      <div className="text-[12px] text-red-200 whitespace-pre-wrap border-l-2 border-[var(--mx-red)] pl-2 flex gap-1">
+        <span className="flex-1">{e.text}</span><SpeakButton id={`log:${e.id}`} label="DM" size="sm" className="self-start" text={e.text} />
+      </div>
+    )
   }
   return (
-    <div className="text-[12px] text-sky-100/90 whitespace-pre-wrap bg-[var(--mx-blue-soft)] rounded-lg px-2.5 py-1.5">
-      <span className="text-[10px] font-black text-sky-300 mr-1">{e.to === 'all' ? 'DM' : 'DM·私'}</span>
-      {e.text}
+    <div className="text-[12px] text-sky-100/90 whitespace-pre-wrap bg-[var(--mx-blue-soft)] rounded-lg px-2.5 py-1.5 flex gap-1">
+      <span className="flex-1">
+        <span className="text-[10px] font-black text-sky-300 mr-1">{e.to === 'all' ? 'DM' : 'DM·私'}</span>
+        {e.text}
+      </span>
+      <SpeakButton id={`log:${e.id}`} label="DM" size="sm" className="self-start" text={e.text} />
     </div>
   )
 }

@@ -2,7 +2,7 @@
 import { makeEngine } from '../core'
 import { swingState } from '../scenarios/swing-state'
 import { CASE_FILES, ACCUSE } from '../scenarios/swing-state/content'
-import { EMPTY_ORDER, PRICE_BASE } from '../scenarios/swing-state/finale'
+import { DEAL_MARKS, EMPTY_ORDER, FINALE_CARDS, LAWYER_BONUS, LINES } from '../scenarios/swing-state/finale'
 import type { FinaleState } from '../scenarios/swing-state/finale'
 import { buildResult } from '../scenarios/swing-state/result'
 import type { FinaleView, FinaleOrder } from '../scenarios/swing-state/finaleTypes'
@@ -166,155 +166,260 @@ function toFinale(opts: { cooperative?: boolean } = {}) {
   return s
 }
 
-describe('《摇摆州》终局「黎明计票」', () => {
-  test('初始比分与手牌', () => {
-    const s = toFinale()
+const orderAction = (o: Partial<FinaleOrder>, round?: number): MysteryAction =>
+  ({ type: 'finale', payload: { type: 'order', ...(round !== undefined ? { round } : {}), order: { ...EMPTY_ORDER, ...o } } })
+const ready = (s: GameState, seat: Seat) => ok(s, seat, { type: 'finale', payload: { type: 'ready' } })
+const pass = (s: GameState) => order(order(s, 'P1', {}), 'P2', {})
+const refuseBoth = (s: GameState) => deal(deal(s, 'P1', 'refuse'), 'P2', 'refuse')
+const person = (s: GameState, seat: Seat, who: 'mandy' | 'ethan' | 'price') => fv(s, seat).people.find(p => p.who === who)!
+const outcome = (s: GameState) => fv(s, 'P1').outcome!
+/** 只指向普莱斯的证据（交出去不会牵连交的人） */
+const priceCards = (s: GameState, seat: Seat) => fv(s, seat).hand.filter(c => c.points.length === 1 && c.points[0] === 'price').map(c => c.id)
+/** 测试用：直接把一条线索放到某人手里 */
+function own(s: GameState, seat: Seat, id: string): GameState {
+  const st = structuredClone(s)
+  st.clues[id] = { ...(st.clues[id] ?? { public: false, seenBy: [], foundAt: now, foundBy: seat }), owner: seat, seenBy: [seat] }
+  return st
+}
+function toRound1(opts: { cooperative?: boolean } = {}) {
+  return ready(ready(toFinale(opts), 'P1'), 'P2')
+}
+
+describe('《摇摆州》终局「警长的名单」', () => {
+  test('开场：先看规则，两人都点「我看懂了」才开始第一轮', () => {
+    let s = toFinale()
+    expect(fv(s, 'P1').phase).toBe('intro')
+    expect(err(s, 'P1', orderAction({}))).toMatch(/不是交证据/)
+    s = ready(s, 'P1')
+    expect(fv(s, 'P1').phase).toBe('intro')
+    expect(fv(s, 'P2').otherSubmitted).toBe(true)
+    s = ready(s, 'P2')
+    expect(fv(s, 'P1').phase).toBe('orders')
+    expect(fv(s, 'P1').round).toBe(1)
+  })
+
+  test('开场说明到点自动开始', () => {
+    let s = toFinale()
+    now = E.nextDeadline(s)! + 1
+    s = E.tick(s, now)
+    expect(fv(s, 'P1').phase).toBe('orders')
+  })
+
+  test('名单：三个人、各自几格；律师名片多一格', () => {
+    const s = toRound1()
     const v = fv(s, 'P1')
-    expect(v.phase).toBe('orders')
-    expect(v.races.map(r => r.claim)).toEqual([PRICE_BASE.R1, PRICE_BASE.R2, PRICE_BASE.R3])
-    expect(v.hand.length).toBeGreaterThan(2)
-    expect(fv(s, 'P2').hand.map(h => h.id)).toContain('b_saw')
-    // 对方手牌不可见
-    expect(JSON.stringify(fv(s, 'P1'))).not.toContain('b_confess')
+    expect(v.people.map(p => p.who)).toEqual(['mandy', 'ethan', 'price'])
+    // P1（曼迪）在拍卖里拿到了律师名片
+    expect(v.people.map(p => p.line)).toEqual([LINES.mandy + LAWYER_BONUS, LINES.ethan, LINES.price])
+    expect(v.people.every(p => p.count === 0)).toBe(true)
+    expect(v.people.find(p => p.isMe)!.who).toBe('mandy')
+    expect(fv(s, 'P2').people.find(p => p.isMe)!.who).toBe('ethan')
   })
 
-  test('递交规则：最多 2 张、只能交自己的、不能既交又烧', () => {
-    const s = toFinale()
-    const hand = fv(s, 'P1').hand.map(h => h.id)
-    expect(err(s, 'P1', { type: 'finale', payload: { type: 'order', order: { ...EMPTY_ORDER, cast: hand.slice(0, 3) } } })).toMatch(/最多递交/)
-    expect(err(s, 'P1', { type: 'finale', payload: { type: 'order', order: { ...EMPTY_ORDER, cast: ['b_saw'] } } })).toBe('只能递交你手里的证据')
-    expect(err(s, 'P1', { type: 'finale', payload: { type: 'order', order: { ...EMPTY_ORDER, cast: [hand[0]], burn: hand[0] } } })).toMatch(/既递交又销毁/)
-  })
-
-  test('囚徒困境：两人都拒绝 → 2000 年一案「普莱斯」−4，且你们各自的案子不受影响', () => {
-    let s = toFinale()
-    s = order(s, 'P1', {})
-    s = order(s, 'P2', {})
-    expect(fv(s, 'P1').phase).toBe('deal')
-    s = deal(s, 'P1', 'refuse')
-    s = deal(s, 'P2', 'refuse')
-    const races = fv(s, 'P1').races
-    expect(races.find(r => r.id === 'R3')!.claim).toBe(PRICE_BASE.R3 - 4)
-    expect(races.find(r => r.id === 'R1')!.claim).toBe(PRICE_BASE.R1)
-    expect(races.find(r => r.id === 'R2')!.claim).toBe(PRICE_BASE.R2)
-  })
-
-  test('囚徒困境：一方接受 → 自己豁免，对方被指证', () => {
-    let s = toFinale()
-    s = order(s, 'P1', {})
-    s = order(s, 'P2', {})
-    s = deal(s, 'P1', 'accept')
-    s = deal(s, 'P2', 'refuse')
-    const v = fv(s, 'P1')
-    expect(v.immune).toBe(true)
-    expect(v.races.find(r => r.id === 'R2')!.truth).toBe(3)
-    expect(fv(s, 'P2').immune).toBe(false)
-  })
-
-  test('囚徒困境：两人都接受 → 普莱斯两头都骗', () => {
-    let s = toFinale()
-    s = order(s, 'P1', {})
-    s = order(s, 'P2', {})
-    s = deal(s, 'P1', 'accept')
-    s = deal(s, 'P2', 'accept')
-    const v = fv(s, 'P1')
-    expect(v.immune).toBe(false)
-    expect(v.races.map(r => r.truth)).toEqual([2, 2, 0])
-    expect(v.races.find(r => r.id === 'R3')!.claim).toBe(PRICE_BASE.R3 + 3)
-  })
-
-  test('普莱斯在每一轮（含第 3 轮）都会对真相增长最多的一案反击', () => {
-    let s = toFinale()
-    const r1card = fv(s, 'P1').hand.find(h => h.race === 'R1' && h.implicates.length === 0)!
-    s = order(s, 'P1', { cast: [r1card.id] })
-    s = order(s, 'P2', {})
-    expect(fv(s, 'P1').races.find(r => r.id === 'R1')!.claim).toBe(PRICE_BASE.R1 + 2)
-    s = deal(deal(s, 'P1', 'refuse'), 'P2', 'refuse')
-    s = order(order(s, 'P1', {}), 'P2', {})
-    const r2card = fv(s, 'P2').hand.find(h => h.race === 'R2' && h.implicates.length === 0)
-    if (r2card) {
-      s = order(s, 'P2', { cast: [r2card.id] })
-      s = order(s, 'P1', {})
-      expect(fv(s, 'P1').races.find(r => r.id === 'R2')!.claim).toBe(PRICE_BASE.R2 + 2)
+  test('手里只有指向人的证据；对方手里的看不到', () => {
+    const s = toRound1()
+    const v1 = fv(s, 'P1')
+    const v2 = fv(s, 'P2')
+    for (const c of [...v1.hand, ...v2.hand]) {
+      expect(c.id in FINALE_CARDS).toBe(true)
+      expect(c.points.length).toBeGreaterThan(0)
+      expect(c.text.length).toBeGreaterThan(0)
     }
+    expect(v1.hand.map(h => h.id)).toContain('a_confess')
+    expect(v2.hand.map(h => h.id)).toContain('b_saw')
+    expect(JSON.stringify(v1)).not.toContain('b_confess')
   })
 
-  test('整局打完：合作路线（交出钥匙开保险箱、都拒绝交易、集中递交 2000 年证据、遗嘱交律师）', () => {
+  test('交证据的规则：只能交自己的；头版要配一份证据；出海只在第三轮；没有的道具不能用', () => {
+    const s = toRound1()
+    expect(err(s, 'P1', orderAction({ card: 'b_saw' }))).toBe('只能交出你手里的证据')
+    expect(err(s, 'P1', orderAction({ card: 'a_confess', headline: true }))).toMatch(/没有可用的「头版」/)
+    expect(err(s, 'P2', orderAction({ headline: true }))).toMatch(/要配合一份证据/)
+    expect(err(s, 'P2', orderAction({ flee: true }))).toMatch(/第三轮/)
+    expect(err(s, 'P2', orderAction({ recount: true }))).toMatch(/放大镜/)
+  })
+
+  test('揭晓：证据指向谁就给谁填一格，同时指向两个人的各一格', () => {
+    let s = toRound1()
+    s = order(s, 'P1', { card: 'a_confess' })
+    s = order(s, 'P2', { card: 'b_saw' })
+    expect(fv(s, 'P1').phase).toBe('deal')
+    expect(person(s, 'P1', 'mandy').count).toBe(2)
+    expect(person(s, 'P1', 'price').count).toBe(1)
+    expect(person(s, 'P1', 'ethan').count).toBe(0)
+    expect(fv(s, 'P1').reveals.at(-1)!.lines.join('\n')).toContain('曼迪的自白')
+    // 交过的证据离开手里；格子标明是谁交的
+    expect(fv(s, 'P1').hand.map(h => h.id)).not.toContain('a_confess')
+    const m = person(s, 'P2', 'mandy').marks
+    expect(m.find(x => x.label === '曼迪的自白')!.by).toBe('other')
+    expect(m.find(x => x.label === '伊森的目击')!.by).toBe('me')
+  })
+
+  test('头版：一份证据算两份；按道具记，用过就不能再用', () => {
+    let s = toRound1()
+    s = order(s, 'P1', {})
+    s = order(s, 'P2', { card: 'b_saw', headline: true })
+    expect(person(s, 'P1', 'mandy').count).toBe(2)
+    expect(fv(s, 'P2').items.find(i => i.kind === 'headline')!.used).toBe(true)
+    expect((s.finale as FinaleState).usedItems).toContain('item_headline')
+    s = refuseBoth(s)
+    const card = fv(s, 'P2').hand[0].id
+    expect(err(s, 'P2', orderAction({ card, headline: true }))).toMatch(/头版/)
+  })
+
+  test('放大镜：对方这一轮交出的证据作废；对方没交就不消耗', () => {
+    let s = toRound1()
+    s = order(s, 'P1', { recount: true })
+    s = order(s, 'P2', {})
+    expect(fv(s, 'P1').items.find(i => i.kind === 'recount')!.used).toBe(false)
+    s = refuseBoth(s)
+    s = order(s, 'P1', { recount: true })
+    s = order(s, 'P2', { card: 'b_saw' })
+    const m = person(s, 'P1', 'mandy')
+    expect(m.count).toBe(0)
+    expect(m.marks.some(x => x.void)).toBe(true)
+    expect(fv(s, 'P1').items.find(i => i.kind === 'recount')!.used).toBe(true)
+    expect(fv(s, 'P2').reveals.at(-1)!.lines.join('\n')).toMatch(/作废/)
+  })
+
+  test('交易：两人都拒绝 → 普莱斯慌了，他 +2；谁也没有担保', () => {
+    const s = refuseBoth(pass(toRound1()))
+    expect(person(s, 'P1', 'price').count).toBe(DEAL_MARKS)
+    expect(person(s, 'P1', 'price').marks.every(m => m.kind === 'panic')).toBe(true)
+    expect(fv(s, 'P1').people.some(p => p.vouched)).toBe(false)
+    expect(fv(s, 'P1').phase).toBe('orders')
+    expect(fv(s, 'P1').round).toBe(2)
+  })
+
+  test('交易：一方接受 → 普莱斯替他作证，并指证另一个人 +2', () => {
+    let s = pass(toRound1())
+    s = deal(deal(s, 'P1', 'accept'), 'P2', 'refuse')
+    expect(person(s, 'P1', 'mandy').vouched).toBe(true)
+    expect(person(s, 'P1', 'ethan').count).toBe(DEAL_MARKS)
+    expect(person(s, 'P1', 'ethan').marks.every(m => m.kind === 'testimony')).toBe(true)
+    expect(person(s, 'P1', 'price').count).toBe(0)
+  })
+
+  test('交易：两人都接受 → 普莱斯把两个人都卖了，谁也没有担保', () => {
+    let s = pass(toRound1())
+    s = deal(deal(s, 'P1', 'accept'), 'P2', 'accept')
+    expect(person(s, 'P1', 'mandy').count).toBe(DEAL_MARKS)
+    expect(person(s, 'P1', 'ethan').count).toBe(DEAL_MARKS)
+    expect(fv(s, 'P1').people.some(p => p.vouched)).toBe(false)
+  })
+
+  test('普莱斯被带走：他替人作的证、对人的指证全部作废', () => {
+    let s = toRound1()
+    for (const id of ['med_bag', 'rx_pad', 'golf_card']) s = own(s, 'P1', id)
+    for (const id of ['printer_log', 'frank_log']) s = own(s, 'P2', id)
+    const p1 = ['med_bag', 'rx_pad', 'golf_card']
+    const p2 = ['printer_log', 'frank_log']
+    for (const id of p1) expect(priceCards(s, 'P1')).toContain(id)
+    for (const id of p2) expect(priceCards(s, 'P2')).toContain(id)
+    s = order(order(s, 'P1', { card: p1[0] }), 'P2', { card: p2[0] })
+    s = deal(deal(s, 'P1', 'refuse'), 'P2', 'accept')
+    expect(person(s, 'P1', 'mandy').count).toBe(DEAL_MARKS)
+    expect(person(s, 'P1', 'ethan').vouched).toBe(true)
+    s = order(order(s, 'P1', { card: p1[1] }), 'P2', { card: p2[1] })
+    s = order(order(s, 'P1', { card: p1[2] }), 'P2', {})
+    expect(stepId(s)).toBe('ending')
+    const o = outcome(s)
+    expect(o.taken.price).toBe(true)
+    expect(o.vouched.ethan).toBe(false)
+    expect(o.counts.mandy).toBe(0)
+    expect(o.taken.mandy).toBe(false)
+    expect(person(s, 'P1', 'mandy').marks.every(m => m.void)).toBe(true)
+    expect(fv(s, 'P1').reveals.at(-1)!.lines.join('\n')).toMatch(/全部作废/)
+  })
+
+  test('普莱斯没被带走：他的担保算数，被担保的人满了格也不会被带走', () => {
+    let s = toRound1()
+    s = own(s, 'P1', 'earpiece')
+    s = own(s, 'P2', 'hector_tray')
+    s = own(s, 'P2', 'hector_corridor')
+    s = order(order(s, 'P1', {}), 'P2', { card: 'hector_corridor' })
+    s = deal(deal(s, 'P1', 'accept'), 'P2', 'refuse')
+    s = order(order(s, 'P1', { card: 'a_saw' }), 'P2', { card: 'b_saw', headline: true })
+    s = order(order(s, 'P1', {}), 'P2', { card: 'hector_tray' })
+    const o = outcome(s)
+    expect(o.taken.price).toBe(false)
+    expect(o.vouched.mandy).toBe(true)
+    expect(o.counts.mandy).toBe(o.lines.mandy)
+    expect(o.taken.mandy).toBe(false)
+    // 伊森：普莱斯的指证 2 格 + 曼迪的目击 1 格 = 3 格，满了
+    expect(o.counts.ethan).toBe(3)
+    expect(o.taken.ethan).toBe(true)
+  })
+
+  test('06:00：满格的人被带走；律师名片让曼迪多扛一格', () => {
+    let s = toRound1()
+    s = own(s, 'P1', 'earpiece')
+    s = own(s, 'P1', 'joan_ethan')
+    s = own(s, 'P2', 'hector_tray')
+    s = order(order(s, 'P1', { card: 'a_saw' }), 'P2', { card: 'b_saw', headline: true })
+    s = refuseBoth(s)
+    s = order(order(s, 'P1', { card: 'earpiece' }), 'P2', { card: 'hector_tray' })
+    s = order(order(s, 'P1', { card: 'joan_ethan' }), 'P2', {})
+    const o = outcome(s)
+    expect(o.counts.mandy).toBe(3)
+    expect(o.lines.mandy).toBe(LINES.mandy + LAWYER_BONUS)
+    expect(o.taken.mandy).toBe(false)
+    expect(o.counts.ethan).toBe(3)
+    expect(o.taken.ethan).toBe(true)
+    const r = E.viewFor(s, 'P1', now).result!
+    const ethanScore = r.scores.find(x => x.roleName === '伊森')!
+    expect(ethanScore.items.find(i => i.label.startsWith('自身'))!.got).toBe(false)
+    const mandyScore = r.scores.find(x => x.roleName === '曼迪')!
+    expect(mandyScore.items.find(i => i.label.startsWith('让灯塔上那个人'))!.got).toBe(true)
+  })
+
+  test('整局打完：合作路线（交出钥匙开保险箱、都拒绝交易、一起把证据交给警长指证普莱斯）', () => {
     let s = until(start(), 'search1')
     s = ok(s, 'P2', search(s, 'frank_log'))
     s = ok(s, 'P1', { type: 'ask', npcId: 'joan', questionId: 'j_why' })
     s = ok(s, 'P1', { type: 'ask', npcId: 'joan', questionId: 'j_2000' })
-    s = ok(s, 'P1', { type: 'ask', npcId: 'joan', questionId: 'j_police' })
-    s = ok(s, 'P1', search(s, 'flutes'))
-    s = ok(s, 'P1', search(s, 'pills'))
     s = until(s, 'search2')
     s = ok(s, 'P2', { type: 'give', clueId: 'safe_key' })
     for (const id of ['will', 'confession', 'mei_diary', 'dna']) s = ok(s, 'P1', search(s, id))
     s = ok(s, 'P2', search(s, 'price_suit'))
     s = until(s, 'finale')
+    s = ready(ready(s, 'P1'), 'P2')
 
-    // 第 1 轮：用罗丝之死的中立证据做诱饵，把普莱斯的反击引过去
-    s = order(s, 'P1', { cast: ['flutes', 'pills'], will: 'submit' })
-    s = order(s, 'P2', { cast: ['frank_letter'] })
-    expect(fv(s, 'P1').races.find(r => r.id === 'R1')!.claim).toBe(PRICE_BASE.R1 + 2)
-    s = deal(deal(s, 'P1', 'refuse'), 'P2', 'refuse')
-    s = order(s, 'P1', { cast: ['confession', 'mei_diary'] })
-    s = order(s, 'P2', { cast: ['frank_log', 'price_suit'] })
-    s = order(s, 'P1', { cast: ['rose_letter', 'joan_2000'] })
-    s = order(s, 'P2', {})
+    s = order(s, 'P1', { card: 'confession' })
+    s = order(s, 'P2', { card: 'frank_log' })
+    s = refuseBoth(s)
+    expect(person(s, 'P1', 'price').count).toBe(2 + DEAL_MARKS)
+    s = order(s, 'P1', { card: 'mei_diary' })
+    s = order(s, 'P2', { card: 'price_suit' })
+    // 第三轮：各自交出一份牵连自己、也指向普莱斯的证据（自白），换对方的"付出代价"
+    s = order(s, 'P1', { card: 'a_confess' })
+    s = order(s, 'P2', { card: 'b_confess' })
     expect(stepId(s)).toBe('ending')
+    const o = outcome(s)
+    expect(o.taken).toEqual({ mandy: false, ethan: false, price: true })
+    expect(o.meiReopened).toBe(true)
+    expect(o.will).toBe('executed')
+    expect(o.mandyInherits).toBe(true)
+    expect(o.ethanInherits).toBe(true)
     const v = E.viewFor(s, 'P1', now)
-    const out = fv(s, 'P1').outcome!
-    expect(out.prevails.R3).toBe(true)
-    expect(out.priceArrested).toBe(true)
-    expect(out.will).toBe('executed')
-    expect(out.mandyInherits).toBe(true)
-    expect(v.result!.scores).toHaveLength(2)
-    expect(v.result!.endings.map(e => e.roleName).sort()).toEqual(['伊森', '曼迪'])
     expect(v.result!.headline).toMatch(/2000 年谋杀/)
-    const m = v.result!.scores.find(x => x.roleName === '曼迪')!
-    expect(m.items.filter(i => i.label.startsWith('指认')).every(i => i.got)).toBe(true)
+    for (const sc of v.result!.scores) {
+      // 七道指认全对 + 四个目标全中
+      expect(sc.items.filter(i => !i.label.startsWith('剩余现金')).every(i => i.got)).toBe(true)
+    }
+    expect(v.result!.endings.map(e => e.roleName).sort()).toEqual(['伊森', '曼迪'])
     // 复盘对双方完全公开
     expect(E.viewFor(s, 'P2', now).result!.truth.length).toBeGreaterThan(3)
   })
 
-  test('背叛路线：伊森接受交易、曼迪拒绝 → 伊森豁免，曼迪被普莱斯指证', () => {
+  test('超时：没交视为这一轮不交，没回复交易视为拒绝，整局仍能结束', () => {
     let s = toFinale()
-    s = order(s, 'P1', {})
-    s = order(s, 'P2', {})
-    s = deal(deal(s, 'P1', 'refuse'), 'P2', 'accept')
-    // 伊森继续交出指向曼迪的目击
-    s = order(s, 'P1', {})
-    s = order(s, 'P2', { cast: ['b_saw'] })
-    s = order(s, 'P1', {})
-    const extra = fv(s, 'P2').hand.filter(h => h.race === 'R1' && h.implicates.length === 0).slice(0, 2).map(h => h.id)
-    s = order(s, 'P2', { cast: extra })
-    const out = fv(s, 'P1').outcome!
-    expect(out.ethan).toBe('none')
-    if (out.prevails.R1) expect(['full', 'reduced']).toContain(out.mandy)
-  })
-
-  test('超时：没下令视为不出手，没回复交易视为拒绝，整局仍能结束', () => {
-    let s = toFinale()
-    for (let i = 0; i < 6 && stepId(s) === 'finale'; i++) {
-      const d = E.nextDeadline(s)!
-      now = d + 1
+    for (let i = 0; i < 8 && stepId(s) === 'finale'; i++) {
+      now = E.nextDeadline(s)! + 1
       s = E.tick(s, now)
     }
     expect(stepId(s)).toBe('ending')
-    expect(fv(s, 'P1').outcome).toBeTruthy()
-  })
-
-  test('警长搜身：留在手里、牵连自己的物证会被搜出', () => {
-    let s = toFinale()
-    const mine = fv(s, 'P2').hand.filter(h => h.searchable)
-    for (let i = 0; i < 6 && stepId(s) === 'finale'; i++) {
-      const v = fv(s, 'P1')
-      if (v.phase === 'deal') s = deal(deal(s, 'P1', 'refuse'), 'P2', 'refuse')
-      else s = order(order(s, 'P1', {}), 'P2', {})
-    }
-    const found = fv(s, 'P2').myCast.filter(c => c.found).map(c => c.id).sort()
-    expect(found).toEqual(mine.map(h => h.id).sort())
+    expect(outcome(s).deal).toBe('both_refuse')
   })
 })
 
@@ -394,125 +499,98 @@ describe('代码审查修复（回归测试）', () => {
     expect(err(s, 'P2', { type: 'give', clueId: card })).toMatch(/封存/)
   })
 
-  test('"限一次"的道具按道具记：用过的头版不能再用', () => {
-    let s = toFinale()
-    expect(fv(s, 'P2').items.find(i => i.id === 'item_headline')?.used).toBe(false)
-    s = order(s, 'P1', {})
-    s = order(s, 'P2', { cast: ['b_saw'], headline: 'b_saw' })
-    expect(fv(s, 'P2').items.find(i => i.id === 'item_headline')?.used).toBe(true)
-    expect((s.finale as FinaleState).usedItems).toContain('item_headline')
-    s = deal(deal(s, 'P1', 'refuse'), 'P2', 'refuse')
-    const card = fv(s, 'P2').hand[0].id
-    expect(err(s, 'P2', { type: 'finale', payload: { type: 'order', order: { ...EMPTY_ORDER, cast: [card], headline: card } } })).toMatch(/头版/)
-  })
-
-  test('秘密销毁：对方看过的线索不会从对方列表里消失（结局时才公开）', () => {
-    let s = until(start(), 'debate1')
-    s = ok(s, 'P2', { type: 'publish', clueId: 'b_confess' })
-    s = until(s, 'finale')
-    const before = E.viewFor(s, 'P1', now).clues.length
-    s = order(s, 'P2', { burn: 'b_confess' })
-    s = order(s, 'P1', {})
-    const v1 = E.viewFor(s, 'P1', now)
-    expect(v1.clues.length).toBe(before)
-    expect(v1.clues.some(c => c.id === 'b_confess')).toBe(true)
-    expect(JSON.stringify((v1.finale as FinaleView).history)).not.toContain('烧')
-    expect(v1.log.some(e => e.text.includes('烧掉'))).toBe(false)
-    // 自己手里确实没了
-    expect(fv(s, 'P2').hand.map(h => h.id)).not.toContain('b_confess')
-    expect('willState' in fv(s, 'P1')).toBe(false)
+  test('"限一次"的道具按道具记：用过的放大镜不能再用', () => {
+    let s = toRound1()
+    s = order(s, 'P1', { recount: true })
+    s = order(s, 'P2', { card: 'b_saw' })
+    expect((s.finale as FinaleState).usedItems).toContain('item_recount')
+    s = refuseBoth(s)
+    expect(err(s, 'P1', orderAction({ recount: true }))).toMatch(/放大镜/)
   })
 
   test('命令带轮次：上一轮的重复命令不会落到下一轮', () => {
-    let s = toFinale()
-    s = order(s, 'P1', {})
+    let s = toRound1()
+    s = refuseBoth(pass(s))
+    // 第 2 轮：对方先选好，我方双击
     s = order(s, 'P2', {})
-    s = deal(deal(s, 'P1', 'refuse'), 'P2', 'refuse')
-    // 第 2 轮：对方先锁定，我方双击
-    s = order(s, 'P2', {})
-    const dup = { type: 'finale', payload: { type: 'order', round: 2, order: EMPTY_ORDER } } as MysteryAction
+    const dup = orderAction({}, 2)
     s = ok(s, 'P1', dup)
     expect(fv(s, 'P1').round).toBe(3)
-    expect(err(s, 'P1', dup)).toMatch(/已经结算/)
+    expect(err(s, 'P1', dup)).toMatch(/已经揭晓/)
     expect(fv(s, 'P1').mySubmitted).toBe(false)
   })
 
-  test('持有遗嘱的人出海：遗嘱带不走，06:00 照样交给律师', () => {
-    let s = toFinale()
-    expect(fv(s, 'P2').items.some(i => i.id === 'item_yacht')).toBe(true)
-    s = structuredClone(s)
-    s.clues.will = { owner: 'P2', public: false, seenBy: ['P2'], foundAt: now, foundBy: 'P2' }
-    s = order(order(s, 'P1', {}), 'P2', {})
-    s = deal(deal(s, 'P1', 'refuse'), 'P2', 'refuse')
-    s = order(order(s, 'P1', {}), 'P2', {})
+  test('持有遗嘱的人出海：遗嘱带不走，06:00 照样交给律师；出海的人放弃遗产', () => {
+    let s = toRound1()
+    expect(fv(s, 'P2').items.some(i => i.kind === 'yacht')).toBe(true)
+    s = own(s, 'P2', 'will')
+    s = refuseBoth(pass(s))
+    s = pass(s)
     s = order(order(s, 'P1', {}), 'P2', { flee: true })
-    const out = fv(s, 'P1').outcome!
-    expect(out.ethan).toBe('fled')
-    expect(out.will).toBe('executed')
-    expect(out.mandyInherits).toBe(true)
+    const o = outcome(s)
+    expect(o.fled.ethan).toBe(true)
+    expect(o.taken.ethan).toBe(false)
+    expect(o.will).toBe('executed')
+    expect(o.ethanInherits).toBe(false)
+    expect(o.mandyInherits).toBe(true)
+    const r = E.viewFor(s, 'P1', now).result!
+    expect(r.scores.find(x => x.roleName === '伊森')!.items.find(i => i.label.startsWith('自身'))!.points).toBe(5)
   })
 
   test('终局界面文案全部由服务器下发', () => {
     const s = toFinale()
-    const c = fv(s, 'P1').copy
-    expect(c.rules.length).toBeGreaterThan(5)
-    expect(c.claimLabel).toBeTruthy()
-    expect(c.deal.terms).toHaveLength(3)
+    const v = fv(s, 'P1')
+    expect(v.copy.rules.length).toBeGreaterThanOrEqual(7)
+    expect(v.copy.deal.terms).toHaveLength(4)
+    expect(v.copy.intro.length).toBeGreaterThan(20)
+    expect(v.people.map(p => p.name)).toEqual(['曼迪', '伊森', '普莱斯医生'])
+    expect(v.actions[0].payload).toEqual({ type: 'ready' })
   })
 
-  test('头条与官方结论一致', () => {
-    let s = toFinale()
-    s = order(order(s, 'P1', {}), 'P2', {})
-    s = deal(deal(s, 'P1', 'refuse'), 'P2', 'refuse')
-    s = order(order(s, 'P1', {}), 'P2', {})
-    s = order(order(s, 'P1', {}), 'P2', {})
+  test('头条、结局与官方结论一致', () => {
+    let s = toRound1()
+    s = pass(refuseBoth(pass(s)))
+    s = pass(s)
     const base = (s.finale as FinaleState).outcome!
     const withOutcome = (o: Partial<typeof base>) => {
       const st = structuredClone(s)
       ;(st.finale as FinaleState).outcome = { ...base, ...o }
       return buildResult(st)
     }
-    const none = { mandy: 'none', ethan: 'none' } as const
-    // 只有 2000 年一案成立：不能写"双尸案真相大白"
-    const r3 = withOutcome({ ...none, prevails: { R1: false, R2: false, R3: true }, priceArrested: true })
-    expect(r3.headline).not.toMatch(/双尸案/)
+    const none = { mandy: false, ethan: false, price: false }
+    const no = { rose: false, gideon: false, mei: false }
+    // 普莱斯因 2000 年的证据被带走：头条写翻案，不能写"双尸案真相大白"
+    const r3 = withOutcome({ taken: { ...none, price: true }, meiReopened: true, raised: { ...no, mei: true }, priceFor: { ...no, mei: true } })
     expect(r3.headline).toMatch(/2000 年谋杀/)
-    // 罗丝之死认定为毒杀、无人被起诉：不能写"猝死"
-    const r1 = withOutcome({ ...none, prevails: { R1: true, R2: false, R3: false }, priceArrested: false })
+    expect(r3.headline).not.toMatch(/双尸案/)
+    // 普莱斯被带走，但没人交 2000 年的证据：不能写翻案
+    const rp = withOutcome({ taken: { ...none, price: true }, raised: { ...no, rose: true }, priceFor: { ...no, rose: true } })
+    expect(rp.headline).toMatch(/私人医生被捕/)
+    for (const e of rp.endings) expect(e.text).not.toMatch(/重新立案/)
+    // 罗丝之死的证据交了、没人被带走：不能写"猝死"
+    const r1 = withOutcome({ raised: { ...no, rose: true } })
     expect(r1.headline).not.toMatch(/猝死/)
     expect(r1.endings[0].text).not.toMatch(/签完了两份死亡证明/)
-    // 曼迪只靠律师降级（普莱斯没被指向）：结局里不能出现"普莱斯如何骗你"
-    const red = withOutcome({ mandy: 'reduced', ethan: 'none', prevails: { R1: true, R2: false, R3: false }, exposed: { R1: ['mandy'], R2: [], R3: [] }, priceArrested: false })
+    // 曼迪被带走、普莱斯也被带走，但没有一份关于罗丝的证据指向普莱斯：不能说"陪审团听完了他如何骗你"
+    const red = withOutcome({ taken: { mandy: true, ethan: false, price: true }, raised: { ...no, mei: true }, priceFor: { ...no, mei: true }, meiReopened: true })
     const mEnd = red.endings.find(e => e.roleName === '曼迪')!
-    expect(mEnd.text).not.toMatch(/普莱斯如何骗你/)
-    expect(mEnd.title).toBe('律师的辩护')
+    expect(mEnd.title).toBe('被欺骗的手')
+    expect(mEnd.text).not.toMatch(/如何骗你/)
+    // 普莱斯担保过的人：结局是"欠下的人情"
+    const v = withOutcome({ vouched: { mandy: true, ethan: false } })
+    expect(v.endings.find(e => e.roleName === '曼迪')!.title).toBe('欠下的人情')
   })
 })
 
 describe('第二轮审查修复（回归测试）', () => {
   test('日志按座位各自编号：对方收到私信，你这边的编号也不会缺号', () => {
-    let s = toFinale()
-    s = order(s, 'P1', { burn: fv(s, 'P1').hand[0].id })
+    let s = toRound1()
+    s = order(s, 'P1', { recount: true })
     s = order(s, 'P2', {})
     for (const seat of ['P1', 'P2'] as Seat[]) {
       const ids = E.viewFor(s, seat, now).log.map(e => e.id)
       for (let i = 1; i < ids.length; i++) expect(ids[i]).toBe(ids[i - 1] + 1)
       expect(JSON.stringify(E.viewFor(s, seat, now).log)).not.toContain('"seq"')
-    }
-  })
-
-  test('探测不出对方烧了哪张：对方手里烧过 / 没烧的牌，交出与公开的报错一模一样', () => {
-    let s = until(start(), 'search1')
-    s = searchAll(s, 'P1')
-    const mine = E.viewFor(s, 'P1', now).clues.filter(c => c.holder === 'me' && !c.id.startsWith('item_'))
-    for (const c of mine.slice(0, 2)) if (!c.public) s = ok(s, 'P1', { type: 'publish', clueId: c.id })
-    s = until(s, 'finale')
-    const hand = fv(s, 'P1').hand.map(h => h.id).filter(id => mine.slice(0, 2).some(c => c.id === id))
-    expect(hand.length).toBe(2)
-    s = order(s, 'P1', { burn: hand[0] })
-    s = order(s, 'P2', {})
-    for (const type of ['give', 'publish'] as const) {
-      expect(err(s, 'P2', { type, clueId: hand[0] })).toBe(err(s, 'P2', { type, clueId: hand[1] }))
     }
   })
 
@@ -529,17 +607,18 @@ describe('第二轮审查修复（回归测试）', () => {
     expect(pub).toContain(E.scenario.clues.find(c => c.id === 'earpiece')!.spot!)
   })
 
-  test('普莱斯结局句：有证据指向他但没成立时，不能说"没有一份证据指向他"', () => {
-    let s = toFinale()
-    s = order(order(s, 'P1', {}), 'P2', {})
-    s = deal(deal(s, 'P1', 'refuse'), 'P2', 'refuse')
-    s = order(order(s, 'P1', {}), 'P2', {})
-    s = order(order(s, 'P1', {}), 'P2', {})
-    const st = structuredClone(s)
-    const f = st.finale as FinaleState
-    f.outcome = { ...f.outcome!, prevails: { R1: true, R2: false, R3: false }, exposed: { R1: [], R2: ['price'], R3: ['price'] }, priceArrested: false, mandy: 'none', ethan: 'none' }
-    const r = buildResult(st)
-    for (const e of r.endings) expect(e.text).not.toMatch(/没有一份证据指向他/)
+  test('普莱斯结局句：有证据指向他但不够时，不能说"没有一份证据指向他"', () => {
+    let s = toRound1()
+    s = order(s, 'P1', { card: priceCards(s, 'P1')[0] })
+    s = order(s, 'P2', {})
+    s = refuseBoth(s)
+    s = pass(pass(s))
+    expect(outcome(s).taken.price).toBe(false)
+    const r = buildResult(s)
+    for (const e of r.endings) {
+      expect(e.text).not.toMatch(/没有一份证据指向他/)
+      expect(e.text).toMatch(/还差一点/)
+    }
   })
 })
 
