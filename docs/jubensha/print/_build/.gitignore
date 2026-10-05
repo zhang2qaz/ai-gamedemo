@@ -2,3 +2,6 @@ fonts/*.woff2
 *.html
 jobs.json
 covers-preview2.png
+pg-*.png
+one-*.png
+pages.*

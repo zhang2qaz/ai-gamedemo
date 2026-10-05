@@ -65,8 +65,26 @@ def font_css():
     return css.replace("url(", "url(fonts/")
 
 
+LIST_RE = re.compile(r"^\s*([-*+]|\d+[.)])\s+")
+
+
+def normalize_md(text):
+    """列表项、表格、引用块之前若紧跟正文行，补一个空行，避免被并入上一段。"""
+    out = []
+    for line in text.split("\n"):
+        if out:
+            prev = out[-1]
+            starts_block = LIST_RE.match(line) or line.startswith("|") or line.startswith(">")
+            prev_is_text = prev.strip() and not LIST_RE.match(prev) and not prev.startswith("|") \
+                and not prev.startswith(">") and not prev.startswith("#") and not prev.startswith("    ")
+            if starts_block and prev_is_text:
+                out.append("")
+        out.append(line)
+    return "\n".join(out)
+
+
 def build_html(key, src, cv):
-    md_text = open(os.path.join(P3, src), encoding="utf-8").read()
+    md_text = normalize_md(open(os.path.join(P3, src), encoding="utf-8").read())
     body = markdown.markdown(md_text, extensions=["tables", "sane_lists", "md_in_html", "attr_list"])
     color = cv.get("color") or ("#1f4e9c" if cv.get("party") == "驴" else "#b8322a" if cv.get("party") == "象" else "#1b1a17")
     css = CSS.replace("VAR_C", color)
