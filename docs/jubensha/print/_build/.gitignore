@@ -5,3 +5,4 @@ covers-preview2.png
 pg-*.png
 one-*.png
 pages.*
+__pycache__/
