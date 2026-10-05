@@ -57,7 +57,31 @@ tr:nth-child(even) td { background: #faf5ea; }
 hr { border: 0; border-top: 0.4mm dashed #4a4a48; margin: 4mm 0; }
 code { font-family: 'Noto Sans SC'; background: #f3e9d4; padding: 0 1mm; }
 .pagebreak { break-after: page; }
+.stop { break-inside: avoid; break-after: page; margin: 10mm 0 0; padding: 6mm 4mm; text-align: center; font-family: 'Noto Sans SC'; font-weight: 900; font-size: 12pt; line-height: 1.8; color: #fff; background: #1b1a17; border: 1.2mm double VAR_C; }
+.yanyi { margin: 3mm 0 4mm; padding: 3mm 4mm; border: 0.45mm dashed #4a4a48; border-radius: 1.6mm; background: #fbf8f1; }
+.yanyi h1 { break-before: avoid; font-size: 12.5pt; border-bottom: 0.6mm solid VAR_C; margin: 0 0 3mm; padding: 0 0 1.5mm; }
+.yanyi p { margin-bottom: 1.6mm; }
+.yanyi p em { color: #6a6a66; }
+.yanyi p.mine { background: #fff1a8; margin-left: -2mm; padding: 0.6mm 2mm; border-left: 1.4mm solid VAR_C; }
 """
+
+SHARED = {"序幕": "prologue.md", "第二幕": "act2.md", "第三幕": "act3.md", "终幕": "finale.md"}
+YANYI_RE = re.compile(r"<!--\s*演绎[:：]\s*(\S+?)\s*-->")
+
+
+def inject_yanyi(md_text, name):
+    """把 <!--演绎:X--> 替换为共享台本，本人台词所在段落标记为 mine。"""
+    def rep(m):
+        f = SHARED.get(m.group(1))
+        path = os.path.join(P3, "shared", f) if f else None
+        if not path or not os.path.exists(path):
+            return "> （全员演绎台本待补：" + m.group(1) + "）"
+        txt = open(path, encoding="utf-8").read()
+        html = markdown.markdown(txt, extensions=["tables", "sane_lists"])
+        if name:
+            html = html.replace(f"<p><strong>{name}</strong>", f'<p class="mine"><strong>{name}</strong>')
+        return f'\n<div class="yanyi" markdown="0">\n{html}\n</div>\n'
+    return YANYI_RE.sub(rep, md_text)
 
 
 def font_css():
@@ -85,12 +109,13 @@ def normalize_md(text):
 
 def build_html(key, src, cv):
     md_text = normalize_md(open(os.path.join(P3, src), encoding="utf-8").read())
+    md_text = inject_yanyi(md_text, cv["name"] if cv.get("party") else None)
     body = markdown.markdown(md_text, extensions=["tables", "sane_lists", "md_in_html", "attr_list"])
     color = cv.get("color") or ("#1f4e9c" if cv.get("party") == "驴" else "#b8322a" if cv.get("party") == "象" else "#1b1a17")
     css = CSS.replace("VAR_C", color)
     svg = cover_svg(**cv)
     is_char = cv.get("party") is not None
-    note = ("本册分为四册，请严格按DM指示的时点阅读对应一册；其余各册保持封口。"
+    note = ("本剧本分为四幕与结局。请只阅读DM允许的那一幕，看到“请停止阅读”立即合上剧本。"
             "<br>游戏中只能口述自己的信息，禁止出示本册原文、卡片与DM给你的任何物件。") if is_char else \
            ("本册供DM与场控使用。开本前请完整通读并完成上岗考核（见上册第一章）。") if "dm" in key else \
            ("本册为公开物料，可在片头分发给全体玩家。")
