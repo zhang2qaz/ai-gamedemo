@@ -2,7 +2,7 @@
 用法：python3 build.py [书目key ...]   不带参数则构建全部已有源文件。"""
 import json, os, re, subprocess, sys
 import markdown
-from covers import cover_svg, INK, PAPER, GOLD, GRAY
+from rococo import cover_svg
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DOCS = os.path.abspath(os.path.join(ROOT, "..", ".."))
