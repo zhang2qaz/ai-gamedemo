@@ -23,6 +23,8 @@ export const PUZZLE: Puzzle = {
     { id: 'meiKiller', desc: '2000 年林梅之死', domain: ['price', 'frank', 'gideon', 'accident', 'suicide'] },
     { id: 'mandyFather', desc: '曼迪的生父', domain: ['gideon', 'frank', 'price', 'unknown'] },
     { id: 'ethanMother', desc: '伊森的生母', domain: ['rose', 'mei', 'unknown'] },
+    { id: 'roseVisitor', desc: '一点半看着罗丝病倒、却没叫救护车的人', domain: ['joan', 'price', 'mandy', 'hector', 'nobody'] },
+    { id: 'safeIntruder', desc: '三点过后偷试保险箱密码的人', domain: ['preston', 'mandy', 'price', 'ethan', 'victor', 'nobody'] },
   ],
   constraints: [
     // ── 罗丝之死 ──
@@ -59,6 +61,10 @@ export const PUZZLE: Puzzle = {
     { id: 'earpiece', clues: ['earpiece', 'joan_ethan'], vars: ['pusher'], desc: '阳台上的安保耳麦管断段；伊森 02:47 进门时耳麦不见了', test: a => a.pusher === 'ethan' || a.pusher === 'nobody' },
     { id: 'fox_moment', clues: ['a_saw', 'joan_notes'], vars: ['fallTime'], desc: '书房电视（Fox）宣布的那一刻＝02:40', test: a => a.fallTime === '0240' },
     { id: 'fox_moment_alt', clues: ['preston_thud', 'joan_notes'], vars: ['fallTime'], desc: '露台户外屏（Fox）宣布的同时听到闷响＝02:40', test: a => a.fallTime === '0240' },
+    { id: 'fox_moment_dvr', clues: ['a_saw', 'dvr'], vars: ['fallTime'], desc: '曼迪看见推人时，书房电视（Fox）正在宣布；书房录像盒录下 Fox 宣布在 02:40', test: a => a.fallTime === '0240' },
+    { id: 'fox_moment_dvr_terrace', clues: ['preston_thud', 'dvr'], vars: ['fallTime'], desc: '露台户外屏（Fox）宣布的同时听到闷响；录像盒：Fox 02:40 宣布', test: a => a.fallTime === '0240' },
+    { id: 'fox_moment_dvr_victor', clues: ['victor_thud', 'dvr'], vars: ['fallTime'], desc: '维克多：露台户外屏（Fox）刚宣布就听见"砰"的一声；录像盒：Fox 02:40 宣布', test: a => a.fallTime === '0240' },
+    { id: 'fox_moment_victor', clues: ['victor_thud', 'joan_notes'], vars: ['fallTime'], desc: '维克多：露台户外屏（Fox）刚宣布就听见"砰"的一声＝02:40', test: a => a.fallTime === '0240' },
     { id: 'preston_watch', clues: ['preston_thud'], vars: ['fallTime'], desc: '普雷斯顿记得闷响是在两点四十', test: a => a.fallTime === '0240' },
     { id: 'after_entry', clues: ['door_log'], vars: ['fallTime'], desc: '第二个人 02:37 才进塔', test: a => a.fallTime >= '0237' },
     { id: 'note_printer', clues: ['note', 'printer_log', 'pc_bin'], vars: ['noteAuthor'], desc: '匿名信由 5 号客房电脑打印并删除', test: a => a.noteAuthor === 'price' || a.noteAuthor === 'preston' || a.noteAuthor === 'joan' },
@@ -78,6 +84,14 @@ export const PUZZLE: Puzzle = {
     { id: 'will_daughter', clues: ['will', 'license'], vars: ['mandyFather'], desc: '遗嘱写着"我的女儿林曼（1990-04-12）"', test: a => a.mandyFather === 'gideon' },
     { id: 'rose_box', clues: ['rose_box', 'dogtags'], vars: ['ethanMother'], desc: '罗丝首饰盒里的婴儿照"伊森 1986.3.14"与弗兰克照片；兵籍牌姓科尔', test: a => a.ethanMother === 'rose' },
     { id: 'mijo', clues: ['voicemail'], vars: ['ethanMother'], desc: '罗丝留言叫他"我的儿子"', test: a => a.ethanMother === 'rose' },
+
+    // ── 另外两个人的秘密 ──
+    { id: 'visit_told', clues: ['joan_rose'], vars: ['roseVisitor'], desc: '乔安亲口说：一点半罗丝叫她去房间，她没有叫救护车', test: a => a.roseVisitor === 'joan' },
+    { id: 'visit_clip', clues: ['press_clip', 'guestbook'], vars: ['roseVisitor'], desc: '罗丝床脚有一枚记者证卡扣，刻着"J.M."——今晚的宾客里只有乔安·默瑟是记者', test: a => a.roseVisitor === 'joan' },
+    { id: 'visit_stairs', clues: ['hector_joan'], vars: ['roseVisitor'], desc: '一点四十赫克托碰见乔安从罗丝那层下来，她说罗丝"喝多了，睡了"——她见过罗丝', test: a => a.roseVisitor === 'joan' },
+    { id: 'safe_late', clues: ['safe_log'], vars: ['safeIntruder'], desc: '保险箱面板 03:14 还有一次密码错误——曼迪两点半之后，又有人来试过', test: a => a.safeIntruder !== 'nobody' },
+    { id: 'safe_window', clues: ['v_preston', 'safe_log'], vars: ['safeIntruder'], desc: '03:10—03:20 普雷斯顿一个人去了只有书房和化妆间的北翼，回来满头大汗；03:14 正是那次试密码', test: a => a.safeIntruder === 'preston' },
+    { id: 'safe_told', clues: ['preston_safe'], vars: ['safeIntruder'], desc: '普雷斯顿自己承认 03:14 试了老密码 1107', test: a => a.safeIntruder === 'preston' },
   ],
 }
 
@@ -97,4 +111,6 @@ export const EXPECTED = {
   meiKiller: 'price',
   mandyFather: 'gideon',
   ethanMother: 'rose',
+  roseVisitor: 'joan',
+  safeIntruder: 'preston',
 }

@@ -1,10 +1,9 @@
 // 《摇摆州》· 结局与计分（服务器端专用）
-import type { GameState, ResultView, Seat } from '../../types'
-import { SEATS } from '../../types'
+import type { GameState, ResultView } from '../../types'
 import { ACCUSE, TRUTH } from './content'
-import { ETHAN, MANDY } from './roles'
-import { computeOutcome } from './finale'
-import type { FinaleState, Outcome } from './finale'
+import { ROLES } from './roles'
+import { computeOutcome, PLAYERS } from './finale'
+import type { FinaleState, Outcome, PlayerWho } from './finale'
 
 function isCorrect(answer: string | string[], v: string | string[] | undefined) {
   if (Array.isArray(answer)) return Array.isArray(v) && [...v].sort().join('|') === [...answer].sort().join('|')
@@ -20,7 +19,7 @@ function label(qid: string, v: string | string[] | undefined) {
 
 type SelfFate = 'free' | 'vouched' | 'fled' | 'confessed' | 'taken_reduced' | 'taken'
 
-function fateOf(o: Outcome, who: 'mandy' | 'ethan'): SelfFate {
+function fateOf(o: Outcome, who: PlayerWho): SelfFate {
   if (o.fled[who]) return 'fled'
   if (o.taken[who] && o.confessed[who]) return 'confessed'
   if (o.taken[who]) return o.taken.price ? 'taken_reduced' : 'taken'
@@ -117,66 +116,180 @@ function ethanEnding(o: Outcome): { title: string; text: string } {
   return { title, text: parts.join('\n\n') }
 }
 
+function joanEnding(o: Outcome): { title: string; text: string } {
+  const parts: string[] = []
+  let title: string
+  switch (fateOf(o, 'joan')) {
+    case 'fled':
+      title = '最后一班船'
+      parts.push('你上了"第二次机会号"。跑了三十年社会新闻，这是你第一次从新闻现场逃走。罗丝攥着你手腕的那股力气，你到现在都还记得。')
+      break
+    case 'confessed':
+      title = '迟到的报道'
+      parts.push(o.taken.price
+        ? '你把一切都告诉了警长：一点半，罗丝的床边，那句"不要他，永远不要他"。普莱斯医生上了同一辆警车。你被以见危不救、作伪证起诉。在看守所里，你用一支铅笔写完了那篇稿子。'
+        : '你把一切都告诉了警长。普莱斯医生耸了耸肩："记者编故事，是职业习惯。"证据不够，警长只带走了你。')
+      break
+    case 'taken':
+    case 'taken_reduced':
+      title = '旁观者'
+      parts.push('警长把你带走了。地毯上的卡扣、楼梯上那句"喝多了，睡了"——检方说，一个跑了三十年社会新闻的人，不可能看不出罗丝快死了。你没有辩解。')
+      break
+    case 'vouched':
+      title = '欠下的人情'
+      parts.push('普莱斯医生对警长说："默瑟小姐整晚都站在我旁边。"警长没有带走你。你自由了——可你知道，从今往后，你再也写不了他。')
+      break
+    default:
+      title = o.meiReopened ? '十六年后的头版' : o.taken.price ? '今晚的头版' : '被压下的稿子'
+      parts.push(o.meiReopened
+        ? '你的稿子登上了《棕榈滩纪事报》的头版：《2000 年大选之夜：一位女郎之死》。署名那一栏，你写了三个名字：乔安·默瑟、林梅、罗丝·阿尔瓦雷斯。'
+        : o.taken.price
+          ? '你写了今晚的事，登上了头版。可十六年前的那一夜，你还是没能写完。'
+          : '你的稿子被报社的律师压了下来。主编说："没有证据，只有一个记者的猜测。"')
+  }
+  parts.push(o.taken.price && o.priceFor.rose
+    ? '罗丝没有白死。法庭上，检方念出了那句"灯都是黄的"。'
+    : '罗丝的死亡证明上，写的还是"心源性猝死"。')
+  if (o.meiReopened) parts.push('翻案那天，你在法院门口等到了哈洛韦警长。十六年前那份"意外坠落"的报告，就是他签的字。他从你身边走过，没有看你。')
+  return { title, text: parts.join('\n\n') }
+}
+
+function prestonEnding(o: Outcome): { title: string; text: string } {
+  const parts: string[] = []
+  let title: string
+  switch (fateOf(o, 'preston')) {
+    case 'fled':
+      title = '父亲的游艇'
+      parts.push('你开走了父亲的"第二次机会号"。维克多的电话一直在响，你把手机扔进了海里。')
+      break
+    case 'confessed':
+      title = '儿子的坦白'
+      parts.push(o.taken.price
+        ? '你对警长说：是我去试了保险箱。你把四点一刻普莱斯在走廊里对你说的话也说了出来。"哈兰叔叔"和你上了同一辆警车。'
+        : '你对警长说：是我去试了保险箱。普莱斯医生叹了口气："这孩子太累了。"警长只带走了你。')
+      break
+    case 'taken':
+    case 'taken_reduced':
+      title = '万斯家的儿子'
+      parts.push('警长把你带走了。保险箱面板上的 03:14、维克多的证词……检方以"企图毁灭遗嘱"起诉了你。万斯家的儿子，上了自家常读的那份报纸的社会版。')
+      break
+    case 'vouched':
+      title = '欠下的人情'
+      parts.push('普莱斯医生对警长说："普雷斯顿只是想守着他父亲。"警长没有带走你。"哈兰叔叔"拍了拍你的肩膀——你忽然觉得那只手很冷。')
+      break
+    default:
+      title = o.meiReopened ? '父亲的秘密' : '万斯这个姓'
+      parts.push('天亮了。你还是万斯家的儿子，站在父亲的庄园里。')
+  }
+  parts.push(o.meiReopened
+    ? '2000 年的案子重新立案。"万斯"这个姓，和一桩被掩盖了十六年的命案写在了一起。'
+    : '父亲十六年前替人掩盖的事，没有人再提起。万斯家的名声保住了。')
+  if (o.will === 'missing') parts.push(o.fled.preston ? '新遗嘱始终没有找到。按旧遗嘱，一切本该是你的——可你已经不在这里了。' : '新遗嘱始终没有找到。按 2009 年的旧遗嘱，这座庄园和一切，都归你。维克多的律师已经在门口等着了。')
+  else parts.push('律师宣读了新遗嘱："一半给我的女儿林曼，一半给弗兰克·科尔之子。"你的名字只出现在最后一行：一笔信托，够你体面地活着。')
+  return { title, text: parts.join('\n\n') }
+}
+
 /** 头条必须和同页的"官方结论"一致 */
 function headline(o: Outcome): string {
-  const taken = (['mandy', 'ethan'] as const).filter(w => o.taken[w]).length
+  const taken = o.cast.filter(w => o.taken[w]).length
   if (o.taken.price && o.meiReopened) return '《棕榈滩纪事报》头版：知名医生涉嫌 2000 年谋杀被捕，16 年前的"意外"重新立案'
   if (o.taken.price) return '《棕榈滩纪事报》头版：吉迪恩·万斯的私人医生被捕'
-  if (taken > 0) return `《棕榈滩纪事报》头版：大选之夜庄园命案，${taken === 2 ? '两人' : '一人'}被警方带走`
+  if (taken > 0) return `《棕榈滩纪事报》头版：大选之夜庄园命案，${['', '一', '两', '三', '四'][taken] ?? taken}人被警方带走`
   if (o.raised.rose && o.raised.gideon) return '《棕榈滩纪事报》头版：首富坠楼、未婚妻中毒，大选之夜双尸案无人被捕'
   if (o.raised.rose) return '《棕榈滩纪事报》头版：首富大选之夜意外身亡，未婚妻同晚遭人下毒'
   if (o.raised.gideon) return '《棕榈滩纪事报》头版：首富坠楼被认定为他杀，未婚妻同晚猝死'
   return '《棕榈滩纪事报》第 14 版：棕榈滩首富大选之夜意外身亡，未婚妻同晚猝死'
 }
 
-function seatOfRole(state: GameState, roleId: string): Seat {
-  return SEATS.find(s => state.seats[s].roleId === roleId) ?? 'P1'
+const NAME: Record<PlayerWho, string> = { mandy: '曼迪', ethan: '伊森', joan: '乔安', preston: '普雷斯顿' }
+const TA: Record<PlayerWho, string> = { mandy: '她', ethan: '他', joan: '她', preston: '他' }
+const ENDING: Record<PlayerWho, (o: Outcome) => { title: string; text: string }> = {
+  mandy: mandyEnding,
+  ethan: ethanEnding,
+  joan: joanEnding,
+  preston: prestonEnding,
+}
+
+/** 每个角色除了"自身平安"以外的三项目标 */
+function goalItems(o: Outcome, who: PlayerWho): { first: { label: string; got: boolean }; rest: { label: string; got: boolean }[] } {
+  switch (who) {
+    case 'mandy':
+      return {
+        first: { label: '母亲的真相（2000 年的证据交到警长手里，普莱斯医生被带走）', got: o.meiReopened },
+        rest: [
+          { label: '让灯塔上那个人付出代价（伊森被警长带走）', got: o.taken.ethan },
+          { label: '拿到他留给你的东西（继承遗产）', got: o.mandyInherits },
+        ],
+      }
+    case 'ethan':
+      return {
+        first: { label: '父亲的清白（2000 年的证据交到警长手里，普莱斯医生被带走）', got: o.meiReopened },
+        rest: [
+          { label: '让毒死母亲的人付出代价（曼迪被警长带走）', got: o.taken.mandy },
+          { label: '"弗兰克·科尔之子"拿到遗产（遗嘱被找到，而且你没被带走、没出海）', got: o.ethanInherits },
+        ],
+      }
+    case 'joan':
+      return {
+        first: { label: '写完十六年前没写完的那篇稿子（2000 年的证据交到警长手里，普莱斯医生被带走）', got: o.meiReopened },
+        rest: [
+          { label: '罗丝不能白死（普莱斯医生被带走，而且有关于罗丝之死、指向他的证据）', got: o.taken.price && o.priceFor.rose },
+          { label: '让今晚的真相登上头版（普莱斯医生被带走）', got: o.taken.price },
+        ],
+      }
+    case 'preston':
+      return {
+        first: { label: '守住万斯家的名声（2000 年的旧案没有被翻出来）', got: !o.meiReopened },
+        rest: [
+          { label: '让推父亲下塔的人付出代价（伊森被警长带走）', got: o.taken.ethan },
+          { label: '拿回本该属于你的一切（新遗嘱没被拿出来，而且你没出海）', got: o.will === 'missing' && !o.fled.preston },
+        ],
+      }
+  }
+}
+
+function whoOf(roleId: string | null): PlayerWho | null {
+  return roleId && (PLAYERS as string[]).includes(roleId) ? (roleId as PlayerWho) : null
 }
 
 export function buildResult(state: GameState): ResultView {
   const f = state.finale as FinaleState | null
   const o: Outcome = f?.outcome ?? (f ? computeOutcome(state) : EMPTY_OUTCOME)
-  const ms = seatOfRole(state, MANDY)
-  const es = seatOfRole(state, ETHAN)
+  const seats = state.roster.filter(s => whoOf(state.seats[s].roleId))
 
-  const scores = SEATS.map(seat => {
-    const isMandy = seat === ms
+  const scores = seats.map(seat => {
+    const who = whoOf(state.seats[seat].roleId)!
     const acc = state.seats[seat].accuse ?? {}
     const items: { label: string; points: number; got: boolean }[] = ACCUSE.map(q => ({
       label: `指认：${q.prompt}`,
       points: q.points,
       got: isCorrect(q.answer, acc[q.id]),
     }))
-    const fate = fateOf(o, isMandy ? 'mandy' : 'ethan')
-    const reduced = (fate === 'taken_reduced' || fate === 'confessed') && o.taken.price
+    const fate = fateOf(o, who)
+    // 曼迪和伊森是被普莱斯骗着动的手：他也被带走，就从轻判决
+    const reduced = (who === 'mandy' || who === 'ethan') && (fate === 'taken_reduced' || fate === 'confessed') && o.taken.price
     const freePoints = fate === 'free' || fate === 'vouched' ? 20 : reduced ? 10 : fate === 'fled' ? 5 : 0
+    const confessTag = fate === 'confessed' ? '（认罪）' : ''
     const freeLabel = fate === 'free' ? '天亮后平安离开'
       : fate === 'vouched' ? '天亮后平安离开（普莱斯保了你）'
-        : reduced ? `被警长带走${fate === 'confessed' ? '（认罪）' : ''}，但普莱斯医生也被带走（从轻判决）`
-          : fate === 'fled' ? '出海逃亡' : `被警长带走${fate === 'confessed' ? '（认罪）' : ''}`
-    items.push({ label: isMandy ? '母亲的真相（2000 年的证据交到警长手里，普莱斯医生被带走）' : '父亲的清白（2000 年的证据交到警长手里，普莱斯医生被带走）', points: 20, got: o.meiReopened })
+        : reduced ? `被警长带走${confessTag}，但普莱斯医生也被带走（从轻判决）`
+          : fate === 'fled' ? '出海逃亡' : `被警长带走${confessTag}`
+    const g = goalItems(o, who)
+    items.push({ label: g.first.label, points: 20, got: g.first.got })
     items.push({ label: `自身：${freeLabel}`, points: freePoints > 0 ? freePoints : 20, got: freePoints > 0 })
-    if (isMandy) {
-      items.push({ label: '让灯塔上那个人付出代价（伊森被警长带走）', points: 15, got: o.taken.ethan })
-      items.push({ label: '拿到他留给你的东西（继承遗产）', points: 15, got: o.mandyInherits })
-    } else {
-      items.push({ label: '让毒死母亲的人付出代价（曼迪被警长带走）', points: 15, got: o.taken.mandy })
-      items.push({ label: '"弗兰克·科尔之子"拿到遗产（遗嘱被找到，而且你没被带走、没出海）', points: 15, got: o.ethanInherits })
-    }
+    for (const r of g.rest) items.push({ label: r.label, points: 15, got: r.got })
     const cashPoints = Math.floor(state.seats[seat].money / 1000)
     items.push({ label: `剩余现金 $${state.seats[seat].money.toLocaleString('en-US')}（每 $1,000 计 1 分）`, points: cashPoints, got: cashPoints > 0 })
     return {
       seat,
-      roleName: isMandy ? '曼迪' : '伊森',
+      roleName: ROLES.find(r => r.id === who)?.name ?? NAME[who],
       total: items.reduce((n, it) => n + (it.got ? it.points : 0), 0),
       items,
     }
   })
 
-  const m = mandyEnding(o)
-  const e = ethanEnding(o)
   // 普莱斯没被带走时，要区分"有证据指向他但还不够"和"根本没人指向他"
-  const pointedAtPrice = o.priceFor.rose || o.priceFor.gideon || o.priceFor.mei
+  const pointedAtPrice = o.priceFor.rose || o.priceFor.gideon || o.priceFor.mei || o.priceFor.will
   const priceLine = o.taken.price
     ? '06:00，哈兰·普莱斯医生被戴上手铐。他上警车前回头看了一眼灯塔。'
     : pointedAtPrice
@@ -187,18 +300,17 @@ export function buildResult(state: GameState): ResultView {
           ? '哈兰·普莱斯医生做完笔录，开着他的奔驰离开了庄园——没有一份证据指向他。他还会去打周日的高尔夫。'
           : '哈兰·普莱斯医生签完了两份死亡证明，开着他的奔驰离开了庄园。他还会去打周日的高尔夫。'
 
-  const fateText = (who: 'mandy' | 'ethan') => {
+  const fateText = (who: PlayerWho) => {
     switch (fateOf(o, who)) {
       case 'fled': return '出海逃亡'
       case 'taken': case 'taken_reduced': return '被警长带走'
       case 'confessed': return '认罪，被警长带走'
-      case 'vouched': return '平安离开（普莱斯保了' + (who === 'mandy' ? '她' : '他') + '）'
+      case 'vouched': return `平安离开（普莱斯保了${TA[who]}）`
       default: return '平安离开'
     }
   }
   const summary = [
-    `曼迪：${fateText('mandy')}`,
-    `伊森：${fateText('ethan')}`,
+    ...o.cast.map(w => `${NAME[w]}：${fateText(w)}`),
     `普莱斯医生：${o.taken.price ? '被警长带走' : '全身而退'}`,
     `2000 年林梅之死：${o.meiReopened ? '重新立案' : '维持"意外"'}`,
     `吉迪恩的新遗嘱：${o.will === 'executed' ? '找到了，交给律师生效' : '没有找到'}`,
@@ -206,30 +318,33 @@ export function buildResult(state: GameState): ResultView {
 
   return {
     headline: headline(o),
-    endings: [
-      { seat: ms, roleName: '曼迪', title: m.title, text: `${m.text}\n\n${priceLine}` },
-      { seat: es, roleName: '伊森', title: e.title, text: `${e.text}\n\n${priceLine}` },
-    ],
+    endings: seats.map(seat => {
+      const who = whoOf(state.seats[seat].roleId)!
+      const e = ENDING[who](o)
+      return { seat, roleName: NAME[who], title: e.title, text: `${e.text}\n\n${priceLine}` }
+    }),
     scores,
     accuseReview: ACCUSE.map(q => ({
       prompt: q.prompt,
       answer: label(q.id, q.answer),
-      picks: Object.fromEntries(SEATS.map(s => [s, label(q.id, state.seats[s].accuse?.[q.id])])),
+      picks: Object.fromEntries(seats.map(s => [s, label(q.id, state.seats[s].accuse?.[q.id])])),
     })),
     truth: [{ title: '天亮时的官方结论', text: summary }, ...TRUTH],
     secrets: f?.secrets ?? [],
   }
 }
 
+const NONE = { mandy: false, ethan: false, joan: false, preston: false }
 const EMPTY_OUTCOME: Outcome = {
-  taken: { mandy: false, ethan: false, price: false },
-  fled: { mandy: false, ethan: false },
-  confessed: { mandy: false, ethan: false },
-  savedByVouch: { mandy: false, ethan: false },
-  counts: { mandy: 0, ethan: 0, price: 0 },
-  lines: { mandy: 3, ethan: 3, price: 6 },
-  raised: { rose: false, gideon: false, mei: false },
-  priceFor: { rose: false, gideon: false, mei: false },
+  cast: [],
+  taken: { ...NONE, price: false },
+  fled: { ...NONE },
+  confessed: { ...NONE },
+  savedByVouch: { ...NONE },
+  counts: { mandy: 0, ethan: 0, joan: 0, preston: 0, price: 0 },
+  lines: { mandy: 3, ethan: 3, joan: 3, preston: 3, price: 7 },
+  raised: { rose: false, gideon: false, mei: false, will: false },
+  priceFor: { rose: false, gideon: false, mei: false, will: false },
   meiReopened: false,
   will: 'missing',
   mandyInherits: false,

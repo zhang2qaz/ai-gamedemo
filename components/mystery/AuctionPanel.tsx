@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useMysteryStore } from '@/store/mysteryStore'
 import type { SeatView } from '@/engine/mystery/types'
-import { Money, RichText } from './ui'
+import { Money, RichText, seatName } from './ui'
 import { SpeakButton } from './Speech'
 
 export default function AuctionPanel({ view }: { view: SeatView }) {
@@ -14,6 +14,8 @@ export default function AuctionPanel({ view }: { view: SeatView }) {
   const [sent, setSent] = useState(false)
   if (!a) return null
 
+  const who = (seat: typeof view.seat) => (seat === view.seat ? '你' : seatName(view, seat))
+  const waitingFor = view.seats.filter(s => s !== view.seat && !a.submitted.includes(s)).map(s => seatName(view, s))
   const total = Object.values(bids).reduce((n, v) => n + v, 0)
   const over = total > view.me.money
   const invalid = a.lots.some(l => (bids[l.id] ?? 0) > 0 && (bids[l.id] ?? 0) < l.min)
@@ -48,7 +50,7 @@ export default function AuctionPanel({ view }: { view: SeatView }) {
               size="sm"
               text={() => a.lots.map(l => {
                 const r = a.results!.find(x => x.lot === l.id)!
-                return `${l.title}：${r.winner === 'me' ? `你拍到了，花了${r.price}美元` : r.winner === 'other' ? '对方拍到了' : r.tie ? a.tieLabel : '没人要'}。`
+                return `${l.title}：${r.winner === view.seat ? `你拍到了，花了${r.price}美元` : r.winner ? `${who(r.winner)}拍到了` : r.tie ? a.tieLabel : '没人要'}。`
               }).join('\n')}
             />
           </div>
@@ -59,11 +61,13 @@ export default function AuctionPanel({ view }: { view: SeatView }) {
                 <span className="text-2xl">{l.itemIcon}</span>
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-white text-sm truncate">{l.title}</div>
-                  <div className="text-[11px] text-[var(--mx-muted)]">你出 <Money value={r.myBid} /> · 对方出 <Money value={r.otherBid} /></div>
+                  <div className="text-[11px] text-[var(--mx-muted)] flex flex-wrap gap-x-2">
+                    {view.seats.map(s => <span key={s} className="whitespace-nowrap">{who(s)}出 <Money value={r.bids[s] ?? 0} /></span>)}
+                  </div>
                 </div>
-                <div className="text-right text-xs font-bold">
-                  {r.winner === 'me' && <span className="text-emerald-300">你拍得 · <Money value={r.price} /></span>}
-                  {r.winner === 'other' && <span className="text-sky-300">对方拍得</span>}
+                <div className="text-right text-xs font-bold shrink-0">
+                  {r.winner === view.seat && <span className="text-emerald-300">你拍得 · <Money value={r.price} /></span>}
+                  {r.winner && r.winner !== view.seat && <span className="text-sky-300">{who(r.winner)}拍得</span>}
                   {r.winner === null && (r.tie ? <span className="text-red-300">{a.tieLabel}</span> : <span className="text-white/40">流拍</span>)}
                 </div>
               </div>
@@ -74,7 +78,7 @@ export default function AuctionPanel({ view }: { view: SeatView }) {
       ) : a.myBids ? (
         <div className="mx-panel p-4 text-center space-y-1">
           <div className="text-emerald-300 font-bold">暗标已交给拍卖师</div>
-          <div className="text-xs text-[var(--mx-muted)]">{a.otherSubmitted ? '对方也已出价，正在揭晓……' : '等待对方出价……'}</div>
+          <div className="text-xs text-[var(--mx-muted)]">{waitingFor.length === 0 ? '大家都出价了，正在揭晓……' : `等待 ${waitingFor.join('、')} 出价……`}</div>
         </div>
       ) : (
         <>

@@ -19,3 +19,5 @@ export const tick = engine.tick
 export const nextDeadline = engine.nextDeadline
 export const viewFor = engine.viewFor
 export const scenario = engine.scenario
+export const maxPlayers = engine.maxPlayers
+export const minPlayers = engine.minPlayers

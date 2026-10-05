@@ -1,13 +1,13 @@
 // =====================
 // 剧本杀 - 多房间联机中枢（服务端）
-// 每个房间 2 个座位；服务器上的引擎就是 DM。
+// 每个房间最多 maxPlayers 个座位（由剧本决定）；服务器上的引擎就是 DM。
 // =====================
 
 import type { WebSocket } from 'ws'
 import { randomUUID } from 'crypto'
 import type { Seat, GameState } from '@/engine/mystery/types'
 import { SEATS } from '@/engine/mystery/types'
-import { createGame, reduce, tick, nextDeadline, viewFor, joinSeat, setPresence, vacateSeat, abandonSeat, unready } from '@/engine/mystery/engine'
+import { createGame, reduce, tick, nextDeadline, viewFor, joinSeat, setPresence, vacateSeat, abandonSeat, unready, maxPlayers } from '@/engine/mystery/engine'
 import type { ClientMsg, ServerMsg } from './protocol'
 import { makeRoomCode, normalizeRoomCode, sanitizeName } from './protocol'
 
@@ -373,10 +373,13 @@ export class MysteryHub {
       this.welcomeAgain(room, ref.seat, ws)
       return
     }
-    let seat = SEATS.find(s => !room.seats[s])
-    if (!seat && room.state.stepIndex === -1) {
-      // 大厅里掉线太久的座位让给新玩家（开局后不允许：那会看到别人的私密剧本）
-      seat = SEATS.find(s => {
+    // 开局后不能再有人坐进来：空着的座位也不行（那会看到别人的私密剧本，人数也对不上）
+    const inLobby = room.state.stepIndex === -1
+    const usable = SEATS.slice(0, maxPlayers)
+    let seat = inLobby ? usable.find(s => !room.seats[s]) : undefined
+    if (!seat && inLobby) {
+      // 大厅里掉线太久的座位让给新玩家
+      seat = usable.find(s => {
         const c = room.seats[s]
         return !!c && !c.ws && c.offlineSince !== null && now - c.offlineSince > LOBBY_RECLAIM_MS
       })
@@ -387,7 +390,9 @@ export class MysteryHub {
     }
     if (!seat) {
       fail()
-      this.send(ws, { type: 'ERROR', message: '房间已满（本剧本限 2 人）。若你是这局的玩家：在原设备上打开本页，点「回到房间」。' })
+      this.send(ws, { type: 'ERROR', message: inLobby
+        ? `房间已满（本剧本最多 ${maxPlayers} 人）。若你是这局的玩家：在原设备上打开本页，点「回到房间」。`
+        : '这一局已经开始了，不能再加入。若你是这局的玩家：在原设备上打开本页，点「回到房间」。' })
       return
     }
     this.leave(ws)

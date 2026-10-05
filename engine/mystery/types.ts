@@ -3,12 +3,9 @@
 // 内容（剧本数据）与运行时状态分离；服务器上的引擎就是 DM。
 // =====================
 
-export const SEATS = ['P1', 'P2'] as const
+/** 房间里最多的座位数（具体几人由剧本的 minPlayers / maxPlayers 决定） */
+export const SEATS = ['P1', 'P2', 'P3', 'P4'] as const
 export type Seat = typeof SEATS[number]
-
-export function otherSeat(seat: Seat): Seat {
-  return seat === 'P1' ? 'P2' : 'P1'
-}
 
 // ───────────────────────── 内容 Schema ─────────────────────────
 
@@ -87,6 +84,8 @@ export type NpcDef = {
   questions: QuestionDef[]
   /** NPC 可被问询的步骤（不填则所有搜证步骤都可） */
   from?: string
+  /** 这个 NPC 是某个可选角色的替身：该角色有玩家扮演时，NPC 不出现 */
+  standsInFor?: string
 }
 
 export type LocationDef = {
@@ -122,6 +121,8 @@ export type RoleDef = {
   goals: GoalDef[]
   /** 初始资金 */
   money?: number
+  /** 可选角色：人数不够时可以没人扮演（由 NpcDef.standsInFor 指定的 NPC 顶替） */
+  optional?: boolean
 }
 
 export type ChoiceOption = {
@@ -220,6 +221,10 @@ export type Scenario = {
   tagline: string
   /** 大厅展示用的无剧透简介 */
   intro: string
+  /** 几人开局（含）；不填为 2 */
+  minPlayers?: number
+  /** 最多几人（含，不超过 SEATS 的数量）；不填为 2 */
+  maxPlayers?: number
   era: string
   duration: string
   roles: RoleDef[]
@@ -286,6 +291,8 @@ export type GameState = {
   stepStartedAt: number
   deadline: number | null
   seats: Record<Seat, SeatState>
+  /** 开局时在座的座位（开局前为空：以已入座的座位为准） */
+  roster: Seat[]
   clues: Record<string, ClueState>
   qa: QaRecord[]
   flags: Record<string, FlagValue>
@@ -316,7 +323,8 @@ export type MysteryAction =
   | { type: 'search'; spotId: string }
   | { type: 'ask'; npcId: string; questionId: string }
   | { type: 'publish'; clueId: string }
-  | { type: 'give'; clueId: string }
+  /** to：交给谁（只有两个人时可省略） */
+  | { type: 'give'; clueId: string; to?: Seat }
   | { type: 'choose'; optionId: string }
   /** attemptsLeft：客户端看到的剩余次数；与服务器不一致时拒绝，防止重复提交 */
   | { type: 'caseFile'; caseId: string; answers: Record<string, string>; attemptsLeft?: number }
@@ -334,6 +342,8 @@ export type ClueView = {
   text: string
   location?: string
   holder: 'me' | 'other' | 'none'
+  /** holder 为 other 时，在谁手里 */
+  holderSeat?: Seat
   public: boolean
   forged?: boolean
 }
@@ -383,10 +393,15 @@ export type CaseFileView = {
 export type SeatView = {
   code: string
   seat: Seat
+  /** 这局的座位（开局前是已入座的座位），按顺序 */
+  seats: Seat[]
+  /** 几人开局 / 最多几人 */
+  minPlayers: number
+  maxPlayers: number
   scenario: { id: string; title: string; subtitle: string; tagline: string; intro: string; era: string; duration: string }
-  roles: { id: string; name: string; enName: string; title: string; avatar: string; color: string; publicProfile: string }[]
-  /** money 只对自己（以及结局后）下发：对方余额会泄露案卷对错与指认得分 */
-  players: Record<Seat, { name: string | null; online: boolean; roleId: string | null; ready: boolean; money?: number }>
+  roles: { id: string; name: string; enName: string; title: string; avatar: string; color: string; publicProfile: string; optional: boolean }[]
+  /** 只有 seats 里的座位。money 只对自己（以及结局后）下发：别人的余额会泄露案卷对错与指认得分 */
+  players: Partial<Record<Seat, { name: string | null; online: boolean; roleId: string | null; ready: boolean; money?: number }>>
   step: {
     index: number
     total: number
@@ -415,8 +430,10 @@ export type SeatView = {
   auction: {
     lots: { id: string; title: string; desc: string; min: number; itemTitle: string; itemIcon: string }[]
     myBids: Record<string, number> | null
-    otherSubmitted: boolean
-    results: { lot: string; winner: 'me' | 'other' | null; price: number; tie: boolean; myBid: number; otherBid: number }[] | null
+    /** 已经交了暗标的座位（不含出价内容） */
+    submitted: Seat[]
+    /** 揭晓后：每件拍品的赢家与每个人的出价 */
+    results: { lot: string; winner: Seat | null; price: number; tie: boolean; bids: Partial<Record<Seat, number>> }[] | null
     /** 同价时结果栏显示的短标签 */
     tieLabel: string
   } | null

@@ -27,7 +27,7 @@ function started() {
   s = E.joinSeat(s, 'P1', '小明', now)
   s = E.joinSeat(s, 'P2', '小红', now)
   s = ok(s, 'P1', { type: 'pickRole', roleId: 'a' })
-  expect(act(s, 'P2', { type: 'pickRole', roleId: 'a' }).error).toBe('该角色已被对方选择')
+  expect(act(s, 'P2', { type: 'pickRole', roleId: 'a' }).error).toBe('这个角色已经被别人选了')
   s = ok(s, 'P2', { type: 'pickRole', roleId: 'b' })
   s = ok(s, 'P1', { type: 'ready', value: true })
   s = ok(s, 'P2', { type: 'ready', value: true })
@@ -160,7 +160,7 @@ describe('剧本杀引擎（通用流程）', () => {
   test('断线状态与不合法动作', () => {
     let s = started()
     s = E.setPresence(s, 'P2', false, now)
-    expect(E.viewFor(s, 'P1', now).players.P2.online).toBe(false)
+    expect(E.viewFor(s, 'P1', now).players.P2!.online).toBe(false)
     expect(act(s, 'P1', search(s, 'key')).error).toBe('现在不是搜证时间')
     expect(act(s, 'P1', { type: 'pickRole', roleId: 'b' }).error).toBe('游戏已开始，不能更换角色')
     // @ts-expect-error 非法动作

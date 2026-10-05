@@ -10,8 +10,8 @@ const QUICK = ['我先说说我知道的', '你在撒谎', '证据呢？', '我�
 function nameOf(view: SeatView, from: LogEntry['from']) {
   if (from === 'DM') return 'DM'
   const p = view.players[from]
-  const role = view.roles.find(r => r.id === p.roleId)
-  return role ? role.name : (p.name ?? from)
+  const role = p ? view.roles.find(r => r.id === p.roleId) : undefined
+  return role ? role.name : (p?.name ?? from)
 }
 
 export default function Feed({ compact = false, active = true }: { compact?: boolean; active?: boolean }) {
@@ -69,7 +69,7 @@ export default function Feed({ compact = false, active = true }: { compact?: boo
             className="mx-input !py-2 lg:text-sm"
             value={text}
             maxLength={300}
-            placeholder="对搭档说点什么…"
+            placeholder="对大家说点什么…"
             onChange={e => setText(e.target.value)}
           />
           <button className="mx-btn mx-btn-blue !py-2 text-sm shrink-0" disabled={!text.trim()}>发送</button>
@@ -84,7 +84,7 @@ function Entry({ e, view }: { e: LogEntry; view: SeatView }) {
   if (e.kind === 'chat') {
     const from = e.from
     const mine = from === view.seat
-    const role = from !== 'DM' ? view.roles.find(r => r.id === view.players[from].roleId) : undefined
+    const role = from !== 'DM' ? view.roles.find(r => r.id === view.players[from]?.roleId) : undefined
     return (
       <div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
         <div className={`max-w-[85%] rounded-2xl px-3 py-1.5 ${mine ? 'bg-[var(--mx-blue)]/30 rounded-br-sm' : 'bg-white/8 bg-white/10 rounded-bl-sm'}`}>

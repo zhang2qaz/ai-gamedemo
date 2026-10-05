@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from 'react'
 import { useMysteryStore } from '@/store/mysteryStore'
-import type { ClueView, SeatView } from '@/engine/mystery/types'
-import { Money, RichText } from './ui'
+import type { ClueView, Seat, SeatView } from '@/engine/mystery/types'
+import { Money, RichText, seatName } from './ui'
 import { SpeakButton } from './Speech'
 
 const KIND_LABEL: Record<ClueView['kind'], string> = {
@@ -86,7 +86,10 @@ export function ScriptPanel({ view }: { view: SeatView }) {
 
 export function ClueCard({ clue, actions = true, canGive = true }: { clue: ClueView; actions?: boolean; canGive?: boolean }) {
   const act = useMysteryStore(s => s.act)
+  const view = useMysteryStore(s => s.view)
   const [confirm, setConfirm] = useState<'publish' | 'give' | null>(null)
+  const targets = view ? view.seats.filter(s => s !== view.seat) : []
+  const holderName = view && clue.holderSeat ? seatName(view, clue.holderSeat) : '别人'
   return (
     <div className="mx-paper p-4 mx-in">
       <div className="flex items-start gap-3">
@@ -97,7 +100,7 @@ export function ClueCard({ clue, actions = true, canGive = true }: { clue: ClueV
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/10">{KIND_LABEL[clue.kind]}</span>
             {clue.public && <span className="mx-stamp text-[10px] text-blue-800">已公开</span>}
             {!clue.public && clue.holder === 'me' && <span className="mx-stamp text-[10px] text-red-700">仅你可见</span>}
-            {clue.holder === 'other' && <span className="text-[10px] opacity-70">在对方手中</span>}
+            {clue.holder === 'other' && <span className="text-[10px] opacity-70">在{holderName}手中</span>}
           </div>
         </div>
         <SpeakButton id={`clue:${clue.id}`} label={clue.title} text={`${clue.title}。\n${clue.text}`} size="sm" tone="light" />
@@ -108,17 +111,22 @@ export function ClueCard({ clue, actions = true, canGive = true }: { clue: ClueV
           {!clue.public && (
             confirm === 'publish'
               ? <>
-                  <button className="mx-btn mx-btn-blue !py-1.5 text-xs" onClick={() => { act({ type: 'publish', clueId: clue.id }); setConfirm(null) }}>确认公开给对方</button>
+                  <button className="mx-btn mx-btn-blue !py-1.5 text-xs" onClick={() => { act({ type: 'publish', clueId: clue.id }); setConfirm(null) }}>确认公开给所有人</button>
                   <button className="mx-btn mx-btn-ghost !py-1.5 text-xs !text-[var(--mx-paper-ink)] !bg-black/5" onClick={() => setConfirm(null)}>取消</button>
                 </>
               : <button className="mx-btn mx-btn-blue !py-1.5 text-xs" onClick={() => setConfirm('publish')}>公开</button>
           )}
-          {canGive && (confirm === 'give'
+          {canGive && targets.length > 0 && (confirm === 'give'
             ? <>
-                <button className="mx-btn mx-btn-red !py-1.5 text-xs" onClick={() => { act({ type: 'give', clueId: clue.id }); setConfirm(null) }}>确认交给对方</button>
+                <span className="text-xs self-center">交给谁？</span>
+                {targets.map(t => (
+                  <button key={t} className="mx-btn mx-btn-red !py-1.5 text-xs" onClick={() => { act({ type: 'give', clueId: clue.id, to: t }); setConfirm(null) }}>
+                    交给{view ? seatName(view, t) : t}
+                  </button>
+                ))}
                 <button className="mx-btn mx-btn-ghost !py-1.5 text-xs !text-[var(--mx-paper-ink)] !bg-black/5" onClick={() => setConfirm(null)}>取消</button>
               </>
-            : confirm === null && <button className="mx-btn mx-btn-ghost !py-1.5 text-xs !text-[var(--mx-paper-ink)] !bg-black/5" onClick={() => setConfirm('give')}>交给对方</button>)}
+            : confirm === null && <button className="mx-btn mx-btn-ghost !py-1.5 text-xs !text-[var(--mx-paper-ink)] !bg-black/5" onClick={() => setConfirm('give')}>交给别人</button>)}
         </div>
       )}
     </div>
@@ -138,13 +146,13 @@ export function CluePanel({ view }: { view: SeatView }) {
   return (
     <div className="space-y-3">
       <div className="flex gap-1.5 overflow-x-auto">
-        {([['all', '全部'], ['mine', '仅我可见'], ['public', '已公开'], ['other', '已交给对方']] as const).map(([k, l]) => (
+        {([['all', '全部'], ['mine', '仅我可见'], ['public', '已公开'], ['other', '在别人手里']] as const).map(([k, l]) => (
           <button key={k} className="mx-tab" data-active={filter === k} onClick={() => setFilter(k)}>
             {l} {k === 'all' ? `(${view.clues.length})` : ''}
           </button>
         ))}
       </div>
-      {sealed && <div className="text-xs text-[var(--mx-muted)]">终局开始后证据已经封存：还能公开，但不能再交给对方。</div>}
+      {sealed && <div className="text-xs text-[var(--mx-muted)]">终局开始后证据已经封存：还能公开，但不能再交给别人。</div>}
       {list.length === 0 && <div className="text-center text-[var(--mx-muted)] py-10 text-sm">这里还没有线索。</div>}
       <div className="grid md:grid-cols-2 gap-3">
         {list.map(c => <ClueCard key={c.id} clue={c} canGive={!sealed} />)}
@@ -291,7 +299,7 @@ export function CasePanel({ view }: { view: SeatView }) {
   return (
     <div className="space-y-3">
       <div className="text-xs text-[var(--mx-muted)] leading-5">
-        私下向 DM 递交推理：全部答对即可领取酬金（对方只会知道你拿到了钱，不知道你答了什么）。答错会被扣钱，且提交次数有限。
+        私下向 DM 递交推理：全部答对即可领取酬金（别人只会知道你拿到了钱，不知道你答了什么）。答错会被扣钱，且提交次数有限。
       </div>
       {view.caseFiles.map(cf => {
         const a = answers[cf.id] ?? {}
@@ -366,7 +374,7 @@ export function ChoicePanel({ view }: { view: SeatView }) {
   const act = useMysteryStore(s => s.act)
   const [pick, setPick] = useState<string | null>(null)
   const c = view.me.choice
-  if (!c) return <div className="text-center text-[var(--mx-muted)] py-10 text-sm">此阶段你无需抉择，等待对方……</div>
+  if (!c) return <div className="text-center text-[var(--mx-muted)] py-10 text-sm">此阶段你无需抉择，等待其他人……</div>
   return (
     <div className="space-y-3">
       <div className="mx-paper p-4 mx-serif text-[15px] leading-7 whitespace-pre-wrap">
@@ -392,7 +400,7 @@ export function ChoicePanel({ view }: { view: SeatView }) {
         })}
       </div>
       {c.chosen ? (
-        <div className="text-center text-emerald-300 text-sm">已锁定选择，等待对方……</div>
+        <div className="text-center text-emerald-300 text-sm">已锁定选择，等待其他人……</div>
       ) : (
         <button className="mx-btn mx-btn-red w-full" disabled={!pick} onClick={() => pick && act({ type: 'choose', optionId: pick })}>
           锁定选择（不可更改）
@@ -411,7 +419,7 @@ export function AccusePanel({ view }: { view: SeatView }) {
   const submitted = view.me.accuse
 
   if (submitted) {
-    return <div className="text-center text-emerald-300 py-10 text-sm">你的指认已提交，等待对方……</div>
+    return <div className="text-center text-emerald-300 py-10 text-sm">你的指认已提交，等待其他人……</div>
   }
   const complete = view.accuse.every(q => {
     const v = answers[q.id]
@@ -542,9 +550,7 @@ export function ResultPanel({ view }: { view: SeatView }) {
                   <div className="text-emerald-300">正确：{q.answer}</div>
                   <div className="text-white/50 text-[12px]">
                     {Object.entries(q.picks).map(([seat, pick]) => {
-                      const p = view.players[seat as keyof typeof view.players]
-                      const role = view.roles.find(x => x.id === p.roleId)
-                      return <span key={seat} className="mr-3">{role?.name ?? seat}：{pick}</span>
+                      return <span key={seat} className="mr-3">{seatName(view, seat as Seat)}：{pick}</span>
                     })}
                   </div>
                 </div>

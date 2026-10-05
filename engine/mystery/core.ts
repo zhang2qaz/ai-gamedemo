@@ -4,10 +4,10 @@
 // =====================
 
 import type {
-  CaseFileDef, ClueDef, ClueView, Cond, Effect, GameState, LogEntry, MysteryAction,
+  CaseFileDef, ClueDef, ClueView, Cond, Effect, GameState, MysteryAction,
   NpcView, QuestionDef, Seat, SeatState, SeatView, SpotView, StepDef,
 } from './types'
-import { SEATS, otherSeat } from './types'
+import { SEATS } from './types'
 import type { ScenarioRuntime } from './runtime'
 import { appendLog } from './log'
 import { createHash } from 'node:crypto'
@@ -51,6 +51,26 @@ export function makeEngine(rt: ScenarioRuntime) {
   const stepIndexById = new Map(sc.flow.map((s, i) => [s.id, i]))
   const caseById = new Map(sc.caseFiles.map(c => [c.id, c]))
   const spotClues = sc.clues.filter(c => c.location)
+  const MAX_PLAYERS = Math.max(1, Math.min(sc.maxPlayers ?? 2, SEATS.length))
+  const MIN_PLAYERS = Math.max(1, Math.min(sc.minPlayers ?? 2, MAX_PLAYERS))
+  /** 这个剧本用得到的座位 */
+  const SEAT_LIST: Seat[] = SEATS.slice(0, MAX_PLAYERS)
+
+  // ───────────── 座位 ─────────────
+
+  /** 这局的座位：开局后是开局时在座的人；开局前是已经入座的人 */
+  function seatsIn(state: GameState): Seat[] {
+    return state.stepIndex === -1 ? SEAT_LIST.filter(s => state.seats[s].name) : state.roster
+  }
+
+  function othersOf(state: GameState, seat: Seat): Seat[] {
+    return seatsIn(state).filter(s => s !== seat)
+  }
+
+  /** 某个角色这局有没有人扮演 */
+  function rolePlayed(state: GameState, roleId: string): boolean {
+    return seatsIn(state).some(s => state.seats[s].roleId === roleId)
+  }
 
   // ───────────── 搜查点编号 ─────────────
   // 发给客户端的是按房间种子散列出来的编号，不暴露线索 id（线索 id 本身是剧透）
@@ -92,7 +112,7 @@ export function makeEngine(rt: ScenarioRuntime) {
   }
 
   function seatOfRole(state: GameState, roleId: string): Seat | null {
-    return SEATS.find(s => state.seats[s].roleId === roleId) ?? null
+    return seatsIn(state).find(s => state.seats[s].roleId === roleId) ?? null
   }
 
   function canSee(state: GameState, seat: Seat, clueId: string): boolean {
@@ -139,12 +159,12 @@ export function makeEngine(rt: ScenarioRuntime) {
     state.clues[clueId] = {
       owner: seat,
       public: !!def.autoPublic,
-      seenBy: def.autoPublic ? [...SEATS] : [seat],
+      seenBy: def.autoPublic ? [...seatsIn(state)] : [seat],
       foundAt: now,
       foundBy: seat,
     }
     if (def.autoPublic) {
-      log(state, now, 'DM', 'all', `【公开线索】${seatName(state, seat)} 发现了「${def.title}」，内容已对双方公开。`, 'event')
+      log(state, now, 'DM', 'all', `【公开线索】${seatName(state, seat)} 发现了「${def.title}」，内容已对所有人公开。`, 'event')
     } else if (!opts.quiet) {
       log(state, now, 'DM', seat, `你获得了线索【${def.title}】。只有你能看到，是否公开由你决定。`, 'dm')
     }
@@ -160,19 +180,17 @@ export function makeEngine(rt: ScenarioRuntime) {
     for (const e of effects) {
       if ('giveClue' in e) {
         if (e.role && state.seats[seat].roleId !== e.role) continue
-        const targets: Seat[] = e.to === 'other' ? [otherSeat(seat)] : e.to === 'both' ? [...SEATS] : [seat]
+        const targets: Seat[] = e.to === 'other' ? othersOf(state, seat) : e.to === 'both' ? seatsIn(state) : [seat]
         for (const t of targets) grantClue(state, t, e.giveClue, now)
       } else if ('setFlag' in e) {
         state.flags[e.setFlag] = e.value
       } else if ('setSeatFlag' in e) {
-        const t = e.to === 'other' ? otherSeat(seat) : seat
-        state.seats[t].flags[e.setSeatFlag] = e.value
+        for (const t of e.to === 'other' ? othersOf(state, seat) : [seat]) state.seats[t].flags[e.setSeatFlag] = e.value
       } else if ('money' in e) {
-        const t = e.to === 'other' ? otherSeat(seat) : seat
-        state.seats[t].money = Math.max(0, state.seats[t].money + e.money)
+        for (const t of e.to === 'other' ? othersOf(state, seat) : [seat]) state.seats[t].money = Math.max(0, state.seats[t].money + e.money)
       } else if ('dm' in e) {
-        const to: LogEntry['to'] = e.to === 'both' ? 'all' : e.to === 'other' ? otherSeat(seat) : seat
-        log(state, now, 'DM', to, e.dm, 'dm')
+        if (e.to === 'both') log(state, now, 'DM', 'all', e.dm, 'dm')
+        else for (const t of e.to === 'other' ? othersOf(state, seat) : [seat]) log(state, now, 'DM', t, e.dm, 'dm')
       }
     }
   }
@@ -189,7 +207,7 @@ export function makeEngine(rt: ScenarioRuntime) {
   function enterStep(state: GameState, index: number, now: number) {
     state.stepIndex = index
     state.stepStartedAt = now
-    for (const s of SEATS) state.seats[s].ready = false
+    for (const s of seatsIn(state)) state.seats[s].ready = false
     const step = stepAt(state)
     if (!step) {
       state.deadline = null
@@ -198,12 +216,12 @@ export function makeEngine(rt: ScenarioRuntime) {
     const seconds = step.seconds ?? (step.kind === 'accuse' || step.kind === 'choice' || step.kind === 'auction' ? FALLBACK_SECONDS : 0)
     state.deadline = seconds ? now + seconds * 1000 : null
     if (step.kind === 'search') {
-      for (const s of SEATS) state.seats[s].ap = step.ap ?? 0
+      for (const s of seatsIn(state)) state.seats[s].ap = step.ap ?? 0
     }
     log(state, now, 'DM', 'all', `—— ${step.title} ——${step.text ? '\n' + step.text : ''}`, 'system')
     applyEnterEffects(state, step.onEnter, now)
     if (step.kind === 'read' && step.chapter) {
-      for (const s of SEATS) {
+      for (const s of seatsIn(state)) {
         const r = roleOf(state, s)
         const ch = r?.script.find(c => c.id === step.chapter)
         if (ch) log(state, now, 'DM', s, `你的剧本已更新：「${ch.title}」。`, 'dm')
@@ -230,16 +248,17 @@ export function makeEngine(rt: ScenarioRuntime) {
     const perSeat = (e: Effect) =>
       ('giveClue' in e && (!!e.role || (e.to !== undefined && e.to !== 'both'))) ||
       'setSeatFlag' in e || 'money' in e || ('dm' in e && e.to !== 'both')
-    for (const s of SEATS) applyEffects(state, s, effects.filter(perSeat), now)
+    const seats = seatsIn(state)
+    for (const s of seats) applyEffects(state, s, effects.filter(perSeat), now)
     const globals = effects.filter(e => !perSeat(e)).map(e => ('giveClue' in e && !e.to ? { ...e, to: 'both' as const } : e))
-    applyEffects(state, SEATS[0], globals, now)
+    if (seats.length) applyEffects(state, seats[0], globals, now)
   }
 
   function leaveStep(state: GameState, now: number) {
     const step = stepAt(state)
     if (!step) return
     if (step.kind === 'choice' && step.choice) {
-      for (const s of SEATS) {
+      for (const s of seatsIn(state)) {
         const r = roleOf(state, s)
         const def = r ? step.choice[r.id] : undefined
         if (!def) continue
@@ -261,7 +280,7 @@ export function makeEngine(rt: ScenarioRuntime) {
       resolveAuction(state, step, now)
     }
     if (step.kind === 'accuse') {
-      for (const s of SEATS) {
+      for (const s of seatsIn(state)) {
         if (!state.seats[s].accuse) state.seats[s].accuse = {}
         let bonus = 0
         for (const q of accuseFor(state, s)) {
@@ -279,19 +298,21 @@ export function makeEngine(rt: ScenarioRuntime) {
     const a = state.auction!
     const results: NonNullable<typeof a.results> = []
     const lines: string[] = []
+    const seats = seatsIn(state)
     for (const lot of step.lots ?? []) {
-      const b1 = a.bids.P1?.[lot.id] ?? 0
-      const b2 = a.bids.P2?.[lot.id] ?? 0
+      const bidOf = (s: Seat) => a.bids[s]?.[lot.id] ?? 0
+      const top = Math.max(0, ...seats.map(bidOf))
+      const leaders = seats.filter(s => bidOf(s) === top)
       const itemTitle = clueById.get(lot.item)?.title ?? lot.title
-      if (b1 === b2) {
-        results.push({ lot: lot.id, winner: null, price: b1, tie: b1 > 0 })
-        lines.push(b1 > 0
-          ? `「${lot.title}」：双方出价相同（$${b1.toLocaleString('en-US')}），${step.tie?.log ?? '流拍'}。`
+      if (top === 0 || leaders.length > 1) {
+        results.push({ lot: lot.id, winner: null, price: top, tie: top > 0 })
+        lines.push(top > 0
+          ? `「${lot.title}」：最高出价相同（$${top.toLocaleString('en-US')}），${step.tie?.log ?? '流拍'}。`
           : `「${lot.title}」：无人出价，流拍。`)
         continue
       }
-      const winner: Seat = b1 > b2 ? 'P1' : 'P2'
-      const price = Math.max(b1, b2)
+      const winner = leaders[0]
+      const price = top
       state.seats[winner].money = Math.max(0, state.seats[winner].money - price)
       grantClue(state, winner, lot.item, now, { quiet: true })
       results.push({ lot: lot.id, winner, price, tie: false })
@@ -328,28 +349,29 @@ export function makeEngine(rt: ScenarioRuntime) {
       if (rt.finale?.isDone(state)) advance(state, now)
       return
     }
+    const seats = seatsIn(state)
     if (step.kind === 'accuse') {
-      if (SEATS.every(s => state.seats[s].accuse)) advance(state, now)
+      if (seats.every(s => state.seats[s].accuse)) advance(state, now)
       return
     }
     if (step.kind === 'auction') {
-      if (state.auction && !state.auction.results && SEATS.every(s => state.auction!.bids[s])) {
+      if (state.auction && !state.auction.results && seats.every(s => state.auction!.bids[s])) {
         resolveAuction(state, step, now)
-        for (const s of SEATS) state.seats[s].ready = false
+        for (const s of seats) state.seats[s].ready = false
         return
       }
-      if (state.auction?.results && SEATS.every(s => state.seats[s].ready)) advance(state, now)
+      if (state.auction?.results && seats.every(s => state.seats[s].ready)) advance(state, now)
       return
     }
     if (step.kind === 'choice') {
-      const allChosen = SEATS.every(s => {
+      const allChosen = seats.every(s => {
         const r = roleOf(state, s)
         return !r || !step.choice?.[r.id] || !!state.seats[s].choices[step.id]
       })
-      if (allChosen && SEATS.every(s => state.seats[s].ready)) advance(state, now)
+      if (allChosen && seats.every(s => state.seats[s].ready)) advance(state, now)
       return
     }
-    if (SEATS.every(s => state.seats[s].ready)) advance(state, now)
+    if (seats.every(s => state.seats[s].ready)) advance(state, now)
   }
 
   // ───────────── 对外 API ─────────────
@@ -363,13 +385,14 @@ export function makeEngine(rt: ScenarioRuntime) {
       stepIndex: -1,
       stepStartedAt: now,
       deadline: null,
-      seats: { P1: emptySeat(), P2: emptySeat() },
+      seats: { P1: emptySeat(), P2: emptySeat(), P3: emptySeat(), P4: emptySeat() },
+      roster: [],
       clues: {},
       qa: [],
       flags: {},
       log: [],
       logSeq: 0,
-      logSeqBy: { P1: 0, P2: 0 },
+      logSeqBy: { P1: 0, P2: 0, P3: 0, P4: 0 },
       auction: null,
       finale: null,
       ended: false,
@@ -423,7 +446,7 @@ export function makeEngine(rt: ScenarioRuntime) {
     const state = structuredClone(prev)
     const name = state.seats[seat].name
     state.seats[seat] = emptySeat()
-    state.seats[otherSeat(seat)].ready = false
+    for (const s of SEAT_LIST) state.seats[s].ready = false
     if (name) log(state, now, 'DM', 'all', `${name} 离开了房间，座位已空出。`, 'system')
     return state
   }
@@ -456,11 +479,11 @@ export function makeEngine(rt: ScenarioRuntime) {
         const role = roleById.get(String(action.roleId))
         if (!role) return '没有这个角色'
         const holder = seatOfRole(state, role.id)
-        if (holder && holder !== seat) return '该角色已被对方选择'
+        if (holder && holder !== seat) return '这个角色已经被别人选了'
         if (me.roleId === role.id) return
         me.roleId = role.id
-        me.ready = false
-        state.seats[otherSeat(seat)].ready = false
+        // 角色变了，大家重新确认一次
+        for (const s of SEAT_LIST) state.seats[s].ready = false
         return
       }
 
@@ -469,11 +492,11 @@ export function makeEngine(rt: ScenarioRuntime) {
         if (state.stepIndex === -1) {
           if (value) {
             if (!me.roleId) return '请先选择角色'
-            const other = state.seats[otherSeat(seat)]
-            if (!other.name) return '等待第二位玩家加入'
+            const n = seatsIn(state).length
+            if (n < MIN_PLAYERS) return `还要等人：至少 ${MIN_PLAYERS} 个人才能开局（现在 ${n} 人）`
           }
           me.ready = value
-          if (SEATS.every(s => state.seats[s].ready && state.seats[s].roleId && state.seats[s].online)) startGame(state, now)
+          if (canStart(state)) startGame(state, now)
           return
         }
         if (!step) return
@@ -500,18 +523,19 @@ export function makeEngine(rt: ScenarioRuntime) {
         me.ap -= cost
         me.ready = false
         grantClue(state, seat, def.id, now)
-        const other = otherSeat(seat)
         const loc = sc.locations.find(l => l.id === def.location)
-        // 对方自己也够得着的点才说出具体位置；专属点、未解锁的点只说地点（否则等于告诉对方你拿到了什么）
-        const place = def.spot && spotReachable(state, other, def) ? `「${loc?.name ?? ''} · ${def.spot}」` : `「${loc?.name ?? ''}」里的某处`
-        log(state, now, 'DM', other, `${seatName(state, seat)} 搜查了${place}。`, 'dm')
+        // 别人自己也够得着的点才说出具体位置；专属点、未解锁的点只说地点（否则等于告诉他你拿到了什么）
+        for (const other of othersOf(state, seat)) {
+          const place = def.spot && spotReachable(state, other, def) ? `「${loc?.name ?? ''} · ${def.spot}」` : `「${loc?.name ?? ''}」里的某处`
+          log(state, now, 'DM', other, `${seatName(state, seat)} 搜查了${place}。`, 'dm')
+        }
         return
       }
 
       case 'ask': {
         if (!step || step.kind !== 'search') return '现在不能问询'
         const npc = npcById.get(String(action.npcId))
-        if (!npc) return '没有这个人'
+        if (!npc || !npcPresent(state, npc)) return '没有这个人'
         if (!reached(state, npc.from)) return '此人现在不在场'
         const q = npc.questions.find(x => x.id === action.questionId)
         if (!q) return '没有这个问题'
@@ -526,7 +550,7 @@ export function makeEngine(rt: ScenarioRuntime) {
         log(state, now, 'DM', seat, `${npc.avatar} ${npc.name}：${q.answer}`, 'dm')
         for (const g of q.grants ?? []) grantClue(state, seat, g, now)
         applyEffects(state, seat, q.effects, now)
-        log(state, now, 'DM', otherSeat(seat), `${seatName(state, seat)} 找${npc.name}单独谈了几句。`, 'dm')
+        for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} 找${npc.name}单独谈了几句。`, 'dm')
         return
       }
 
@@ -542,7 +566,7 @@ export function makeEngine(rt: ScenarioRuntime) {
         if (c.public) return '已经公开过了'
         if (state.stepIndex < 0 || state.ended) return '现在不能公开线索'
         c.public = true
-        for (const s of SEATS) if (!c.seenBy.includes(s)) c.seenBy.push(s)
+        for (const s of seatsIn(state)) if (!c.seenBy.includes(s)) c.seenBy.push(s)
         log(state, now, 'DM', 'all', `【公开线索】${seatName(state, seat)} 公开了「${def.title}」。`, 'event')
         return
       }
@@ -556,8 +580,10 @@ export function makeEngine(rt: ScenarioRuntime) {
         if (c.destroyed) return '没有这条线索'
         if (state.stepIndex < 0 || state.ended) return '现在不能交出线索'
         // 终局里证据就是选票：转手会让"限一次"的道具再用一次，也能把牵连自己的物证塞给对方躲过搜身
-        if (step?.kind === 'finale') return '终局开始后证据已经封存，不能再交给对方'
-        const other = otherSeat(seat)
+        if (step?.kind === 'finale') return '终局开始后证据已经封存，不能再交给别人'
+        const others = othersOf(state, seat)
+        const other = action.to === undefined && others.length === 1 ? others[0] : others.find(s => s === action.to)
+        if (!other) return '请选择交给谁'
         c.owner = other
         if (!c.seenBy.includes(other)) c.seenBy.push(other)
         log(state, now, 'DM', 'all', `${seatName(state, seat)} 把「${def.title}」交给了 ${seatName(state, other)}。`, 'event')
@@ -575,7 +601,7 @@ export function makeEngine(rt: ScenarioRuntime) {
         if (!evalCond(state, seat, opt.requires)) return '你无法选择这一项'
         me.choices[step.id] = opt.id
         me.ready = true
-        log(state, now, 'DM', otherSeat(seat), `${seatName(state, seat)} 已做出选择。`, 'dm')
+        for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} 已做出选择。`, 'dm')
         return
       }
 
@@ -598,7 +624,7 @@ export function makeEngine(rt: ScenarioRuntime) {
           me.money += cf.reward
           me.flags[`case:${cf.id}`] = true
           log(state, now, 'DM', seat, `✅ 案卷「${cf.title}」判定正确！酬金 $${cf.reward.toLocaleString('en-US')} 已到账。`, 'dm')
-          log(state, now, 'DM', otherSeat(seat), `${seatName(state, seat)} 向 DM 递交了一份案卷，并且拿到了酬金。`, 'dm')
+          for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} 向 DM 递交了一份案卷，并且拿到了酬金。`, 'dm')
         } else {
           me.money = Math.max(0, me.money - cf.penalty)
           const left = cf.maxAttempts - attempts.length
@@ -619,7 +645,7 @@ export function makeEngine(rt: ScenarioRuntime) {
           else if (typeof v === 'string' && q.options.some(o => o.id === v)) clean[q.id] = v
         }
         me.accuse = clean
-        log(state, now, 'DM', otherSeat(seat), `${seatName(state, seat)} 已提交最终指认。`, 'dm')
+        for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} 已提交最终指认。`, 'dm')
         return
       }
 
@@ -641,7 +667,7 @@ export function makeEngine(rt: ScenarioRuntime) {
         }
         if (total > me.money) return '总出价超过了你的现金'
         state.auction.bids[seat] = clean
-        log(state, now, 'DM', otherSeat(seat), `${seatName(state, seat)} 已经把暗标交给了拍卖师。`, 'dm')
+        for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} 已经把暗标交给了拍卖师。`, 'dm')
         return
       }
 
@@ -655,8 +681,17 @@ export function makeEngine(rt: ScenarioRuntime) {
     }
   }
 
+  /** 开局条件：人数够、每个人都在线、选了角色、点了准备；必须有人演的角色都有人演 */
+  function canStart(state: GameState): boolean {
+    const seats = seatsIn(state)
+    if (seats.length < MIN_PLAYERS) return false
+    if (!seats.every(s => state.seats[s].ready && state.seats[s].roleId && state.seats[s].online)) return false
+    return sc.roles.every(r => r.optional || seats.some(s => state.seats[s].roleId === r.id))
+  }
+
   function startGame(state: GameState, now: number) {
-    for (const s of SEATS) {
+    state.roster = seatsIn(state)
+    for (const s of state.roster) {
       const r = roleOf(state, s)
       state.seats[s].money = r?.money ?? 0
       state.seats[s].ready = false
@@ -719,6 +754,11 @@ export function makeEngine(rt: ScenarioRuntime) {
     return spotReachable(state, seat, def) ? 'open' : 'locked'
   }
 
+  /** 可选角色的替身 NPC：那个角色有人演，NPC 就不在场 */
+  function npcPresent(state: GameState, npc: { standsInFor?: string }): boolean {
+    return !npc.standsInFor || !rolePlayed(state, npc.standsInFor)
+  }
+
   function accuseFor(state: GameState, seat: Seat) {
     const roleId = state.seats[seat].roleId
     return sc.accuse.filter(q => !q.onlyRole || q.onlyRole === roleId)
@@ -729,12 +769,13 @@ export function makeEngine(rt: ScenarioRuntime) {
     const me = state.seats[seat]
     const role = roleOf(state, seat)
 
-    const players = {} as SeatView['players']
-    for (const s of SEATS) {
+    const seats = seatsIn(state)
+    const players: SeatView['players'] = {}
+    for (const s of seats) {
       const st = state.seats[s]
       players[s] = { name: st.name, online: st.online, roleId: st.roleId, ready: st.ready }
-      // 对方的余额会泄露案卷对错、指认得分：只在结局后公开
-      if (s === seat || state.ended) players[s].money = st.money
+      // 别人的余额会泄露案卷对错、指认得分：只在结局后公开
+      if (s === seat || state.ended) players[s]!.money = st.money
     }
 
     const chapters = (role?.script ?? [])
@@ -773,7 +814,7 @@ export function makeEngine(rt: ScenarioRuntime) {
     }
 
     const npcs: NpcView[] = sc.npcs
-      .filter(n => reached(state, n.from) && state.stepIndex >= 0)
+      .filter(n => reached(state, n.from) && state.stepIndex >= 0 && npcPresent(state, n))
       .map(n => ({
         id: n.id,
         name: n.name,
@@ -807,6 +848,7 @@ export function makeEngine(rt: ScenarioRuntime) {
         text: c.forged && def.forgedText ? def.forgedText : def.text,
         location: def.location,
         holder: c.owner === seat ? 'me' : c.owner ? 'other' : 'none',
+        holderSeat: c.owner && c.owner !== seat ? c.owner : undefined,
         public: c.public,
         forged: c.forged && c.owner === seat ? true : undefined,
       })
@@ -830,7 +872,6 @@ export function makeEngine(rt: ScenarioRuntime) {
 
     let auction: SeatView['auction'] = null
     if (step?.kind === 'auction' && state.auction) {
-      const other = otherSeat(seat)
       const a = state.auction
       auction = {
         lots: (step.lots ?? []).map(l => ({
@@ -838,15 +879,15 @@ export function makeEngine(rt: ScenarioRuntime) {
           itemTitle: clueById.get(l.item)?.title ?? '', itemIcon: clueById.get(l.item)?.icon ?? '🎁',
         })),
         myBids: a.bids[seat] ?? null,
-        otherSubmitted: !!a.bids[other],
+        submitted: seats.filter(s => !!a.bids[s]),
+        // 揭晓前别人的出价一个字也不下发
         results: a.results
           ? a.results.map(r => ({
               lot: r.lot,
-              winner: r.winner === null ? null : r.winner === seat ? 'me' : 'other',
+              winner: r.winner,
               price: r.price,
               tie: r.tie,
-              myBid: a.bids[seat]?.[r.lot] ?? 0,
-              otherBid: a.bids[other]?.[r.lot] ?? 0,
+              bids: Object.fromEntries(seats.map(s => [s, a.bids[s]?.[r.lot] ?? 0])),
             }))
           : null,
         tieLabel: step.tie?.label ?? '平局 · 流拍',
@@ -856,8 +897,11 @@ export function makeEngine(rt: ScenarioRuntime) {
     return {
       code: state.code,
       seat,
+      seats,
+      minPlayers: MIN_PLAYERS,
+      maxPlayers: MAX_PLAYERS,
       scenario: { id: sc.id, title: sc.title, subtitle: sc.subtitle, tagline: sc.tagline, intro: sc.intro, era: sc.era, duration: sc.duration },
-      roles: sc.roles.map(r => ({ id: r.id, name: r.name, enName: r.enName, title: r.title, avatar: r.avatar, color: r.color, publicProfile: r.publicProfile })),
+      roles: sc.roles.map(r => ({ id: r.id, name: r.name, enName: r.enName, title: r.title, avatar: r.avatar, color: r.color, publicProfile: r.publicProfile, optional: !!r.optional })),
       players,
       step: {
         index: state.stepIndex,
@@ -922,6 +966,8 @@ export function makeEngine(rt: ScenarioRuntime) {
     viewFor,
     // 供剧本模块与测试使用
     spotIdOf,
-    helpers: { evalCond, canSee, grantClue, log, applyEffects, roleOf, seatOfRole, stepAt, reached, seatName, clueOfSpot },
+    helpers: { evalCond, canSee, grantClue, log, applyEffects, roleOf, seatOfRole, stepAt, reached, seatName, clueOfSpot, seatsIn, othersOf, rolePlayed },
+    minPlayers: MIN_PLAYERS,
+    maxPlayers: MAX_PLAYERS,
   }
 }

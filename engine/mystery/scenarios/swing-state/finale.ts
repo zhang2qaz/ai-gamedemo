@@ -1,31 +1,41 @@
 // 《摇摆州》· 终局大机制「警长的名单」（服务器端专用）
 //
-// 06:00 警长到。名单上有三个人：曼迪、伊森、普莱斯医生，每人一排格子，格子填满的人会被带走。
-// 一共三轮（05:00 / 05:15 / 05:45）：两人同时秘密交出一份证据，证据指向谁就给谁填一格。
+// 06:00 警长到。名单上是这一局的每一位玩家角色，外加普莱斯医生；每人一排格子，格子填满的人会被带走。
+// 一共三轮（05:00 / 05:15 / 05:45）：所有人同时秘密交出一份证据，证据指向谁就给谁填一格。
 // 交出自己的自白 = 认罪：06:00 一定会被带走，但普莱斯医生被填 2 格。
-// 第 2 轮之后插入"未知剧情"：普莱斯的交易（囚徒困境）——他可以"保"一个人（多 2 格），也可以"告"一个人（填 2 格）。
+// 第 2 轮之后插入"未知剧情"：普莱斯的交易——每个人私下回复他。
+//   没人接受：他慌了，自己说漏嘴（他 +2 格）；
+//   只有一个人接受：他"保"这个人（多 2 格才会被带走），并"告"这个人点名的人（+2 格）；
+//   不止一个人接受：他把接受的人全告了（各 +2 格），谁也不保。
 // 06:00 结算：先看普莱斯，他被带走的话，他保的、告的全部不算。
 
 import type { GameState, Seat } from '../../types'
-import { SEATS, otherSeat } from '../../types'
 import type { FinaleModule } from '../../runtime'
 import { appendLog } from '../../log'
 import { CLUES } from './clues'
 import { NPCS } from './npcs'
-import { ETHAN, MANDY, ROLES } from './roles'
+import { ROLES } from './roles'
 import { FINALE_TEXT } from './content'
-import type { FinaleCard, FinaleCopy, FinaleItem, FinaleMark, FinaleOrder, FinaleOutcome, FinalePerson, FinaleReveal, FinaleView, Who } from './finaleTypes'
+import type {
+  CaseId, FinaleCard, FinaleCopy, FinaleDealResult, FinaleItem, FinaleMark, FinaleOrder, FinaleOutcome, FinalePerson,
+  FinaleReveal, FinaleView, PlayerWho, Who,
+} from './finaleTypes'
 
-export type { Who }
+export type { CaseId, PlayerWho, Who }
 export type Order = FinaleOrder
 export type Outcome = FinaleOutcome
-export type CaseId = 'rose' | 'gideon' | 'mei'
-type Player = 'mandy' | 'ethan'
+type Player = PlayerWho
 
-export const CASE_TITLE: Record<CaseId, string> = { rose: '罗丝之死', gideon: '吉迪恩之死', mei: '2000 年 · 林梅之死' }
+export const CASE_TITLE: Record<CaseId, string> = { rose: '罗丝之死', gideon: '吉迪恩之死', mei: '2000 年 · 林梅之死', will: '保险箱 · 新遗嘱' }
 
-/** 满几格会被带走 */
-export const LINES: Record<Who, number> = { mandy: 3, ethan: 3, price: 6 }
+/** 名单上的玩家角色，按这个顺序排 */
+export const PLAYERS: Player[] = ['mandy', 'ethan', 'joan', 'preston']
+/** 玩家角色满几格会被带走 */
+export const LINES: Record<Player, number> = { mandy: 3, ethan: 3, joan: 3, preston: 3 }
+/** 普莱斯医生满几格会被带走：人越多，能交给警长的证据越多 */
+export function priceLineFor(players: number) {
+  return players <= 2 ? 6 : players === 3 ? 7 : 8
+}
 /** 律师名片：多一格 */
 export const LAWYER_BONUS = 1
 /** 交易：普莱斯"保"你（多 2 格才会被带走）/"告"你（填 2 格）/ 他慌了说漏嘴（他自己填 2 格） */
@@ -44,9 +54,9 @@ const DEAL_CLOCK = '05:30'
 
 export type CardMeta = {
   about: CaseId
-  /** 交出去给谁填一格 */
+  /** 交出去给谁填一格（不在这一局名单上的人不算） */
   implicates: Who[]
-  /** 自白：交出去就是这个人认罪（06:00 一定被带走），普莱斯填 CONFESS_MARKS 格 */
+  /** 自白：只有本人能交，交出去就是认罪（06:00 一定被带走），普莱斯填 CONFESS_MARKS 格 */
   confessor?: Player
   /** 为什么指向他（终局里显示并朗读） */
   why: string
@@ -67,6 +77,9 @@ export const FINALE_CARDS: Record<string, CardMeta> = {
   rx_pad: { about: 'rose', implicates: ['price'], why: '普莱斯的笔迹和毒药瓶上的标签一模一样。' },
   med_record: { about: 'rose', implicates: ['price'], why: '普莱斯早就知道吉迪恩只拿右边那杯，却让曼迪倒进"你右手边"那杯——毒酒就这样到了罗丝手里。' },
   golf_card: { about: 'rose', implicates: ['price'], why: '普莱斯亲手写下"R 也会作证""天亮之前"——他知道罗丝要揭发他。' },
+  press_clip: { about: 'rose', implicates: ['joan'], why: '罗丝床脚有一枚刻着"J.M."的记者证卡扣——今晚的客人里只有乔安·默瑟是记者。罗丝病倒时，她就在那个房间里。' },
+  hector_joan: { about: 'rose', implicates: ['joan'], why: '一点四十，赫克托在楼梯上碰见乔安从罗丝那层下来；她骗赫克托说罗丝"喝多了，睡了"，赫克托就没上去。' },
+  joan_rose: { about: 'rose', implicates: [], confessor: 'joan', why: '这是乔安的坦白：一点半她就在罗丝床边，看着罗丝病倒，却没有叫救护车。她会告诉警长，罗丝那时死死攥着她说："不要他，永远不要他。"' },
   // 吉迪恩之死
   earpiece: { about: 'gideon', implicates: ['ethan'], why: '这是庄园保安戴的耳麦，扯断在阳台上；另外两个保安整晚都在摄像头下。' },
   door_log: { about: 'gideon', implicates: ['ethan'], why: '02:37 有人用安保通用码进了灯塔；知道这个码的三个人里，只有伊森不在摄像头下。' },
@@ -78,9 +91,13 @@ export const FINALE_CARDS: Record<string, CardMeta> = {
   price_scratch: { about: 'gideon', implicates: ['ethan'], why: '伊森手腕上有三道新鲜的抓痕，警长自己就看得到；吉迪恩的指甲缝里正好有皮屑。' },
   a_saw: { about: 'gideon', implicates: ['ethan'], why: '曼迪亲眼看见一个高个子、深色短发的男人把吉迪恩推了下去——在场只有伊森是这个样子。' },
   note: { about: 'gideon', implicates: ['ethan'], why: '这封叫人去灯塔的匿名信，就放在伊森的储物柜里。' },
+  preston_thud: { about: 'gideon', implicates: ['ethan'], why: '两点半多，普雷斯顿看见吉迪恩和他的保镖一起往灯塔去了；两点四十，树篱后面"砰"的一声。' },
   b_confess: { about: 'gideon', implicates: [], confessor: 'ethan', why: '这是伊森的认罪：是他把吉迪恩推了下去。他会把匿名信和今晚的事全告诉警长，警长顺着查到写信的人。' },
   printer_log: { about: 'gideon', implicates: ['price'], why: '那封匿名信，是从普莱斯住的 5 号客房打印出来的。' },
   pc_bin: { about: 'gideon', implicates: ['price'], why: '普莱斯客房电脑的回收站里，有一份和匿名信一字不差的文档。' },
+  // 保险箱
+  v_preston: { about: 'will', implicates: ['preston'], why: '三点十分到三点二十，普雷斯顿一个人去了书房所在的北翼，回来满头大汗——03:14，保险箱面板上又多了一次密码错误。' },
+  preston_safe: { about: 'will', implicates: [], confessor: 'preston', why: '这是普雷斯顿的坦白：他想让新遗嘱在天亮前消失。他会告诉警长，04:15 普莱斯医生劝过他"那封信要是见了报，万斯这个姓就完了"——普莱斯怕的是那封信。' },
   // 2000 年
   frank_letter: { about: 'mei', implicates: ['price'], why: '弗兰克看见从塔里出来的人个子不高、拎着黑色小皮包、手背有抓痕——正是普莱斯医生的样子。' },
   frank_log: { about: 'mei', implicates: ['price'], why: '2000 年的值班日志：塔门口的男人约 5 尺 8 寸、拎黑色小皮包、左手背有抓伤——和普莱斯医生对得上。' },
@@ -97,19 +114,39 @@ type ItemKind = keyof typeof ITEMS
 
 const ITEM_TEXT: Record<ItemKind, string> = {
   lawyer: `你要多填 ${LAWYER_BONUS} 格，警长才会带走你。一直有效，不用操作。`,
-  headline: '这一轮你交出的证据算两份（只能用一次；就算被放大镜作废，也算用过了）。',
-  recount: '对方这一轮交出的证据作废，不算数（只能用一次；对方这一轮没交，就不算用过）。',
+  headline: '这一轮你交出的证据算两份（只能用一次）。',
+  recount: '这一轮别人交出的证据里，给你填的格全部作废，不算数（只能用一次；这一轮没人给你填格，就不算用过）。',
   yacht: '第三轮可以出海：06:00 时你已经不在庄园，警长带不走你；但遗产里你的那份就不要了。出海这一轮，你仍然可以交出一份证据。',
 }
 
 const clueById = new Map(CLUES.map(c => [c.id, c]))
 const title = (id: string) => clueById.get(id)?.title ?? id
-const WHO_LABEL: Record<Who, string> = { mandy: '曼迪', ethan: '伊森', price: '普莱斯医生' }
-const TA: Record<Who, string> = { mandy: '她', ethan: '他', price: '他' }
-const ROLE_OF: Record<Player, string> = { mandy: MANDY, ethan: ETHAN }
+const WHO_LABEL: Record<Who, string> = { mandy: '曼迪', ethan: '伊森', joan: '乔安', preston: '普雷斯顿', price: '普莱斯医生' }
+const TA: Record<Who, string> = { mandy: '她', ethan: '他', joan: '她', preston: '他', price: '他' }
+
+/** 普莱斯在交易里"保"一个人时说的话 */
+const VOUCH_QUOTE: Record<Player, string> = {
+  mandy: '"曼迪只是个端盘子的孩子，她什么都不知道——我可以担保。"',
+  ethan: '"伊森是个好孩子，吉迪恩让他在塔下等着，他就一直等着——我可以担保。"',
+  joan: '"默瑟小姐两点二十以后一直站在我旁边——我可以担保。"',
+  preston: '"普雷斯顿是吉迪恩的儿子，他今晚只想守着他父亲——我可以担保。"',
+}
+/** 普莱斯在交易里"告"一个人时说的话 */
+const ACCUSE_QUOTE: Record<Player, string> = {
+  mandy: '"我本不想说——曼迪那孩子从我药箱里偷过东西。"',
+  ethan: '"伊森跟着吉迪恩上了灯塔，大家都看见了。"',
+  joan: '"默瑟小姐一点多去过罗丝的房间，回来脸色发白——她知道的，比她写下来的多。"',
+  preston: '"普雷斯顿三点多一个人去了书房——保险箱就在那儿。"',
+}
+const ACCUSE_LABEL: Record<Player, string> = {
+  mandy: '普莱斯告她：「曼迪从我的药箱里偷过东西」',
+  ethan: '普莱斯告他：「伊森跟着吉迪恩上了灯塔」',
+  joan: '普莱斯告她：「乔安一点多去过罗丝的房间」',
+  preston: '普莱斯告他：「普雷斯顿三点多一个人去了书房」',
+}
 
 export type DealChoice = 'accept' | 'refuse'
-export type DealResult = NonNullable<FinaleOutcome['deal']>
+export type DealPick = { choice: DealChoice; target: Player | null }
 
 export type MarkRecord = {
   target: Who
@@ -124,16 +161,18 @@ export type MarkRecord = {
   voided: boolean
 }
 
-export type Handed = { seat: Seat; card: string; round: number; headline: boolean; voided: boolean }
+export type Handed = { seat: Seat; card: string; round: number; headline: boolean }
 
 export type FinaleState = {
   phase: 'intro' | 'orders' | 'deal' | 'done'
   round: number
   deadline: number
+  /** 普莱斯医生满几格会被带走（开局按人数定好） */
+  priceLine: number
   introReady: Seat[]
   orders: Partial<Record<Seat, Order>>
-  deal: Partial<Record<Seat, DealChoice>>
-  dealResult: DealResult | null
+  deal: Partial<Record<Seat, DealPick>>
+  dealResult: FinaleDealResult | null
   handed: Handed[]
   marks: MarkRecord[]
   /** 普莱斯答应"保"谁 */
@@ -152,25 +191,53 @@ function fs(state: GameState): FinaleState {
   return state.finale as FinaleState
 }
 
+function isPlayer(id: string | null | undefined): id is Player {
+  return !!id && (PLAYERS as string[]).includes(id)
+}
+
+/** 角色 id 就是名单上的 who */
 function whoOfSeat(state: GameState, seat: Seat): Player {
-  return state.seats[seat].roleId === MANDY ? 'mandy' : 'ethan'
+  const id = state.seats[seat].roleId
+  return isPlayer(id) ? id : 'mandy'
 }
 
 function seatOfWho(state: GameState, who: Player): Seat | null {
-  return SEATS.find(s => state.seats[s].roleId === ROLE_OF[who]) ?? null
+  return state.roster.find(s => state.seats[s].roleId === who) ?? null
+}
+
+/** 这一局名单上的玩家角色 */
+export function castOf(state: GameState): Player[] {
+  return PLAYERS.filter(w => seatOfWho(state, w))
+}
+
+function onBoard(state: GameState, w: Who) {
+  return w === 'price' || castOf(state).includes(w)
 }
 
 function nameOf(state: GameState, seat: Seat) {
   return WHO_LABEL[whoOfSeat(state, seat)]
 }
 
-/** 某座位手里还能交的证据 */
+function joinNames(names: string[]) {
+  return names.length <= 1 ? names.join('') : `${names.slice(0, -1).join('、')}和${names[names.length - 1]}`
+}
+
+/** 这份证据交出去，给谁填格（不在名单上的人不算） */
+function targetsOf(state: GameState, meta: CardMeta): Who[] {
+  if (meta.confessor) return Array(CONFESS_MARKS).fill('price')
+  return meta.implicates.filter(w => onBoard(state, w))
+}
+
+/** 某座位手里还能交的证据：别人的自白交不了；只指向名单外的人的证据也用不上 */
 export function handOf(state: GameState, seat: Seat): string[] {
   const f = fs(state)
+  const me = whoOfSeat(state, seat)
   const out: string[] = []
   for (const [id, c] of Object.entries(state.clues)) {
     if (c.owner !== seat || c.destroyed || !(id in FINALE_CARDS)) continue
     if (f && f.handed.some(h => h.card === id)) continue
+    const meta = FINALE_CARDS[id]
+    if (meta.confessor ? meta.confessor !== me : targetsOf(state, meta).length === 0) continue
     out.push(id)
   }
   return out.sort()
@@ -190,13 +257,13 @@ function countOf(f: FinaleState, who: Who) {
 }
 
 function priceTakenNow(f: FinaleState) {
-  return countOf(f, 'price') >= LINES.price
+  return countOf(f, 'price') >= f.priceLine
 }
 
 /** 满几格会被带走：基本格数 + 律师名片 + 普莱斯的"保"（他被带走就不算） */
 function linePartsOf(state: GameState, who: Who) {
-  if (who === 'price') return { base: LINES.price, lawyer: 0, vouch: 0 }
   const f = fs(state)
+  if (who === 'price') return { base: f.priceLine, lawyer: 0, vouch: 0 }
   const seat = seatOfWho(state, who)
   const lawyer = seat && hasItem(state, seat, 'lawyer') ? LAWYER_BONUS : 0
   const priceGone = f.outcome ? f.outcome.taken.price : false
@@ -209,9 +276,9 @@ function lineOf(state: GameState, who: Who) {
   return p.base + p.lawyer + p.vouch
 }
 
-/** 交出了（没被作废的）自己的自白 */
+/** 交出了自己的自白 */
 function confessedOf(f: FinaleState, who: Player) {
-  return f.handed.some(h => !h.voided && FINALE_CARDS[h.card].confessor === who)
+  return f.handed.some(h => FINALE_CARDS[h.card].confessor === who)
 }
 
 function validateOrder(state: GameState, seat: Seat, raw: unknown): Order | string {
@@ -237,7 +304,7 @@ function validateOrder(state: GameState, seat: Seat, raw: unknown): Order | stri
 
 /** 每次揭晓后的小结：谁几格、还差几格 */
 function summaryLine(state: GameState, f: FinaleState) {
-  return '现在：' + (['mandy', 'ethan', 'price'] as Who[]).map(w => {
+  return '现在：' + [...castOf(state), 'price' as const].map(w => {
     const n = countOf(f, w)
     const line = lineOf(state, w)
     if (w !== 'price' && confessedOf(f, w)) return `${WHO_LABEL[w]}已经认罪`
@@ -245,20 +312,21 @@ function summaryLine(state: GameState, f: FinaleState) {
   }).join('；') + '。'
 }
 
-function effectText(meta: CardMeta, headline: boolean) {
+function effectText(state: GameState, meta: CardMeta, headline: boolean) {
   const k = headline ? 2 : 1
   if (meta.confessor) return `${WHO_LABEL[meta.confessor]}认罪了，06:00 警长一定会带走${TA[meta.confessor]}；普莱斯医生 +${CONFESS_MARKS * k} 格`
-  return meta.implicates.map(w => `${WHO_LABEL[w]} +${k} 格`).join('，')
+  return targetsOf(state, meta).map(w => `${WHO_LABEL[w]} +${k} 格`).join('，')
 }
 
 function resolveRound(state: GameState, now: number) {
   const f = fs(state)
   const lines: string[] = []
-  const orders: Record<Seat, Order> = { P1: f.orders.P1 ?? EMPTY_ORDER, P2: f.orders.P2 ?? EMPTY_ORDER }
+  const seats = state.roster
+  const orderOf = (s: Seat) => f.orders[s] ?? EMPTY_ORDER
 
   // 1. 交出证据
-  for (const seat of SEATS) {
-    const o = orders[seat]
+  for (const seat of seats) {
+    const o = orderOf(seat)
     const who = nameOf(state, seat)
     if (!o.card || !handOf(state, seat).includes(o.card)) {
       lines.push(`🤐 ${who}这一轮没有交出证据。`)
@@ -267,34 +335,34 @@ function resolveRound(state: GameState, now: number) {
     const meta = FINALE_CARDS[o.card]
     const headline = o.headline && itemAvailable(state, seat, 'headline')
     if (headline) f.usedItems.push(ITEMS.headline)
-    f.handed.push({ seat, card: o.card, round: f.round, headline, voided: false })
-    const targets: Who[] = meta.confessor ? Array(CONFESS_MARKS).fill('price') : meta.implicates
-    for (const target of targets) {
+    f.handed.push({ seat, card: o.card, round: f.round, headline })
+    for (const target of targetsOf(state, meta)) {
       f.marks.push({ target, kind: 'card', label: title(o.card), seat, card: o.card, round: f.round, double: false, voided: false })
       if (headline) f.marks.push({ target, kind: 'card', label: `${title(o.card)}（头版）`, seat, card: o.card, round: f.round, double: true, voided: false })
     }
     if (meta.confessor) f.secrets.push(`第 ${f.round} 轮，${who}把「${title(o.card)}」交给了警长。`)
-    lines.push(`🗂️ ${who}交出「${title(o.card)}」→ ${effectText(meta, headline)}。${headline ? '（🗞️ 登上头版，算两份）' : ''}`)
+    lines.push(`🗂️ ${who}交出「${title(o.card)}」→ ${effectText(state, meta, headline)}。${headline ? '（🗞️ 登上头版，算两份）' : ''}`)
   }
 
-  // 2. 放大镜：对方这一轮交出的证据作废
-  for (const seat of SEATS) {
-    if (!orders[seat].recount || !itemAvailable(state, seat, 'recount')) continue
-    const target = f.handed.find(h => h.seat === otherSeat(seat) && h.round === f.round && !h.voided)
-    if (!target) {
-      appendLog(state, now, 'DM', seat, '🔍 对方这一轮什么也没交，你的放大镜没有用上（之后还能用）。', 'dm')
+  // 2. 放大镜：这一轮别人交出的证据里，给自己填的格作废
+  for (const seat of seats) {
+    if (!orderOf(seat).recount || !itemAvailable(state, seat, 'recount')) continue
+    const me = whoOfSeat(state, seat)
+    const hit = f.marks.filter(m => m.kind === 'card' && m.round === f.round && m.seat !== null && m.seat !== seat && m.target === me && !m.voided)
+    if (hit.length === 0) {
+      appendLog(state, now, 'DM', seat, '🔍 这一轮没有人给你填格，你的放大镜没有用上（之后还能用）。', 'dm')
       continue
     }
-    target.voided = true
-    for (const m of f.marks) if (m.card === target.card) m.voided = true
+    for (const m of hit) m.voided = true
     f.usedItems.push(ITEMS.recount)
-    lines.push(`🔍 ${nameOf(state, seat)}拿出放大镜，指出「${title(target.card)}」有问题——这份证据作废，不算数。`)
+    const titles = [...new Set(hit.map(m => (m.card ? title(m.card) : m.label)))].map(t => `「${t}」`).join('、')
+    lines.push(`🔍 ${WHO_LABEL[me]}拿出放大镜，指出${titles}有问题——给${WHO_LABEL[me]}填的 ${hit.length} 格作废，不算数。`)
   }
 
   // 3. 出海
   if (f.round === ROUNDS) {
-    for (const seat of SEATS) {
-      if (!orders[seat].flee || !hasItem(state, seat, 'yacht')) continue
+    for (const seat of seats) {
+      if (!orderOf(seat).flee || !hasItem(state, seat, 'yacht')) continue
       f.fled.push(seat)
       lines.push(`🛥️ ${nameOf(state, seat)}没有回到大厅。码头方向传来游艇引擎的声音。`)
       f.secrets.push(`${nameOf(state, seat)}在 05:45 驾驶"第二次机会号"出海逃亡。`)
@@ -307,68 +375,66 @@ function resolveRound(state: GameState, now: number) {
   f.orders = {}
 }
 
-const ACCUSE_LABEL: Record<Player, string> = {
-  mandy: '普莱斯告她：「曼迪从我的药箱里偷过东西」',
-  ethan: '普莱斯告他：「伊森跟着吉迪恩上了灯塔」',
-}
-
 function resolveDeal(state: GameState, now: number) {
   const f = fs(state)
-  const ms = seatOfWho(state, 'mandy')
-  const es = seatOfWho(state, 'ethan')
-  const m = (ms && f.deal[ms]) ?? 'refuse'
-  const e = (es && f.deal[es]) ?? 'refuse'
+  const picks = state.roster.map(seat => ({ seat, who: whoOfSeat(state, seat), pick: f.deal[seat] ?? { choice: 'refuse' as const, target: null } }))
+  const accepted = picks.filter(p => p.pick.choice === 'accept')
   const lines: string[] = []
+  const accused: Player[] = []
   const accuse = (target: Player) => {
+    accused.push(target)
     for (let i = 0; i < DEAL_MARKS; i++) f.marks.push({ target, kind: 'accused', label: ACCUSE_LABEL[target], seat: null, round: DEAL_AFTER + 0.5, double: false, voided: false })
   }
-  if (m === 'refuse' && e === 'refuse') {
-    f.dealResult = 'both_refuse'
+  let vouched: Player | null = null
+  if (accepted.length === 0) {
     for (let i = 0; i < DEAL_MARKS; i++) f.marks.push({ target: 'price', kind: 'panic', label: '他慌了，自己说漏了嘴', seat: null, round: DEAL_AFTER + 0.5, double: false, voided: false })
-    lines.push('普莱斯的交易，你们两个都拒绝了。他回到大厅，脸色发白。')
-    lines.push(`乔安问他怎么了，他脱口而出："那瓶药明明是……"——他猛地闭上了嘴。没有人跟他提过什么药瓶。普莱斯医生 +${DEAL_MARKS} 格。`)
-  } else if (m === 'accept' && e === 'refuse') {
-    f.dealResult = 'mandy_only'
-    f.vouched.push('mandy')
-    accuse('ethan')
-    lines.push(`普莱斯医生保了曼迪："曼迪只是个端盘子的孩子，她什么都不知道——我可以担保。"曼迪要多 ${VOUCH_BONUS} 格，警长才会带走她。`)
-    lines.push(`接着，他告了伊森："伊森跟着吉迪恩上了灯塔，大家都看见了。"伊森 +${DEAL_MARKS} 格。`)
-  } else if (m === 'refuse' && e === 'accept') {
-    f.dealResult = 'ethan_only'
-    f.vouched.push('ethan')
-    accuse('mandy')
-    lines.push(`普莱斯医生保了伊森："伊森是个好孩子，吉迪恩让他在塔下等着，他就一直等着——我可以担保。"伊森要多 ${VOUCH_BONUS} 格，警长才会带走他。`)
-    lines.push(`接着，他告了曼迪："我本不想说——曼迪那孩子从我药箱里偷过东西。"曼迪 +${DEAL_MARKS} 格。`)
+    lines.push('普莱斯的交易，所有人都拒绝了。他回到大厅，脸色发白。')
+    lines.push(`赫克托递给他一杯水，问他怎么了。他脱口而出："那瓶药明明是……"——他猛地闭上了嘴。没有人跟他提过什么药瓶。普莱斯医生 +${DEAL_MARKS} 格。`)
+  } else if (accepted.length === 1) {
+    const a = accepted[0]
+    vouched = a.who
+    f.vouched.push(a.who)
+    lines.push(`普莱斯医生保了${WHO_LABEL[a.who]}：${VOUCH_QUOTE[a.who]}${WHO_LABEL[a.who]}要多 ${VOUCH_BONUS} 格，警长才会带走${TA[a.who]}。`)
+    const t = a.pick.target
+    if (t && t !== a.who && seatOfWho(state, t)) {
+      accuse(t)
+      lines.push(`接着，他告了${WHO_LABEL[t]}：${ACCUSE_QUOTE[t]}${WHO_LABEL[t]} +${DEAL_MARKS} 格。`)
+    }
   } else {
-    f.dealResult = 'both_accept'
-    accuse('mandy')
-    accuse('ethan')
-    lines.push('普莱斯医生分别向你们两个人许了诺——然后当着所有人的面，把你们两个都告了："曼迪偷了我的药，伊森跟着吉迪恩上了灯塔。"')
-    lines.push(`曼迪 +${DEAL_MARKS} 格，伊森 +${DEAL_MARKS} 格。他谁也没保。`)
+    for (const a of accepted) accuse(a.who)
+    const names = joinNames(accepted.map(a => WHO_LABEL[a.who]))
+    lines.push(`普莱斯医生分别向${names}许了诺——然后当着所有人的面，把他们全告了：`)
+    for (const a of accepted) lines.push(`「${WHO_LABEL[a.who]}？」${ACCUSE_QUOTE[a.who]}`)
+    lines.push(`${names}各 +${DEAL_MARKS} 格。他谁也没保。`)
   }
   lines.push('（记住：普莱斯自己要是被带走，他保的不算、告的也擦掉。）')
   lines.push(summaryLine(state, f))
-  for (const s of SEATS) f.secrets.push(`${nameOf(state, s)}${f.deal[s] === 'accept' ? '接受' : '拒绝'}了普莱斯的交易。`)
+  f.dealResult = { accepted: accepted.map(a => a.who), vouched, accused, panic: accepted.length === 0 }
+  for (const p of picks) {
+    f.secrets.push(p.pick.choice === 'accept'
+      ? `${WHO_LABEL[p.who]}接受了普莱斯的交易${p.pick.target ? `，点名让他去告${WHO_LABEL[p.pick.target]}` : ''}。`
+      : `${WHO_LABEL[p.who]}拒绝了普莱斯的交易。`)
+  }
   f.reveals.push({ round: DEAL_AFTER + 0.5, title: `${DEAL_CLOCK} · 普莱斯的交易`, lines })
   appendLog(state, now, 'DM', 'all', `🤝 ${DEAL_CLOCK} · 普莱斯的交易\n${lines.join('\n')}`, 'event')
 }
 
-/** 06:00 警长到：先看普莱斯，再看你们俩 */
+/** 06:00 警长到：先看普莱斯，再看每一个人 */
 function sheriffArrives(state: GameState, now: number) {
   const f = fs(state)
   const lines: string[] = ['🚔 06:00，警长到了。他拿着你们交上去的证据，一个一个看过去。']
   const priceTaken = priceTakenNow(f)
   if (priceTaken) {
-    lines.push(`🩺 普莱斯医生：${countOf(f, 'price')} 格，满了 ${LINES.price} 格。警长当场给他戴上了手铐。`)
+    lines.push(`🩺 普莱斯医生：${countOf(f, 'price')} 格，满了 ${f.priceLine} 格。警长当场给他戴上了手铐。`)
     const said = f.marks.filter(m => m.kind === 'accused' && !m.voided)
     if (said.length > 0 || f.vouched.length > 0) {
       for (const m of said) m.voided = true
       lines.push('他被带走了，他说的话也就不算数了：他保过的人不再有人保，他告过的格子全部擦掉。')
     }
   } else {
-    lines.push(`🩺 普莱斯医生：${countOf(f, 'price')} 格，不够 ${LINES.price} 格。警长和他握了握手。`)
+    lines.push(`🩺 普莱斯医生：${countOf(f, 'price')} 格，不够 ${f.priceLine} 格。警长和他握了握手。`)
   }
-  for (const w of ['mandy', 'ethan'] as Player[]) {
+  for (const w of castOf(state)) {
     const seat = seatOfWho(state, w)
     const n = countOf(f, w)
     const line = LINES[w] + linePartsOf(state, w).lawyer + (f.vouched.includes(w) && !priceTaken ? VOUCH_BONUS : 0)
@@ -385,46 +451,50 @@ function sheriffArrives(state: GameState, now: number) {
   appendLog(state, now, 'DM', 'all', lines.join('\n'), 'event')
 }
 
+function byPlayer<T>(fn: (w: Player) => T): Record<Player, T> {
+  return { mandy: fn('mandy'), ethan: fn('ethan'), joan: fn('joan'), preston: fn('preston') }
+}
+
 export function computeOutcome(state: GameState): Outcome {
   const f = fs(state)
+  const cast = castOf(state)
+  const inCast = (w: Player) => cast.includes(w)
   const priceTaken = priceTakenNow(f)
-  const fledOf = (w: Player) => {
+  const fled = byPlayer(w => {
     const seat = seatOfWho(state, w)
-    return !!seat && f.fled.includes(seat)
-  }
-  const fled = { mandy: fledOf('mandy'), ethan: fledOf('ethan') }
-  const confessed = { mandy: confessedOf(f, 'mandy'), ethan: confessedOf(f, 'ethan') }
+    return inCast(w) && !!seat && f.fled.includes(seat)
+  })
+  const confessed = byPlayer(w => inCast(w) && confessedOf(f, w))
   // 普莱斯被带走时，他告的格子不算、保也不算（sheriffArrives 已经把格子作废；这里按规则再算一遍，不依赖调用顺序）
   const countFor = (w: Player) => f.marks.filter(m => m.target === w && !m.voided && !(priceTaken && m.kind === 'accused')).length
   const lawyer = (w: Player) => linePartsOf(state, w).lawyer
   const vouchOk = (w: Player) => f.vouched.includes(w) && !priceTaken
   const lineFor = (w: Player) => LINES[w] + lawyer(w) + (vouchOk(w) ? VOUCH_BONUS : 0)
-  const takenOf = (w: Player) => !fled[w] && (confessed[w] || countFor(w) >= lineFor(w))
-  const taken = { mandy: takenOf('mandy'), ethan: takenOf('ethan'), price: priceTaken }
-  const savedBy = (w: Player) => vouchOk(w) && !taken[w] && !fled[w] && countFor(w) >= LINES[w] + lawyer(w)
-  const raised = { rose: false, gideon: false, mei: false }
-  const priceFor = { rose: false, gideon: false, mei: false }
+  const takenP = byPlayer(w => inCast(w) && !fled[w] && (confessed[w] || countFor(w) >= lineFor(w)))
+  const savedByVouch = byPlayer(w => inCast(w) && vouchOk(w) && !takenP[w] && !fled[w] && countFor(w) >= LINES[w] + lawyer(w))
+  const raised: Record<CaseId, boolean> = { rose: false, gideon: false, mei: false, will: false }
+  const priceFor: Record<CaseId, boolean> = { rose: false, gideon: false, mei: false, will: false }
   for (const h of f.handed) {
-    if (h.voided) continue
     const meta = FINALE_CARDS[h.card]
     raised[meta.about] = true
     if (meta.implicates.includes('price') || meta.confessor) priceFor[meta.about] = true
   }
   const will = state.clues[WILL] && !state.clues[WILL]!.destroyed ? 'executed' : 'missing'
   return {
-    taken,
+    cast,
+    taken: { ...takenP, price: priceTaken },
     fled,
     confessed,
-    savedByVouch: { mandy: savedBy('mandy'), ethan: savedBy('ethan') },
-    counts: { mandy: countFor('mandy'), ethan: countFor('ethan'), price: countOf(f, 'price') },
-    lines: { mandy: lineFor('mandy'), ethan: lineFor('ethan'), price: LINES.price },
+    savedByVouch,
+    counts: { ...byPlayer(w => (inCast(w) ? countFor(w) : 0)), price: countOf(f, 'price') },
+    lines: { ...byPlayer(lineFor), price: f.priceLine },
     raised,
     priceFor,
     meiReopened: priceTaken && priceFor.mei,
     will,
     mandyInherits: will === 'executed' && !fled.mandy,
     // 佛州"杀人者不得继承"：伊森因吉迪恩之死被带走，就失去份额；出海也拿不到
-    ethanInherits: will === 'executed' && !fled.ethan && !taken.ethan,
+    ethanInherits: will === 'executed' && !fled.ethan && !takenP.ethan,
     deal: f.dealResult,
   }
 }
@@ -445,7 +515,7 @@ function advanceAfterOrders(state: GameState, now: number) {
     f.phase = 'deal'
     f.deal = {}
     f.deadline = now + DEAL_SECONDS * 1000
-    appendLog(state, now, 'DM', 'all', `📞 ${DEAL_CLOCK} · 未知剧情：普莱斯医生分别把你们叫到了走廊尽头……（请在「终局」里回复他）`, 'system')
+    appendLog(state, now, 'DM', 'all', `📞 ${DEAL_CLOCK} · 未知剧情：普莱斯医生把你们一个一个叫到了走廊尽头……（请在「终局」里回复他）`, 'system')
   } else if (f.round < ROUNDS) {
     startOrders(state, now, f.round + 1)
   } else {
@@ -455,22 +525,44 @@ function advanceAfterOrders(state: GameState, now: number) {
   }
 }
 
+function finishDeal(state: GameState, now: number) {
+  resolveDeal(state, now)
+  startOrders(state, now, DEAL_AFTER + 1)
+}
+
 function goalsFor(me: Player): FinaleCopy['goals'] {
-  const other: Player = me === 'mandy' ? 'ethan' : 'mandy'
-  const free = { points: 20, text: '自己平安：06:00 不被警长带走。（被带走了、但普莱斯医生也被带走，得 10 分；出海得 5 分）' }
-  return me === 'mandy'
-    ? [
+  const free = { points: 20, text: '自己平安：06:00 不被警长带走。（出海得 5 分）' }
+  const freeReduced = { points: 20, text: '自己平安：06:00 不被警长带走。（被带走了、但普莱斯医生也被带走，得 10 分；出海得 5 分）' }
+  switch (me) {
+    case 'mandy':
+      return [
         { points: 20, text: '母亲的真相：普莱斯医生被带走，而且至少有一份关于 2000 年的证据交到了警长手里。' },
-        free,
-        { points: 15, text: `让灯塔上那个人付出代价：${WHO_LABEL[other]}被警长带走。` },
+        freeReduced,
+        { points: 15, text: `让灯塔上那个人付出代价：${WHO_LABEL.ethan}被警长带走。` },
         { points: 15, text: '拿到他留给你的东西：保险箱里的新遗嘱被拿出来过（06:00 律师会自动宣读），而且你没有出海。' },
       ]
-    : [
+    case 'ethan':
+      return [
         { points: 20, text: '父亲的清白：普莱斯医生被带走，而且至少有一份关于 2000 年的证据交到了警长手里。' },
-        free,
-        { points: 15, text: `让毒死母亲的人付出代价：${WHO_LABEL[other]}被警长带走。` },
+        freeReduced,
+        { points: 15, text: `让毒死母亲的人付出代价：${WHO_LABEL.mandy}被警长带走。` },
         { points: 15, text: '"弗兰克·科尔之子"拿到遗产：新遗嘱被拿出来过（06:00 律师会自动宣读），而且你没被带走、没有出海（杀了立遗嘱的人，就不能继承）。' },
       ]
+    case 'joan':
+      return [
+        { points: 20, text: '写完十六年前没写完的那篇稿子：普莱斯医生被带走，而且至少有一份关于 2000 年的证据交到了警长手里。' },
+        free,
+        { points: 15, text: '罗丝不能白死：普莱斯医生被带走，而且至少有一份关于罗丝之死、指向他的证据交到了警长手里。' },
+        { points: 15, text: '让今晚的真相登上头版：普莱斯医生被带走。' },
+      ]
+    case 'preston':
+      return [
+        { points: 20, text: '守住万斯家的名声：2000 年的旧案没有被翻出来（普莱斯医生没被带走，或者没有一份关于 2000 年的证据交到警长手里）。' },
+        free,
+        { points: 15, text: `让推父亲下塔的人付出代价：${WHO_LABEL.ethan}被警长带走。` },
+        { points: 15, text: '拿回本该属于你的一切：保险箱里的新遗嘱始终没被拿出来，而且你没有出海。' },
+      ]
+  }
 }
 
 /**
@@ -479,12 +571,15 @@ function goalsFor(me: Player): FinaleCopy['goals'] {
  */
 function finaleCopy(state: GameState, seat: Seat, f: FinaleState): FinaleCopy {
   const me = whoOfSeat(state, seat)
-  const other: Player = me === 'mandy' ? 'ethan' : 'mandy'
+  const cast = castOf(state)
+  const others = cast.filter(w => w !== me)
   const o = f.outcome
   const myItems = (Object.keys(ITEMS) as ItemKind[]).filter(k => hasItem(state, seat, k))
   const itemLine = myItems.length
     ? `你拍卖得到的道具：${myItems.map(k => `${clueById.get(ITEMS[k])?.icon ?? ''}「${title(ITEMS[k])}」——${ITEM_TEXT[k]}`).join(' ')}`
     : '你在拍卖里没有拿到道具。'
+  const castNames = cast.map(w => WHO_LABEL[w])
+  const call = me === 'joan' ? '默瑟小姐' : '孩子'
   return {
     tag: 'SHERIFF',
     title: '警长的名单',
@@ -494,50 +589,51 @@ function finaleCopy(state: GameState, seat: Seat, f: FinaleState): FinaleCopy {
     dealClock: `${DEAL_CLOCK} · 普莱斯的交易`,
     doneClock: '06:00 · 警长到了',
     rules: [
-      `06:00 警长就到。名单上有三个人：曼迪、伊森、普莱斯医生，每个人下面有一排格子。格子填满了，警长就把这个人带走。曼迪和伊森各 ${LINES.mandy} 格；普莱斯医生是有身份的大人物，要 ${LINES.price} 格。`,
+      `06:00 警长就到。名单上有 ${cast.length + 1} 个人：${castNames.join('、')}，还有普莱斯医生，每个人下面有一排格子。格子填满了，警长就把这个人带走。${joinNames(castNames)}各 ${LINES.mandy} 格；普莱斯医生是有身份的大人物，要 ${f.priceLine} 格。`,
       '一共三轮。每一轮，你从手里挑**一份**证据交给警长，也可以不交。证据指向谁，就给谁填一格；同时指向两个人的，两个人各填一格。',
-      '你们两个人同时偷偷选，都选好了才一起揭晓。',
+      '所有人同时偷偷选，都选好了才一起揭晓。',
       `自白很特别：交出你自己的自白，就是**认罪**——06:00 警长一定会带走你；但你会把一切都说出来，普莱斯医生被填 ${CONFESS_MARKS} 格。`,
-      `第二轮之后，普莱斯医生会私下找你们谈交易。他可以"保"一个人（这个人要多填 ${VOUCH_BONUS} 格才会被带走），也可以"告"一个人（这个人被填 ${DEAL_MARKS} 格）。到时候会一条一条讲清楚。`,
-      '06:00 警长先看普莱斯医生：他要是被带走了，他保的人就不保了，他告的格子也擦掉。然后再看你们俩。',
+      `第二轮之后，普莱斯医生会一个一个找你们私下谈交易。如果**只有一个人**接受，他就"保"这个人（要多填 ${VOUCH_BONUS} 格才会被带走），还会"告"这个人点名的人（填 ${DEAL_MARKS} 格）。到时候会一条一条讲清楚。`,
+      '06:00 警长先看普莱斯医生：他要是被带走了，他保的人就不保了，他告的格子也擦掉。然后再一个一个看你们。',
       itemLine,
       '只证明"发生了什么"、不指向任何人的线索，警长用不上，所以不会出现在你能交的证据里。',
     ],
     goals: goalsFor(me),
     pickHint: '点一份证据，再点「交给警长」。不想交，就点「这一轮不交」。',
-    waiting: '你已经选好了，等对方……（你们可以在记录里商量）',
+    waiting: '你已经选好了，等其他人……（你们可以在记录里商量）',
     noCards: '你手里已经没有能交给警长的证据了。',
     deal: {
-      intro: `走廊尽头，普莱斯医生压低声音，像所有人的好外公：\n"孩子，你我都知道今晚发生了什么。只要你点头，我就在警长面前保你。至于${WHO_LABEL[other]}……我会说出我‘看到’的。"`,
+      intro: `走廊尽头，普莱斯医生压低声音，像所有人的好外公：\n"${call}，你我都知道今晚发生了什么。只要你点头，我就在警长面前保你。你只要告诉我——该让谁替你顶着？"`,
       terms: [
-        `**你们两个都拒绝**：普莱斯慌了，自己说漏了嘴——普莱斯医生 +${DEAL_MARKS} 格。`,
-        `**你接受、${WHO_LABEL[other]}拒绝**：普莱斯保你——你要多填 ${VOUCH_BONUS} 格才会被带走；他还会告${WHO_LABEL[other]}——${WHO_LABEL[other]} +${DEAL_MARKS} 格。`,
-        `**你拒绝、${WHO_LABEL[other]}接受**：普莱斯保${WHO_LABEL[other]}，告你——你 +${DEAL_MARKS} 格。`,
-        `**你们两个都接受**：他把你们两个都告了——你们各 +${DEAL_MARKS} 格，谁也不保。`,
+        `**所有人都拒绝**：普莱斯慌了，自己说漏了嘴——普莱斯医生 +${DEAL_MARKS} 格。`,
+        `**只有你一个人接受**：普莱斯保你——你要多填 ${VOUCH_BONUS} 格才会被带走；他还会告你点名的那个人——那个人 +${DEAL_MARKS} 格。`,
+        `**只有别人一个人接受**：普莱斯保那个人，再告那个人点名的人——要是点的是你，你 +${DEAL_MARKS} 格。`,
+        `**不止一个人接受**：他把接受的人全告了——每人 +${DEAL_MARKS} 格，谁也不保。`,
         '**记住**：普莱斯自己要是在 06:00 被带走，他保的不算，告的格子也全部擦掉。只有他说漏嘴的格子不擦——那是他自己露了馅。',
       ],
-      note: `${WHO_LABEL[other]}听到的是同样的提议。你们可以先在记录里商量——但对方最后选什么，只有揭晓时才知道。`,
+      note: `${joinNames(others.map(w => WHO_LABEL[w]))}听到的是同样的提议。你们可以先在记录里商量——但别人最后选什么，只有揭晓时才知道。`,
       accept: '接受交易',
       refuse: '拒绝交易',
+      pickTarget: '接受的话，你要告诉普莱斯：让他去告谁？',
     },
-    legend: { me: '你交的', other: '对方交的', accused: '普莱斯告的（他被带走就擦掉）', panic: '普莱斯说漏嘴' },
+    legend: { me: '你交的', other: '别人交的', accused: '普莱斯告的（他被带走就擦掉）', panic: '普莱斯说漏嘴' },
     vouchedBy: '普莱斯医生保了',
     vouchShort: '普莱斯保',
     done: o
-      ? `06:00 · ${o.taken.price ? '普莱斯医生被带走了。' : '普莱斯医生没有被带走。'}${o.taken.mandy ? '曼迪被带走了。' : ''}${o.taken.ethan ? '伊森被带走了。' : ''}（结局即将揭晓）`
+      ? `06:00 · ${o.taken.price ? '普莱斯医生被带走了。' : '普莱斯医生没有被带走。'}${cast.filter(w => o.taken[w]).map(w => `${WHO_LABEL[w]}被带走了。`).join('')}（结局即将揭晓）`
       : null,
   }
 }
 
 function personView(state: GameState, seat: Seat, f: FinaleState, who: Who): FinalePerson {
-  const avatar = who === 'price'
-    ? NPCS.find(n => n.id === 'price')?.avatar ?? '🩺'
-    : ROLES.find(r => r.id === ROLE_OF[who])?.avatar ?? '🙂'
-  const color = who === 'price' ? '#a78bfa' : ROLES.find(r => r.id === ROLE_OF[who])?.color ?? '#ffffff'
+  const role = who === 'price' ? null : ROLES.find(r => r.id === who)
+  const avatar = who === 'price' ? NPCS.find(n => n.id === 'price')?.avatar ?? '🩺' : role?.avatar ?? '🙂'
+  const color = who === 'price' ? '#a78bfa' : role?.color ?? '#ffffff'
   const marks: FinaleMark[] = f.marks.filter(m => m.target === who).map(m => ({
     kind: m.kind,
     label: m.label,
     by: m.seat === null ? 'deal' : m.seat === seat ? 'me' : 'other',
+    from: m.seat === null ? null : nameOf(state, m.seat),
     round: m.round,
     double: m.double,
     void: m.voided,
@@ -565,12 +661,17 @@ function finaleText(id: string) {
   return (clueById.get(id)?.text ?? '').replace(/\n?（代价：[^）]*）/g, '').trim()
 }
 
+function tellOthers(state: GameState, seat: Seat, now: number, text: string) {
+  for (const s of state.roster) if (s !== seat) appendLog(state, now, 'DM', s, text, 'dm')
+}
+
 export const finaleModule: FinaleModule = {
   init(state, now) {
     const f: FinaleState = {
       phase: 'intro',
       round: 0,
       deadline: now + INTRO_SECONDS * 1000,
+      priceLine: priceLineFor(state.roster.length),
       introReady: [],
       orders: {},
       deal: {},
@@ -585,21 +686,22 @@ export const finaleModule: FinaleModule = {
       outcome: null,
     }
     state.finale = f
-    appendLog(state, now, 'DM', 'all', '🚔 05:00 · 终局「警长的名单」：先看规则，两人都点「我看懂了」就开始。', 'system')
+    appendLog(state, now, 'DM', 'all', '🚔 05:00 · 终局「警长的名单」：先看规则，所有人都点「我看懂了」就开始。', 'system')
   },
 
   act(state, seat, payload, now) {
     const f = fs(state)
     if (!payload || typeof payload !== 'object') return '无效操作'
-    const p = payload as { type?: string; order?: unknown; choice?: unknown; round?: unknown }
+    const p = payload as { type?: string; order?: unknown; choice?: unknown; target?: unknown; round?: unknown }
     if (f.phase === 'done') return '已经结束了'
+    if (!state.roster.includes(seat)) return '你不在这一局里'
     if (p.type === 'ready') {
       if (f.phase !== 'intro') return '已经开始了'
       if (!f.introReady.includes(seat)) {
         f.introReady.push(seat)
-        appendLog(state, now, 'DM', otherSeat(seat), `${nameOf(state, seat)}已经看懂规则了。`, 'dm')
+        tellOthers(state, seat, now, `${nameOf(state, seat)}已经看懂规则了。`)
       }
-      if (SEATS.every(s => f.introReady.includes(s))) startOrders(state, now, 1)
+      if (state.roster.every(s => f.introReady.includes(s))) startOrders(state, now, 1)
       return
     }
     if (p.type === 'order') {
@@ -610,20 +712,24 @@ export const finaleModule: FinaleModule = {
       const o = validateOrder(state, seat, p.order)
       if (typeof o === 'string') return o
       f.orders[seat] = o
-      appendLog(state, now, 'DM', otherSeat(seat), `${nameOf(state, seat)}已经选好了第 ${f.round} 轮。`, 'dm')
-      if (SEATS.every(s => f.orders[s])) advanceAfterOrders(state, now)
+      tellOthers(state, seat, now, `${nameOf(state, seat)}已经选好了第 ${f.round} 轮。`)
+      if (state.roster.every(s => f.orders[s])) advanceAfterOrders(state, now)
       return
     }
     if (p.type === 'deal') {
       if (f.phase !== 'deal') return '现在没有交易'
       if (f.deal[seat]) return '你已经回复了普莱斯'
       if (p.choice !== 'accept' && p.choice !== 'refuse') return '请选择接受或拒绝'
-      f.deal[seat] = p.choice
-      appendLog(state, now, 'DM', otherSeat(seat), `${nameOf(state, seat)}已经回复了普莱斯。`, 'dm')
-      if (SEATS.every(s => f.deal[s])) {
-        resolveDeal(state, now)
-        startOrders(state, now, DEAL_AFTER + 1)
+      let target: Player | null = null
+      if (p.choice === 'accept') {
+        const me = whoOfSeat(state, seat)
+        const t = typeof p.target === 'string' ? p.target : ''
+        if (!isPlayer(t) || t === me || !seatOfWho(state, t)) return '接受交易时，要告诉普莱斯让他去告谁'
+        target = t
       }
+      f.deal[seat] = { choice: p.choice, target }
+      tellOthers(state, seat, now, `${nameOf(state, seat)}已经回复了普莱斯。`)
+      if (state.roster.every(s => f.deal[s])) finishDeal(state, now)
       return
     }
     return '未知操作'
@@ -637,7 +743,7 @@ export const finaleModule: FinaleModule = {
       return true
     }
     if (f.phase === 'orders') {
-      for (const s of SEATS) {
+      for (const s of state.roster) {
         if (!f.orders[s]) {
           f.orders[s] = EMPTY_ORDER
           appendLog(state, now, 'DM', s, '时间到，你这一轮没有交出证据。', 'dm')
@@ -647,9 +753,8 @@ export const finaleModule: FinaleModule = {
       return true
     }
     if (f.phase === 'deal') {
-      for (const s of SEATS) if (!f.deal[s]) f.deal[s] = 'refuse'
-      resolveDeal(state, now)
-      startOrders(state, now, DEAL_AFTER + 1)
+      for (const s of state.roster) if (!f.deal[s]) f.deal[s] = { choice: 'refuse', target: null }
+      finishDeal(state, now)
       return true
     }
     return false
@@ -670,7 +775,7 @@ export const finaleModule: FinaleModule = {
     const f = fs(state)
     if (!f) return null
     const me = whoOfSeat(state, seat)
-    const other = otherSeat(seat)
+    const cast = castOf(state)
     const rank = (id: string) => {
       const m = FINALE_CARDS[id]
       if (m.confessor) return 3
@@ -685,7 +790,7 @@ export const finaleModule: FinaleModule = {
           title: title(id),
           icon: clueById.get(id)?.icon ?? '📄',
           about: CASE_TITLE[m.about],
-          points: m.confessor ? ['price'] : m.implicates,
+          points: m.confessor ? ['price'] : targetsOf(state, m),
           confessor: m.confessor ?? null,
           why: m.why,
           text: finaleText(id),
@@ -699,17 +804,25 @@ export const finaleModule: FinaleModule = {
         : f.phase === 'orders' ? !!f.orders[s]
           : f.phase === 'deal' ? !!f.deal[s]
             : true
+    const mine = f.deal[seat]
     return {
       phase: f.phase,
       round: f.round,
       deadline: f.phase === 'done' ? null : f.deadline,
-      people: (['mandy', 'ethan', 'price'] as Who[]).map(w => personView(state, seat, f, w)),
+      people: [...cast, 'price' as const].map(w => personView(state, seat, f, w)),
       hand,
       items,
       mySubmitted: submitted(seat),
-      otherSubmitted: submitted(other),
+      waitingFor: state.roster.filter(s => s !== seat && !submitted(s)).map(s => nameOf(state, s)),
       reveals: f.reveals,
-      deal: f.phase === 'deal' || f.dealResult ? { myChoice: f.deal[seat] ?? null, result: f.dealResult } : null,
+      deal: f.phase === 'deal' || f.dealResult
+        ? {
+            myChoice: mine?.choice ?? null,
+            myTarget: mine?.target ?? null,
+            targets: cast.filter(w => w !== me).map(w => ({ who: w, name: WHO_LABEL[w], avatar: ROLES.find(r => r.id === w)?.avatar ?? '🙂' })),
+            result: f.dealResult,
+          }
+        : null,
       outcome: f.outcome,
       copy: finaleCopy(state, seat, f),
       actions: f.phase === 'intro' && !f.introReady.includes(seat)

@@ -63,7 +63,7 @@ function Header({ f }: { f: FinaleView }) {
   )
 }
 
-// ───────── 名单：三个人，每人一排格子 ─────────
+// ───────── 名单：每个人一排格子 ─────────
 
 const MARK_STYLE = {
   me: 'bg-sky-400 border-sky-200',
@@ -101,7 +101,8 @@ function Board({ f }: { f: FinaleView }) {
         <div className="text-[12px] text-white/70 flex-1">名单：谁的格子填满了，06:00 警长就带走谁。</div>
         <SpeakButton id={`fin:board:${f.reveals.length}`} label="名单现在的样子" size="sm" text={() => boardSpeech(f)} />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      {/* 每张卡至少 200px 宽，放不下就换行（电脑上右边还有记录栏，左边并不宽） */}
+      <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
         {f.people.map(p => <PersonCard key={p.who} p={p} done={done} vouchLabel={f.copy.vouchShort} />)}
       </div>
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-white/60 px-1">
@@ -177,7 +178,7 @@ function PersonCard({ p, done, vouchLabel }: { p: FinalePerson; done: boolean; v
 function whoText(m: FinaleMark) {
   if (m.kind === 'accused') return '交易时被告的'
   if (m.kind === 'panic') return '交易时他自己说漏的'
-  return `第 ${m.round} 轮，${m.by === 'me' ? '你交的' : '对方交的'}`
+  return `第 ${m.round} 轮，${m.by === 'me' ? '你交的' : `${m.from ?? '别人'}交的`}`
 }
 
 // ───────── 开场说明、目标、规则 ─────────
@@ -196,7 +197,7 @@ function Intro({ f }: { f: FinaleView }) {
       <Rules f={f} defaultOpen />
       {f.mySubmitted ? (
         <div className="mx-panel p-4 text-center text-emerald-300 font-bold">
-          你已经准备好了。{f.otherSubmitted ? '' : '等对方看完规则……'}
+          你已经准备好了。{f.waitingFor.length ? `等${f.waitingFor.join('、')}看完规则……` : ''}
         </div>
       ) : (
         <button
@@ -402,7 +403,8 @@ function Waiting({ f }: { f: FinaleView }) {
   return (
     <div className="mx-panel p-4 text-center space-y-1">
       <div className="text-emerald-300 font-bold">你这一轮已经选好了</div>
-      <div className="text-xs text-[var(--mx-muted)]">{f.otherSubmitted ? '对方也选好了，正在揭晓……' : f.copy.waiting}</div>
+      <div className="text-xs text-[var(--mx-muted)]">{f.waitingFor.length ? f.copy.waiting : '大家都选好了，正在揭晓……'}</div>
+      {f.waitingFor.length > 0 && <div className="text-xs text-white/60">还在选：{f.waitingFor.join('、')}</div>}
     </div>
   )
 }
@@ -412,11 +414,15 @@ function Waiting({ f }: { f: FinaleView }) {
 function DealCard({ f }: { f: FinaleView }) {
   const act = useMysteryStore(s => s.act)
   const [confirm, setConfirm] = useState<'accept' | 'refuse' | null>(null)
+  const [target, setTarget] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
   const d = f.copy.deal
   const text = `${d.intro}\n\n${d.terms.join('\n')}\n\n${d.note}`
   useAutoRead({ id: 'fin:deal', label: '交易', text })
   const mine = f.deal?.myChoice
+  const targets = f.deal?.targets ?? []
+  const nameOf = (w: string | null | undefined) => targets.find(t => t.who === w)?.name ?? ''
+  const waiting = f.waitingFor.length ? `等${f.waitingFor.join('、')}……` : '正在揭晓……'
   return (
     <div className="mx-panel p-4 space-y-3 border border-violet-400/40">
       <div className="flex justify-end"><SpeakButton id="fin:deal" label="交易" text={text} /></div>
@@ -427,26 +433,41 @@ function DealCard({ f }: { f: FinaleView }) {
       <div className="text-[12px] text-white/60">{d.note}</div>
       {mine ? (
         <div className="text-center text-emerald-300 text-sm font-bold">
-          你已经回复了：{mine === 'accept' ? d.accept : d.refuse}。{f.otherSubmitted ? '正在揭晓……' : '等对方……'}
+          你已经回复了：{mine === 'accept' ? `${d.accept}（让他告${nameOf(f.deal?.myTarget)}）` : d.refuse}。{waiting}
+        </div>
+      ) : confirm === 'accept' && !target ? (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-bold text-white flex-1">{d.pickTarget}</div>
+            <SpeakButton id="fin:deal:target" label="让他去告谁" size="sm" text={`${d.pickTarget}\n${targets.map(t => t.name).join('，')}`} />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {targets.map(t => (
+              <button key={t.who} className="mx-btn mx-btn-ghost !py-3 flex items-center justify-center gap-2" onClick={() => setTarget(t.who)}>
+                <span className="text-2xl leading-none">{t.avatar}</span>{t.name}
+              </button>
+            ))}
+          </div>
+          <button className="mx-btn mx-btn-ghost w-full" onClick={() => setConfirm(null)}>再想想</button>
         </div>
       ) : confirm ? (
         <div className="grid grid-cols-2 gap-2">
-          <button className="mx-btn mx-btn-ghost" onClick={() => setConfirm(null)}>再想想</button>
+          <button className="mx-btn mx-btn-ghost" onClick={() => { setConfirm(null); setTarget(null) }}>再想想</button>
           <button
             className={`mx-btn ${confirm === 'accept' ? 'mx-btn-red' : 'mx-btn-blue'}`}
             disabled={sent}
             onClick={() => {
               setSent(true)
-              act({ type: 'finale', payload: { type: 'deal', choice: confirm } })
+              act({ type: 'finale', payload: { type: 'deal', choice: confirm, ...(confirm === 'accept' && target ? { target } : {}) } })
               setTimeout(() => setSent(false), 4000)
             }}
           >
-            确定{confirm === 'accept' ? d.accept : d.refuse}
+            {confirm === 'accept' ? `确定${d.accept}，让他告${nameOf(target)}` : `确定${d.refuse}`}
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-2">
-          <button className="mx-btn mx-btn-red !py-3" onClick={() => setConfirm('accept')}>{d.accept}</button>
+          <button className="mx-btn mx-btn-red !py-3" onClick={() => { setTarget(null); setConfirm('accept') }}>{d.accept}</button>
           <button className="mx-btn mx-btn-blue !py-3" onClick={() => setConfirm('refuse')}>{d.refuse}</button>
         </div>
       )}

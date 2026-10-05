@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useMysteryStore } from '@/store/mysteryStore'
+import type { Seat, SeatView } from '@/engine/mystery/types'
 
 /** 服务器时钟对齐的倒计时（秒） */
 export function useCountdown(deadline: number | null): number | null {
@@ -34,6 +35,13 @@ export function Countdown({ deadline, label = '剩余' }: { deadline: number | n
       ⏱ {label} {formatClock(left)}
     </span>
   )
+}
+
+/** 座位的称呼：开局后用角色名（服务器下发），没选角色就用昵称 */
+export function seatName(view: SeatView, seat: Seat): string {
+  const p = view.players[seat]
+  const role = p?.roleId ? view.roles.find(r => r.id === p.roleId) : undefined
+  return role?.name ?? p?.name ?? '别人'
 }
 
 export function Money({ value, className = '' }: { value: number; className?: string }) {

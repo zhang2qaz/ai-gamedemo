@@ -2,9 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMysteryStore } from '@/store/mysteryStore'
-import { otherSeat } from '@/engine/mystery/types'
 import type { SeatView } from '@/engine/mystery/types'
-import { ConnectionBadge, Countdown, Money } from './ui'
+import { ConnectionBadge, Countdown, Money, seatName } from './ui'
 import Feed from './Feed'
 import { AccusePanel, CasePanel, ChoicePanel, CluePanel, ResultPanel, ScriptPanel, SearchPanel } from './panels'
 import FinalePanel, { FinaleSummary } from './FinalePanel'
@@ -43,9 +42,8 @@ export default function GameScreen() {
   if (tab === 'clues' && seenClues !== view.clues.length) setSeenClues(view.clues.length)
 
   const role = view.roles.find(r => r.id === view.me.roleId)
-  const partner = view.players[otherSeat(view.seat)]
-  const partnerRole = view.roles.find(r => r.id === partner.roleId)
-  const me = view.players[view.seat]
+  const others = view.seats.filter(s => s !== view.seat)
+  const me = view.players[view.seat] ?? { name: null, online: true, roleId: null, ready: false }
   const k = view.step.kind
   if (readySent && (readySent.step !== view.step.index || me.ready === readySent.target)) setReadySent(null)
   const readyPending = !!readySent && readySent.step === view.step.index && me.ready !== readySent.target
@@ -111,8 +109,15 @@ export default function GameScreen() {
                 <SpeakButton id={`hint:${view.step.id}`} label="现在做什么" size="sm" text={`现在是：${view.step.title}。${stageHint(view)}`} />
               </div>
               <div className="flex items-center gap-2">
-                <span className={`text-[11px] ${partner.ready ? 'text-emerald-400' : 'text-[var(--mx-muted)]'}`}>
-                  {partnerRole?.name ?? '搭档'}：{partner.online ? (partner.ready ? '已准备' : '进行中') : '离线'}
+                <span className="text-[11px] flex flex-wrap gap-x-2 gap-y-0.5 justify-end">
+                  {others.map(s => {
+                    const p = view.players[s]
+                    return (
+                      <span key={s} className={p?.ready ? 'text-emerald-400' : 'text-[var(--mx-muted)]'}>
+                        {seatName(view, s)}：{p?.online ? (p.ready ? '已准备' : '进行中') : '离线'}
+                      </span>
+                    )
+                  })}
                 </span>
                 <button
                   className={`mx-btn !py-2 text-sm ${me.ready ? 'mx-btn-ghost' : 'mx-btn-gold'}`}
@@ -183,12 +188,12 @@ function readyLabel(kind: SeatView['step']['kind']) {
 
 function stageHint(view: SeatView): string {
   switch (view.step.kind) {
-    case 'story': return '请阅读 DM 的开场叙述。双方都点「继续」后进入下一阶段。'
-    case 'read': return '请在「剧本」中阅读你的私密剧本。不要把原文发给对方——你可以选择说什么、不说什么。'
-    case 'search': return '在「搜证」中消耗行动点搜查地点、问询人物。线索默认只有你可见，可以选择公开或交给对方。'
+    case 'story': return '请阅读 DM 的开场叙述。所有人都点「继续」后进入下一阶段。'
+    case 'read': return '请在「剧本」中阅读你的私密剧本。不要把原文发给别人——你可以选择说什么、不说什么。'
+    case 'search': return '在「搜证」中消耗行动点搜查地点、问询人物。线索默认只有你可见，可以选择公开，或者交给某一个人。'
     case 'discuss': return '自由讨论：交换（或隐瞒）信息，对质疑点。可在「案卷」向 DM 递交推理领取酬金。'
-    case 'choice': return '请做出你的秘密抉择。对方看不到你的选择。'
-    case 'auction': return '拍卖结果已揭晓。拍到的道具在「线索」里，终局时可以用。双方点「继续」进入第二幕。'
+    case 'choice': return '请做出你的秘密抉择。别人看不到你的选择。'
+    case 'auction': return '拍卖结果已揭晓。拍到的道具在「线索」里，终局时可以用。所有人都点「继续」后进入第二幕。'
     default: return ''
   }
 }
@@ -230,7 +235,7 @@ function QuickLink({ label, icon, onClick }: { label: string; icon: string; onCl
 }
 
 /**
- * 自动朗读新消息：DM 私下告诉你的（拿到线索、问询回答、案卷结果……）、公开事件、搭档的发言，
+ * 自动朗读新消息：DM 私下告诉你的（拿到线索、问询回答、案卷结果……）、公开事件、别人的发言，
  * 以及新拿到 / 新公开的线索内容。打开「自动朗读」之前的旧内容不会补读。
  */
 function AutoReader({ view }: { view: SeatView }) {
@@ -246,14 +251,14 @@ function AutoReader({ view }: { view: SeatView }) {
       return
     }
     const sp = getSpeaker()
-    const partner = otherSeat(view.seat)
-    const partnerName = view.roles.find(r => r.id === view.players[partner].roleId)?.name ?? '搭档'
     for (const e of view.log) {
       if (e.id <= lastLog.current) continue
       // 终局开始后，揭晓的经过由终局面板自己朗读（同一段不念两遍）
-      const read = e.kind === 'dm' || (e.kind === 'event' && !view.finale) || (e.kind === 'chat' && e.from === partner)
+      const fromOther = e.kind === 'chat' && e.from !== 'DM' && e.from !== view.seat
+      const read = e.kind === 'dm' || (e.kind === 'event' && !view.finale) || fromOther
       if (!read) continue
-      sp?.enqueue({ id: `log:${e.id}`, label: e.kind === 'chat' ? `${partnerName}说` : 'DM', text: e.kind === 'chat' ? `${partnerName}说：${e.text}` : e.text })
+      const name = fromOther && e.from !== 'DM' ? seatName(view, e.from) : 'DM'
+      sp?.enqueue({ id: `log:${e.id}`, label: fromOther ? `${name}说` : 'DM', text: fromOther ? `${name}说：${e.text}` : e.text })
     }
     for (const c of view.clues) {
       if (known.has(c.id)) continue
@@ -262,6 +267,6 @@ function AutoReader({ view }: { view: SeatView }) {
       sp?.enqueue({ id: `clue:${c.id}`, label: c.title, text: `${c.title}。\n${c.text}` })
     }
     lastLog.current = maxLog
-  }, [speech.auto, view.log, view.clues, view.seat, view.players, view.roles, view.finale])
+  }, [speech.auto, view])
   return null
 }

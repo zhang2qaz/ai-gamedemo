@@ -123,17 +123,21 @@ afterEach(() => {
   jest.useRealTimers()
 })
 
-/** 标签页 A 建房，搭档加入，选角、准备、开局 */
+/** 标签页 A 建房，两位搭档加入，选角、准备、开局 */
 function startedGame() {
   const A = openTab('A')
   inTab(A, () => A.store.getState().create('甲'))
   const code = A.store.getState().code!
   const P = partner()
   say(P, { type: 'JOIN', code, name: '乙' })
+  const Q = partner()
+  say(Q, { type: 'JOIN', code, name: '丙' })
   inTab(A, () => A.store.getState().act({ type: 'pickRole', roleId: 'mandy' }))
   say(P, { type: 'ACT', action: { type: 'pickRole', roleId: 'ethan' } })
+  say(Q, { type: 'ACT', action: { type: 'pickRole', roleId: 'joan' } })
   inTab(A, () => A.store.getState().act({ type: 'ready', value: true }))
   say(P, { type: 'ACT', action: { type: 'ready', value: true } })
+  say(Q, { type: 'ACT', action: { type: 'ready', value: true } })
   expect(A.store.getState().view?.step.index).toBe(0)
   return { A, P, code }
 }
@@ -148,7 +152,7 @@ describe('同一台设备两个标签页', () => {
     closeTab(B)
     inTab(A, () => A.store.getState().resume())
     expect(A.store.getState().joined).toBe(true)
-    expect(lastOf(P, 'VIEW')!.view.players.P1.online).toBe(true)
+    expect(lastOf(P, 'VIEW')!.view.players.P1!.online).toBe(true)
   })
 
   test('A 离开（暂离），B 打开后「回到房间」；A 的横幅随之变成"正在另一个窗口里进行"', () => {

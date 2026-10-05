@@ -86,7 +86,7 @@ export default function EntryScreen() {
                 <button className="mx-btn mx-btn-ghost" onClick={forget}>放弃这局</button>
                 <button className="mx-btn mx-btn-gold" onClick={resume}>回到房间</button>
               </div>
-              <div className="text-[11px] text-[var(--mx-muted)]">直接创建或加入别的房间，也会放弃这一局（搭档会收到通知）。</div>
+              <div className="text-[11px] text-[var(--mx-muted)]">直接创建或加入别的房间，也会放弃这一局（其他人会收到通知）。</div>
             </div>
           )
         )}
@@ -149,7 +149,7 @@ export default function EntryScreen() {
 
         <div className="text-[11px] text-center text-[var(--mx-muted)] leading-5">
           {m.players} · {m.duration} · 电脑 DM 全程主持<br />
-          建议两人语音通话进行；文字聊天也可完成全部流程。
+          3–4 人一起玩，建议开语音通话；只用文字聊天也能玩完全程。
         </div>
       </div>
     </div>

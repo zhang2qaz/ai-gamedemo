@@ -174,7 +174,7 @@ export function SpeechSettings() {
             试听一下
           </button>
           <div className="text-[11px] text-white/50 leading-4">
-            每段文字旁边都有「🔊 读给我听」按钮。声音只在你自己的设备上播放，对方听不到。
+            每段文字旁边都有「🔊 读给我听」按钮。声音只在你自己的设备上播放，别人听不到。
             {!s.voiceName && <span className="block mt-1 text-amber-200/80">这台设备好像没有安装中文语音，读出来可能不标准。</span>}
           </div>
           <button type="button" className="w-full text-[11px] text-white/60" onClick={() => setOpen(false)}>收起</button>

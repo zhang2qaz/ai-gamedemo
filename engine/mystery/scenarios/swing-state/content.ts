@@ -1,6 +1,6 @@
 // 《摇摆州》· 流程、案卷、指认、复盘（服务器端专用，含剧透）
 import type { AccuseQuestion, CaseFileDef, Scenario, StepDef } from '../../types'
-import { ETHAN, MANDY, ROLES } from './roles'
+import { ETHAN, JOAN, MANDY, PRESTON, ROLES } from './roles'
 import { CLUES, LOCATIONS } from './clues'
 import { NPCS } from './npcs'
 import { SCENARIO_META } from '../meta'
@@ -17,13 +17,13 @@ const PROLOGUE = `2016 年 11 月 8 日，星期二，佛罗里达州棕榈滩�
 
 大厅的大屏幕上，CNN 的选举地图一块一块地变红、变蓝。
 
-你们两个人，今晚都在这座房子里工作。你们都带着一个秘密来到这里。`
+今晚，你们都在这座房子里。你们每个人，都带着一个秘密。`
 
 const AUCTION_TEXT = `21:30，慈善拍卖开始，善款捐给"海员遗孤基金"。
 
 拍卖师是吉迪恩本人。他笑着说："今晚的拍品都很特别——也许比你们想的更有用。"
 
-规则：四件拍品同时暗标。不想要的拍品出价 0 即可放弃；要出价的话，每件最低 $500、以 $100 为单位，总出价不能超过你的现金。价高者得，付自己的出价；只有一方出价，就以这个价成交；**双方出价相同，会被维克多·奥利维拉以更高的价钱截走**，你们谁都拿不到；双方都放弃则流拍。
+规则：四件拍品同时暗标。不想要的拍品出价 0 即可放弃；要出价的话，每件最低 $500、以 $100 为单位，总出价不能超过你的现金。出价最高的人拍得，付自己的出价；**最高出价有两个或更多人一样，会被维克多·奥利维拉以更高的价钱截走**，你们谁都拿不到；没人出价则流拍。
 
 每件拍品都会在天亮前的终局「警长的名单」里派上用场。`
 
@@ -35,32 +35,32 @@ const DISCOVERY = `02:57，巴西开发商维克多·奥利维拉从露台冲进
 
 普雷斯顿·万斯——如今这座庄园的继承人——下令锁上大门："律师来之前，谁也不许报警。这个家已经够丢人了。"普莱斯点点头："警长是我的老朋友，我请他六点过来。"
 
-宾客们被留在大厅，手机仍锁在安保室。只有工作人员还能在庄园里走动。
+所有人都被要求留在主楼等警长，手机仍锁在安保室。可主楼、员工楼和花园是连在一起的，夜深风大，谁也看不住谁。
 
-记者乔安·默瑟走到你们身边，压低声音："同一座房子，同一座灯塔，同一个大选之夜，又死了人。十六年前我什么都没查到。你们俩在这里工作，哪儿都能去——天亮之前，找出真相。"
+老酒保赫克托红着眼睛站在大厅门口，谁也不看："同一座房子，同一座灯塔，同一个大选之夜，又死了人。十六年前，没有人查。"
 
-现在是凌晨 03:20。离警长到达还有两个小时四十分钟。`
+现在是凌晨 03:20。离警长到达还有两个小时四十分钟。天亮之前，找出真相——或者，藏好你自己的。`
 
 const ACT3_TEXT = `凌晨 04:15。大屏上，特朗普的胜选演讲已经重播了第三遍。
 
 有人收到了一封信。有人听到了一条留言。`
 
-export const FINALE_TEXT = `05:00。普雷斯顿拍了拍手："六点，警长和律师就到。所有人都要做笔录。"
+export const FINALE_TEXT = `05:00。老酒保赫克托挨个敲门："六点，警长和律师就到。所有人都要在大厅做笔录。"
 
 普莱斯医生在大厅另一头整理袖口，冲你们微微一笑。他刚给警长打过电话——他们是二十年的老朋友。
 
-乔安把你们拉到窗边，压低声音："警长来了只看两样东西：你们交给他的证据，还有他的老朋友普莱斯说的话。**谁的证据攒够了，他就带走谁。**你们手里的东西，决定了天亮以后谁戴上手铐。"`
+**警长来了只看两样东西：你们交给他的证据，还有他的老朋友普莱斯说的话。谁的证据攒够了，他就带走谁。**你们手里的东西，决定了天亮以后谁戴上手铐。`
 
 export const FLOW: StepDef[] = [
   { id: 'prologue', kind: 'story', title: '序幕 · 大选之夜', text: PROLOGUE, seconds: 300 },
   {
     id: 'act1', kind: 'read', title: '第一幕 · 八方豪宴', chapter: 'act1', seconds: 900,
-    text: '请阅读你的私密剧本。注意：不要把原文发给对方——你可以选择说什么、隐瞒什么。',
-    onEnter: [{ giveClue: 'frank_letter', role: ETHAN }],
+    text: '请阅读你的私密剧本。注意：不要把原文发给别人——你可以选择说什么、隐瞒什么。',
+    onEnter: [{ giveClue: 'frank_letter', role: ETHAN }, { giveClue: 'joan_2000', role: JOAN }, { giveClue: 'police_2000', role: JOAN }],
   },
   {
     id: 'intro', kind: 'discuss', title: '自我介绍', seconds: 420,
-    text: '以角色身份向对方介绍自己：你是谁、今晚为什么在这里、你和吉迪恩、罗丝是什么关系。可以说真话，也可以撒谎。',
+    text: '轮流以角色身份向大家介绍自己：你是谁、今晚为什么在这里、你和吉迪恩、罗丝是什么关系。可以说真话，也可以撒谎。',
   },
   {
     id: 'auction', kind: 'auction', title: '21:30 · 慈善拍卖', text: AUCTION_TEXT, seconds: 420,
@@ -68,7 +68,7 @@ export const FLOW: StepDef[] = [
     lots: [
       { id: 'lot_lawyer', title: '罗伊·凯斯勒律师的一年法律顾问', desc: '棕榈滩最贵的刑辩律师。【终局】你要多填一格，警长才会带走你。', item: 'item_lawyer', min: 500 },
       { id: 'lot_headline', title: '《棕榈滩纪事报》头版专访', desc: '乔安亲自执笔。【终局】你交出的一份证据算两份（限一次）。', item: 'item_headline', min: 500 },
-      { id: 'lot_recount', title: '2000 年重新计票纪念放大镜', desc: '棕榈滩县计票员用过的放大镜。【终局】对方这一轮交出的证据作废（限一次）。', item: 'item_recount', min: 500 },
+      { id: 'lot_recount', title: '2000 年重新计票纪念放大镜', desc: '棕榈滩县计票员用过的放大镜。【终局】这一轮别人交出的证据里，给你填的格全部作废（限一次）。', item: 'item_recount', min: 500 },
       { id: 'lot_yacht', title: '"第二次机会号"游艇周末', desc: '附钥匙，码头就在庄园西侧。【终局】第三轮可以出海：警长带不走你，但放弃遗产。', item: 'item_yacht', min: 500 },
     ],
   },
@@ -78,12 +78,14 @@ export const FLOW: StepDef[] = [
     onEnter: [
       { giveClue: 'a_saw', role: MANDY }, { giveClue: 'a_confess', role: MANDY },
       { giveClue: 'b_saw', role: ETHAN }, { giveClue: 'b_confess', role: ETHAN },
+      { giveClue: 'joan_rose', role: JOAN }, { giveClue: 'joan_notes', role: JOAN }, { giveClue: 'joan_ethan', role: JOAN },
+      { giveClue: 'preston_thud', role: PRESTON }, { giveClue: 'preston_safe', role: PRESTON },
     ],
   },
   { id: 'discovery', kind: 'story', title: '噩耗', text: DISCOVERY, seconds: 300 },
   {
     id: 'search1', kind: 'search', title: '搜证一 · 03:20', ap: 8, seconds: 1080,
-    text: '每人 8 点行动力。搜查地点、问询人物都要花费行动力。你找到的线索只有你看得到，可以选择公开或交给对方。注意：有些东西对你不利——先找到它的人，就能决定它的命运。',
+    text: '每人 8 点行动力。搜查地点、问询人物都要花费行动力。你找到的线索只有你看得到，可以选择公开，或者交给某一个人。注意：有些东西对你不利——先找到它的人，就能决定它的命运。',
   },
   {
     id: 'debate1', kind: 'discuss', title: '交锋一', seconds: 720,
@@ -189,6 +191,8 @@ export const ACCUSE: AccuseQuestion[] = [
     { id: 'price', label: '被普莱斯推下灯塔' }, { id: 'frank', label: '被弗兰克·科尔推下' }, { id: 'gideon', label: '被吉迪恩推下' },
     { id: 'accident', label: '醉酒失足' }, { id: 'suicide', label: '自杀' },
   ], answer: 'price', points: 10, bonus: 1000 },
+  { id: 'visitor', prompt: '凌晨一点半，是谁在罗丝房里看着她病倒，却没有叫救护车？', options: [...people(['joan', 'price', 'mandy', 'hector']), { id: 'nobody', label: '没有人去过' }], answer: 'joan', points: 10, bonus: 1000 },
+  { id: 'safe', prompt: '三点过后，是谁偷偷去书房试过保险箱的密码？', options: [...people(['preston', 'mandy', 'price', 'ethan', 'victor'])], answer: 'preston', points: 10, bonus: 1000 },
   { id: 'father', prompt: '曼迪的亲生父亲是谁？', options: [
     { id: 'gideon', label: '吉迪恩·万斯' }, { id: 'frank', label: '弗兰克·科尔' }, { id: 'price', label: '哈兰·普莱斯' }, { id: 'unknown', label: '无法确定' },
   ], answer: 'gideon', points: 10, bonus: 1000 },
@@ -223,14 +227,20 @@ export const TRUTH: { title: string; text: string }[] = [
 **第三步：替罪羊。**普莱斯给了曼迪一个错误的保险箱密码 1107，让她在两点半去书房——正对灯塔的窗口。这样，两个人都在案发现场附近，都有说不清的嫌疑。而普莱斯自己，从 02:20 起一直站在记者乔安身边。`,
   },
   {
-    title: '四、你们',
+    title: '四、曼迪和伊森',
     text: `曼迪以为自己只是给仇人下了安眠药。她毒死的，是这世上最疼她的罗丝；而她恨了十六年、被别人推下灯塔的那个人，是她的父亲。
 
 伊森以为自己终于替父亲报了仇。他推下去的，是一个正准备向他道歉、把一半家产留给他的老人；而他透过舷窗看见、却选择沉默的那一瓶"药"，毒死了他的母亲。
 
-你们杀死的，都是对方生命里的人。而你们的父母，都死于同一个人之手。
+他们杀死的，都是对方生命里的人。而他们的父母，都死于同一个人之手。`,
+  },
+  {
+    title: '五、另外两个人',
+    text: `**乔安。**十六年前，林梅打来的那通电话，她没有追到底；今晚一点半，罗丝攥着她的手说"等他三点讲完"，她又一次选择了等。罗丝那时还有救。而普莱斯从 02:20 起一步不离地站在她身边——他需要一个记者替他作证：两点四十，他在大厅。
 
-这就是摇摆州：每一票都可能改变结局，而你们手里，都沾着血。`,
+**普雷斯顿。**他一辈子都在等父亲回家。父亲死的那天夜里，他去书房试了那个用了十六年的密码 1107——父亲早就换掉了它。04:15，普莱斯对他说"那封信要是见了报，万斯家就完了"：一个想守住遗产的儿子，是普莱斯今晚想借的第三只手。
+
+这就是摇摆州：每一票都可能改变结局，而今晚这座房子里的每一个人，手上都不干净。`,
   },
 ]
 
@@ -240,6 +250,8 @@ export const SCENARIO: Scenario = {
   subtitle: SCENARIO_META.subtitle,
   tagline: SCENARIO_META.tagline,
   intro: SCENARIO_META.intro,
+  minPlayers: 3,
+  maxPlayers: 4,
   era: SCENARIO_META.era,
   duration: SCENARIO_META.duration,
   roles: ROLES,

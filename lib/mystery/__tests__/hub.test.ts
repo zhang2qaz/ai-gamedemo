@@ -27,6 +27,7 @@ const last = <T extends ServerMsg['type']>(f: Fake, type: T) =>
   [...f.msgs].reverse().find(m => m.type === type) as Extract<ServerMsg, { type: T }> | undefined
 const tick = (ms = 1100) => { clock += ms }
 
+/** 三个人进了同一个房间（本剧本 3–4 人） */
 function room() {
   tick()
   const a = sock()
@@ -34,36 +35,54 @@ function room() {
   const code = last(a, 'WELCOME')!.code
   const b = sock()
   send(b, { type: 'JOIN', code, name: '乙' })
-  return { a, b, code }
+  const c = sock()
+  send(c, { type: 'JOIN', code, name: '丙' })
+  return { a, b, c, code }
+}
+
+/** 三个人选好角色、都准备好：开局 */
+function started() {
+  const r = room()
+  send(r.a, { type: 'ACT', action: { type: 'pickRole', roleId: 'mandy' } })
+  send(r.b, { type: 'ACT', action: { type: 'pickRole', roleId: 'ethan' } })
+  send(r.c, { type: 'ACT', action: { type: 'pickRole', roleId: 'joan' } })
+  for (const f of [r.a, r.b, r.c]) send(f, { type: 'ACT', action: { type: 'ready', value: true } })
+  return r
 }
 
 describe('MysteryHub', () => {
-  test('大厅里离开会让出座位，第三个人可以补位；两人都走了房间就删除', () => {
-    const { a, b, code } = room()
+  test('大厅里离开会让出座位，新来的人可以补位；人都走了房间就删除', () => {
+    const { a, b, c, code } = room()
     send(b, { type: 'LEAVE' })
-    const c = sock()
-    send(c, { type: 'JOIN', code, name: '丙' })
-    expect(last(c, 'WELCOME')?.seat).toBe('P2')
-    expect(last(a, 'VIEW')!.view.players.P2.name).toBe('丙')
+    const d = sock()
+    send(d, { type: 'JOIN', code, name: '丁' })
+    expect(last(d, 'WELCOME')?.seat).toBe('P2')
+    expect(last(a, 'VIEW')!.view.players.P2!.name).toBe('丁')
     const before = hub.roomCount
-    send(a, { type: 'LEAVE' })
-    send(c, { type: 'LEAVE' })
+    for (const f of [a, c, d]) send(f, { type: 'LEAVE' })
     expect(hub.roomCount).toBe(before - 1)
   })
 
-  test('开局后离开保留座位，原令牌可以回来', () => {
-    const { a, b, code } = room()
-    send(a, { type: 'ACT', action: { type: 'pickRole', roleId: 'mandy' } })
-    send(b, { type: 'ACT', action: { type: 'pickRole', roleId: 'ethan' } })
-    send(a, { type: 'ACT', action: { type: 'ready', value: true } })
-    send(b, { type: 'ACT', action: { type: 'ready', value: true } })
+  test('最多 4 个人：第 4 个人坐 P4，第 5 个人进不来', () => {
+    const { a, code } = room()
+    const d = sock()
+    send(d, { type: 'JOIN', code, name: '丁' })
+    expect(last(d, 'WELCOME')?.seat).toBe('P4')
+    expect(last(a, 'VIEW')!.view.players.P4!.name).toBe('丁')
+    const e = sock()
+    send(e, { type: 'JOIN', code, name: '戊' })
+    expect(last(e, 'ERROR')?.message).toMatch(/房间已满（本剧本最多 4 人）/)
+  })
+
+  test('开局后离开保留座位，原令牌可以回来；开局后新的人不能再加入', () => {
+    const { a, b, code } = started()
     expect(last(a, 'VIEW')!.view.step.index).toBe(0)
     const token = last(b, 'WELCOME')!.token
     send(b, { type: 'LEAVE' })
-    expect(last(a, 'VIEW')!.view.players.P2.online).toBe(false)
-    const c = sock()
-    send(c, { type: 'JOIN', code, name: '丙' })
-    expect(last(c, 'ERROR')?.message).toMatch(/房间已满/)
+    expect(last(a, 'VIEW')!.view.players.P2!.online).toBe(false)
+    const d = sock()
+    send(d, { type: 'JOIN', code, name: '丁' })
+    expect(last(d, 'ERROR')?.message).toMatch(/已经开始/)
     const b2 = sock()
     send(b2, { type: 'RESUME', code, token })
     expect(last(b2, 'WELCOME')?.seat).toBe('P2')
@@ -71,13 +90,15 @@ describe('MysteryHub', () => {
 
   test('大厅里掉线超过 1 分钟的座位可以被新玩家补上', () => {
     const { b, code } = room()
+    const d = sock()
+    send(d, { type: 'JOIN', code, name: '丁' })
     hub.handleClose(b.ws)
-    const c = sock()
-    send(c, { type: 'JOIN', code, name: '丙' })
-    expect(last(c, 'ERROR')?.message).toMatch(/房间已满/)
+    const e = sock()
+    send(e, { type: 'JOIN', code, name: '戊' })
+    expect(last(e, 'ERROR')?.message).toMatch(/房间已满/)
     tick(61_000)
-    send(c, { type: 'JOIN', code, name: '丙' })
-    expect(last(c, 'WELCOME')?.seat).toBe('P2')
+    send(e, { type: 'JOIN', code, name: '戊' })
+    expect(last(e, 'WELCOME')?.seat).toBe('P2')
   })
 
   test('LEAVE / 建房不会清零限流计数', () => {
@@ -114,15 +135,15 @@ describe('MysteryHub', () => {
   })
 
   test('过期操作（阶段已推进）被丢弃，聊天不受影响', () => {
-    const { a, b } = room()
+    const { a, b, c } = room()
     send(a, { type: 'ACT', action: { type: 'pickRole', roleId: 'mandy' } })
     send(b, { type: 'ACT', action: { type: 'pickRole', roleId: 'ethan' } })
-    send(a, { type: 'ACT', action: { type: 'ready', value: true }, at: -1 })
-    send(b, { type: 'ACT', action: { type: 'ready', value: true }, at: -1 })
+    send(c, { type: 'ACT', action: { type: 'pickRole', roleId: 'joan' } })
+    for (const f of [a, b, c]) send(f, { type: 'ACT', action: { type: 'ready', value: true }, at: -1 })
     // 双击：第二下仍带着大厅的序号
     send(a, { type: 'ACT', action: { type: 'ready', value: true }, at: -1 })
     expect(last(a, 'ERROR')?.reason).toBe('stale')
-    expect(last(a, 'VIEW')!.view.players.P1.ready).toBe(false)
+    expect(last(a, 'VIEW')!.view.players.P1!.ready).toBe(false)
     tick()
     send(a, { type: 'ACT', action: { type: 'chat', text: '你好' }, at: -1 })
     expect(last(b, 'VIEW')!.view.log.some(e => e.kind === 'chat' && e.text === '你好')).toBe(true)
@@ -155,20 +176,12 @@ describe('MysteryHub', () => {
   test('对方余额不随视图下发', () => {
     const { a } = room()
     const v = last(a, 'VIEW')!.view
-    expect(v.players.P2.money).toBeUndefined()
+    expect(v.players.P2!.money).toBeUndefined()
+    expect(v.players.P3!.money).toBeUndefined()
   })
 })
 
 describe('MysteryHub（第二轮修复）', () => {
-  function started() {
-    const { a, b, code } = room()
-    send(a, { type: 'ACT', action: { type: 'pickRole', roleId: 'mandy' } })
-    send(b, { type: 'ACT', action: { type: 'pickRole', roleId: 'ethan' } })
-    send(a, { type: 'ACT', action: { type: 'ready', value: true } })
-    send(b, { type: 'ACT', action: { type: 'ready', value: true } })
-    return { a, b, code }
-  }
-
   test('离开有确认：大厅里 vacated=true，开局后 vacated=false', () => {
     const r1 = room()
     send(r1.b, { type: 'LEAVE' })
@@ -179,17 +192,17 @@ describe('MysteryHub（第二轮修复）', () => {
   })
 
   test('对方的私密操作（答错案卷）不会让你多收到一份视图', () => {
-    const { a, b } = started()
+    const { a, b, c } = started()
     // 推进到搜证一
     for (let guard = 0; guard < 20; guard++) {
       const v = last(a, 'VIEW')!.view
       if (v.step.id === 'search1') break
       tick()
       if (v.step.kind === 'auction' && !v.auction?.results) {
-        for (const f of [a, b]) send(f, { type: 'ACT', action: { type: 'bid', bids: {} } })
+        for (const f of [a, b, c]) send(f, { type: 'ACT', action: { type: 'bid', bids: {} } })
         continue
       }
-      for (const f of [a, b]) send(f, { type: 'ACT', action: { type: 'ready', value: true } })
+      for (const f of [a, b, c]) send(f, { type: 'ACT', action: { type: 'ready', value: true } })
     }
     expect(last(a, 'VIEW')!.view.step.id).toBe('search1')
     const views = () => b.msgs.filter(m => m.type === 'VIEW').length
@@ -228,15 +241,6 @@ describe('MysteryHub（第二轮修复）', () => {
 })
 
 describe('MysteryHub（ABANDON：凭令牌放弃座位）', () => {
-  function started() {
-    const { a, b, code } = room()
-    send(a, { type: 'ACT', action: { type: 'pickRole', roleId: 'mandy' } })
-    send(b, { type: 'ACT', action: { type: 'pickRole', roleId: 'ethan' } })
-    send(a, { type: 'ACT', action: { type: 'ready', value: true } })
-    send(b, { type: 'ACT', action: { type: 'ready', value: true } })
-    return { a, b, code }
-  }
-
   test('大厅里离线的座位：放弃后让出，别人可以立刻补位；不发 WELCOME', () => {
     const { b, code } = room()
     const token = last(b, 'WELCOME')!.token
@@ -261,7 +265,7 @@ describe('MysteryHub（ABANDON：凭令牌放弃座位）', () => {
     // 旧连接被回收（心跳 / 关闭）→ 执行放弃：大厅座位让出，发起方收到确认
     hub.handleClose(b.ws)
     expect(last(x, 'LEFT')).toMatchObject({ vacated: true, token })
-    expect(last(a, 'VIEW')!.view.players.P2.name).toBeNull()
+    expect(last(a, 'VIEW')!.view.players.P2?.name ?? null).toBeNull()
   })
 
   test('暂缓的放弃：期间有人凭令牌回到座位就作废', () => {
@@ -300,15 +304,17 @@ describe('MysteryHub（ABANDON：凭令牌放弃座位）', () => {
 })
 
 describe('MysteryHub（暂缓的放弃：时限与取消准备）', () => {
-  test('大厅里暂缓放弃期间先取消准备：对方不能抢先开局', () => {
-    const { a, b, code } = room()
+  test('大厅里暂缓放弃期间先取消准备：别人不能抢先开局', () => {
+    const { a, b, c, code } = room()
     send(a, { type: 'ACT', action: { type: 'pickRole', roleId: 'mandy' } })
     send(b, { type: 'ACT', action: { type: 'pickRole', roleId: 'ethan' } })
+    send(c, { type: 'ACT', action: { type: 'pickRole', roleId: 'joan' } })
     send(b, { type: 'ACT', action: { type: 'ready', value: true } })
+    send(c, { type: 'ACT', action: { type: 'ready', value: true } })
     const token = last(b, 'WELCOME')!.token
     const x = sock()
     send(x, { type: 'ABANDON', code, token })
-    expect(last(a, 'VIEW')!.view.players.P2.ready).toBe(false)
+    expect(last(a, 'VIEW')!.view.players.P2!.ready).toBe(false)
     send(a, { type: 'ACT', action: { type: 'ready', value: true } })
     expect(last(a, 'VIEW')!.view.step.index).toBe(-1)
   })
@@ -320,7 +326,7 @@ describe('MysteryHub（暂缓的放弃：时限与取消准备）', () => {
     send(x, { type: 'ABANDON', code, token })
     tick(91_000)
     hub.handleClose(b.ws)
-    expect(last(a, 'VIEW')!.view.players.P2.name).toBe('乙')
+    expect(last(a, 'VIEW')!.view.players.P2!.name).toBe('乙')
     // 发起方收到最终结果：座位保留（暂缓的放弃已作废）
     expect(x.msgs.filter(m => m.type === 'LEFT').map(m => (m as { kept?: boolean }).kept ?? false)).toEqual([false, true])
   })
@@ -334,21 +340,21 @@ describe('MysteryHub（暂缓放弃：时限从第一次算起）', () => {
     const token = last(b, 'WELCOME')!.token
     const x1 = sock()
     send(x1, { type: 'ABANDON', code, token })
-    expect(last(a, 'VIEW')!.view.players.P2.ready).toBe(false)
+    expect(last(a, 'VIEW')!.view.players.P2!.ready).toBe(false)
     // 乙（真实在玩）重新准备
     send(b, { type: 'ACT', action: { type: 'ready', value: true } })
     tick(60_000)
     const x2 = sock()
     send(x2, { type: 'ABANDON', code, token }) // 重发：仍 busy，但不再取消准备
     expect(last(x2, 'LEFT')).toMatchObject({ busy: true })
-    expect(last(a, 'VIEW')!.view.players.P2.ready).toBe(true)
+    expect(last(a, 'VIEW')!.view.players.P2!.ready).toBe(true)
     tick(31_000) // 距第一次已 91 秒
     const x3 = sock()
     send(x3, { type: 'ABANDON', code, token })
     expect(last(x3, 'LEFT')).toMatchObject({ vacated: false, kept: true, token })
     // 之后乙短暂断线：不会被替它离开
     hub.handleClose(b.ws)
-    expect(last(a, 'VIEW')!.view.players.P2.name).toBe('乙')
+    expect(last(a, 'VIEW')!.view.players.P2!.name).toBe('乙')
   })
 })
 
