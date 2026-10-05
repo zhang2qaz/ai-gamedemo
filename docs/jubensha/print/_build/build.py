@@ -11,14 +11,14 @@ P3 = os.path.join(DOCS, "phase3")
 
 BOOKS = [
     # key, 源文件, 封面参数
-    ("01-lajiao", "characters/01-lajiao.md", dict(no="No.01", name="辣椒·冲冲", party="驴", role="驴友党众议员 · 厨房直播网红", slogan="锅都热了，你还凉着？", prop="lajiao")),
-    ("02-gaowen", "characters/02-gaowen.md", dict(no="No.02", name="定型·高文", party="驴", role="冲浪州州长 · 建制派领跑者", slogan="风再大，发型不乱。", prop="gaowen")),
-    ("03-andefu", "characters/03-andefu.md", dict(no="No.03", name="“老底”安德福", party="驴", role="驴友党众议院党鞭", slogan="我不记仇，我记账。", prop="andefu")),
-    ("04-mei", "characters/04-mei.md", dict(no="No.04", name="梅·独家", party="驴", role="驴友党通讯总监 · 前调查记者", slogan="我有个独家，下次告诉你。", prop="mei")),
-    ("05-maike", "characters/05-maike.md", dict(no="No.05", name="麦克·三小时", party="象", role="播客之王 · 大象党初选挑战者", slogan="这事儿咱展开聊三小时。", prop="maike")),
-    ("06-gengen", "characters/06-gengen.md", dict(no="No.06", name="半步·跟跟", party="象", role="现任副总统 · 大象党接班人", slogan="我一直就在您身后半步。", prop="gengen")),
-    ("07-qianduoduo", "characters/07-qianduoduo.md", dict(no="No.07", name="钱多多", party="象", role="开盒智能创始人 · 大象党头号金主", slogan="两边押，才叫稳。", prop="qianduoduo")),
-    ("08-linda", "characters/08-linda.md", dict(no="No.08", name="琳达·背调", party="象", role="大象党首席选举律师", slogan="我查过了，他是干净的。", prop="linda")),
+    ("01-lajiao", "characters/01-lajiao.md", dict(no="No.01", name="皮拉提", party="驴", role="驴友党众议员 · 厨房直播网红", slogan="锅都热了，你还凉着？", prop="lajiao")),
+    ("02-gaowen", "characters/02-gaowen.md", dict(no="No.02", name="烦高", party="驴", role="冲浪州州长 · 建制派领跑者", slogan="风再大，发型不乱。", prop="gaowen")),
+    ("03-andefu", "characters/03-andefu.md", dict(no="No.03", name="下木", party="驴", role="驴友党众议院党鞭", slogan="我不记仇，我记账。", prop="andefu")),
+    ("04-mei", "characters/04-mei.md", dict(no="No.04", name="梅戏", party="驴", role="驴友党通讯总监 · 前调查记者", slogan="我有个独家，下次告诉你。", prop="mei")),
+    ("05-maike", "characters/05-maike.md", dict(no="No.05", name="麦克播", party="象", role="播客之王 · 大象党初选挑战者", slogan="这事儿咱展开聊三小时。", prop="maike")),
+    ("06-gengen", "characters/06-gengen.md", dict(no="No.06", name="半步爹", party="象", role="现任副总统 · 大象党接班人", slogan="我一直就在您身后半步。", prop="gengen")),
+    ("07-qianduoduo", "characters/07-qianduoduo.md", dict(no="No.07", name="建国钱", party="象", role="开盒智能创始人 · 大象党头号金主", slogan="两边押，才叫稳。", prop="qianduoduo")),
+    ("08-linda", "characters/08-linda.md", dict(no="No.08", name="狗登罗", party="象", role="大象党首席选举律师", slogan="我查过了，他是干净的。", prop="linda")),
     ("09-dm-hosting", "dm/01-dm-hosting-manual.md", dict(no="DM·上", name="DM主持手册", party=None, role="上册 · 流程与主持（主持人：贾不睡）", slogan="今夜不睡，明天的总统还是今晚的总统吗？", prop="dm", kind="DM专用 · 上册", warn="仅限DM与场控阅读", color="#b8322a")),
     ("10-dm-secret", "dm/02-dm-secret-appendix.md", dict(no="DM·下", name="DM机密附录", party=None, role="下册 · 真相、机密册、账本与结局", slogan="账，总是要还的。", prop="dm", kind="DM专用 · 下册 · 绝密", warn="开本前请勿让任何玩家看到", color="#1b1a17")),
     ("11-public", "public/01-public-materials.md", dict(no="公共", name="节目单与规则书", party=None, role="《今夜不睡·大选特别季》公共物料", slogan="你支持的候选人，可能也在支持你的对手。", prop="public", kind="全员公开物料", warn="可在开本时分发给所有玩家", color="#1f4e9c")),
