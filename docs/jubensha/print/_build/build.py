@@ -84,9 +84,20 @@ def inject_yanyi(md_text, name):
     return YANYI_RE.sub(rep, md_text)
 
 
+STATIC_FONTS = [("Noto Serif SC", "NotoSerifCJKsc"), ("Noto Sans SC", "NotoSansCJKsc")]
+
+
 def font_css():
+    """中文正文用静态 OTF（Noto CJK），避免可变字体被打成 Type3 导致复制乱码；装饰字体仍用 woff2。"""
     css = open(os.path.join(ROOT, "fonts", "fonts.css"), encoding="utf-8").read()
-    return css.replace("url(", "url(fonts/")
+    blocks = re.findall(r"@font-face\s*{[^}]*}", css)
+    keep = [b for b in blocks if "Noto Serif SC" not in b and "Noto Sans SC" not in b]
+    out = [b.replace("url(", "url(fonts/") for b in keep]
+    for fam, stem in STATIC_FONTS:
+        for w, name in ((400, "Regular"), (700, "Bold"), (900, "Black")):
+            out.append(f"@font-face{{font-family:'{fam}';font-weight:{w};font-style:normal;"
+                       f"src:url(fonts/static/{stem}-{name}.ttf) format('truetype');}}")
+    return "\n".join(out)
 
 
 LIST_RE = re.compile(r"^\s*([-*+]|\d+[.)])\s+")

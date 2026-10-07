@@ -6,3 +6,4 @@ pg-*.png
 one-*.png
 pages.*
 __pycache__/
+fonts/static/
