@@ -7,7 +7,7 @@ import { SpeakButton } from './Speech'
 
 const QUICK = ['我先说说我知道的', '你在撒谎', '证据呢？', '我们交换线索吧', '先别急着公开', '我同意']
 /** 给小学生的快捷话：不说"你在撒谎" */
-const QUICK_KIDS = ['我先说说我知道的', '我找到一条线索！', '证据呢？', '我们交换线索吧', '我觉得是……', '我同意']
+const QUICK_KIDS = ['我先说我知道的', '我找到一条线索！', '证据呢？', '那时候你在哪儿？', '你的话对不上', '我觉得是……']
 
 function nameOf(view: SeatView, from: LogEntry['from']) {
   if (from === 'DM') return 'DM'

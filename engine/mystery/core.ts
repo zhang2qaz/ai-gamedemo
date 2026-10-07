@@ -298,8 +298,8 @@ export function makeEngine(rt: ScenarioRuntime) {
         }
         if (bonus > 0) state.seats[s].money += bonus
         log(state, now, 'DM', s, bonus > 0
-          ? (KIDS ? `主持人看了你的答案：${REWARD} ${money(bonus)} 已经给你啦！（只告诉你一共多少，不告诉你哪题对了。）` : `DM 核对了你的答案：${REWARD} ${money(bonus)} 已到账。（只告诉你总额，不告诉你对在哪里。）`)
-          : (KIDS ? '主持人看了你的答案：这一次没有奖励。' : `DM 核对了你的指认：这一次，你没有拿到${REWARD}。`), 'dm')
+          ? (KIDS ? `主持人看了你的投票：${REWARD} ${money(bonus)} 已到账。（只告诉你一共多少，不告诉你哪题对了。）` : `DM 核对了你的答案：${REWARD} ${money(bonus)} 已到账。（只告诉你总额，不告诉你对在哪里。）`)
+          : (KIDS ? '主持人看了你的投票：这一次没有奖励。' : `DM 核对了你的指认：这一次，你没有拿到${REWARD}。`), 'dm')
       }
     }
   }
@@ -648,7 +648,7 @@ export function makeEngine(rt: ScenarioRuntime) {
         if (correct) {
           me.money += cf.reward
           me.flags[`case:${cf.id}`] = true
-          log(state, now, 'DM', seat, KIDS ? `✅「${cf.title}」全答对了！${REWARD} ${money(cf.reward)} 已经给你啦。` : `✅ 案卷「${cf.title}」判定正确！${REWARD} ${money(cf.reward)} 已到账。`, 'dm')
+          log(state, now, 'DM', seat, KIDS ? `✅「${cf.title}」全答对了！${REWARD} ${money(cf.reward)} 已到账。` : `✅ 案卷「${cf.title}」判定正确！${REWARD} ${money(cf.reward)} 已到账。`, 'dm')
           for (const o of othersOf(state, seat)) log(state, now, 'DM', o, KIDS ? `${seatName(state, seat)} 做对了「${cf.title}」，得到了${REWARD}。` : `${seatName(state, seat)} 向 DM 递交了一份案卷，并且拿到了${REWARD}。`, 'dm')
         } else {
           me.money = Math.max(0, me.money - cf.penalty)
@@ -672,7 +672,7 @@ export function makeEngine(rt: ScenarioRuntime) {
           else if (typeof v === 'string' && q.options.some(o => o.id === v)) clean[q.id] = v
         }
         me.accuse = clean
-        for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} ${KIDS ? '交好答案了' : '已提交最终指认'}。`, 'dm')
+        for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} ${KIDS ? '投好票了' : '已提交最终指认'}。`, 'dm')
         return
       }
 
@@ -692,9 +692,9 @@ export function makeEngine(rt: ScenarioRuntime) {
           clean[lot.id] = v
           total += v
         }
-        if (total > me.money) return sc.currency ? `出价加起来，比你有的${sc.currency.unit.replace(/^颗/, '')}还多` : '总出价超过了你的现金'
+        if (total > me.money) return sc.currency ? `出价加起来，比你有的${sc.currency.unit.replace(/^[颗个枚]/, '')}还多` : '总出价超过了你的现金'
         state.auction.bids[seat] = clean
-        for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} ${KIDS ? '已经偷偷交好了出价' : '已经把暗标交给了拍卖师'}。`, 'dm')
+        for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} ${KIDS ? '已经交了出价' : '已经把暗标交给了拍卖师'}。`, 'dm')
         return
       }
 
@@ -788,7 +788,7 @@ export function makeEngine(rt: ScenarioRuntime) {
 
   function accuseFor(state: GameState, seat: Seat) {
     const roleId = state.seats[seat].roleId
-    return sc.accuse.filter(q => !q.onlyRole || q.onlyRole === roleId)
+    return sc.accuse.filter(q => (!q.onlyRole || q.onlyRole === roleId) && q.notRole !== roleId)
   }
 
   function viewFor(state: GameState, seat: Seat, now: number): SeatView {

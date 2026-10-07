@@ -112,7 +112,7 @@ export default function LobbyRoom() {
         <div className="mx-panel p-4 space-y-3">
           <div className="text-xs text-[var(--mx-muted)] leading-5">
             {view.scenario.theme === 'kids'
-              ? <>开始以后，电脑会把只给你看的小剧本发给你。<b className="text-white/80">不要直接念给别人听</b>——你可以选择先说什么、先不说什么。找到证据，就知道谁说的是真的啦！</>
+              ? <>开始以后，电脑会把只给你看的剧本发给你。<b className="text-white/80">不要把原文直接念给别人听</b>——你可以选择说什么、不说什么。你们中间可能藏着一个会说谎的人：用证据说话。</>
               : <>开局后，电脑 DM 会按幕推送你的私密剧本。<b className="text-white/80">不要把剧本原文直接念给别人</b>——你可以撒谎、隐瞒、交易，但别忘了：每个谎言都可能被证据揭穿。</>}
           </div>
           <div className="text-xs text-amber-200/90 leading-5 rounded-lg bg-amber-500/10 p-2">

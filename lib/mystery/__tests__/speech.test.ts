@@ -20,6 +20,7 @@ describe('朗读文本整理', () => {
     expect(toSpeechText('第 1 轮 · 05:00')).toBe('第 1 轮，5点整')
     // 小学生剧本：星星、橡果是当字用的
     expect(toSpeechText('一共 12颗⭐，剩下 🌰5')).toBe('一共 12颗星，剩下 橡果5')
+    expect(toSpeechText('出价 🪙3')).toBe('出价 金币3')
   })
 
   test('不使用旧版 Safari 不支持的正则写法（后行断言会让整个页面打不开）', () => {

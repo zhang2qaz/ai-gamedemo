@@ -40,6 +40,7 @@ export function toSpeechText(raw: string): string {
     // 当字用的表情先换成字（"12颗⭐"要念成"12颗星"），其余表情去掉
     .replace(/⭐/g, '星')
     .replace(/🌰/g, '橡果')
+    .replace(/🪙/g, '金币')
     .replace(EMOJI, '')
     // 美式日期：11/7/00、04/12/1990 → 年月日
     .replace(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/g, (_, m, d, y) => `${y}年${+m}月${+d}日`)

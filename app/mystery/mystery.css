@@ -154,30 +154,30 @@
 .mx-ticker { display: inline-flex; gap: 48px; white-space: nowrap; animation: mxTicker 40s linear infinite; }
 
 /* ═══════════════════════════════════════
-   小学生剧本（《草莓蛋糕不见了！》）：童话夜空，颜色更亮、字体更圆
+   小学生剧本（《恐龙蛋失踪之夜》）：博物馆的夜：深蓝底、琥珀色的灯
    ═══════════════════════════════════════ */
 .mx-root.mx-kids {
-  --mx-ink: #1b1340;
-  --mx-panel: rgba(52, 38, 110, 0.86);
-  --mx-panel-2: rgba(70, 52, 140, 0.78);
-  --mx-line: rgba(255, 255, 255, 0.14);
-  --mx-paper: #fff8e6;
-  --mx-paper-ink: #3b2a1a;
-  --mx-red: #ff5d8f;
-  --mx-red-soft: rgba(255, 93, 143, 0.2);
+  --mx-ink: #0b1630;
+  --mx-panel: rgba(20, 38, 72, 0.88);
+  --mx-panel-2: rgba(28, 52, 92, 0.8);
+  --mx-line: rgba(255, 255, 255, 0.13);
+  --mx-paper: #fbf4e4;
+  --mx-paper-ink: #2b2116;
+  --mx-red: #f87171;
+  --mx-red-soft: rgba(248, 113, 113, 0.2);
   --mx-blue: #38bdf8;
   --mx-blue-soft: rgba(56, 189, 248, 0.2);
-  --mx-gold: #ffd166;
-  --mx-muted: #c3bce8;
-  color: #fdfbff;
+  --mx-gold: #fbbf24;
+  --mx-muted: #a9b8d6;
+  color: #f5f8ff;
   background:
-    radial-gradient(ellipse at 10% -10%, rgba(255, 93, 143, 0.28), transparent 55%),
-    radial-gradient(ellipse at 95% 5%, rgba(56, 189, 248, 0.26), transparent 50%),
-    radial-gradient(ellipse at 50% 110%, rgba(255, 209, 102, 0.18), transparent 60%),
-    linear-gradient(180deg, #2d1f63 0%, #1a2f55 100%);
+    radial-gradient(ellipse at 15% -10%, rgba(251, 191, 36, 0.16), transparent 55%),
+    radial-gradient(ellipse at 90% 0%, rgba(56, 189, 248, 0.18), transparent 50%),
+    radial-gradient(ellipse at 50% 115%, rgba(52, 211, 153, 0.12), transparent 60%),
+    linear-gradient(180deg, #0f1d3d 0%, #0b2233 100%);
 }
 
-/* 小朋友读圆一点的字更轻松 */
+/* 小学生读无衬线的字更轻松 */
 .mx-root.mx-kids .mx-serif {
   font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
 }

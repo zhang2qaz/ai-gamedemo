@@ -17,7 +17,7 @@ export default function AuctionPanel({ view }: { view: SeatView }) {
   const who = (seat: typeof view.seat) => (seat === view.seat ? '你' : seatName(view, seat))
   const waitingFor = view.seats.filter(s => s !== view.seat && !a.submitted.includes(s)).map(s => seatName(view, s))
   const kids = view.scenario.theme === 'kids'
-  // 加减按钮：美元一次 100 / 500；橡果一次 1 / 3
+  // 加减按钮：美元一次 100 / 500；金币一次 1 / 3
   const small = view.scenario.currency?.step ?? 100
   const big = view.scenario.currency ? small * 3 : 500
   const total = Object.values(bids).reduce((n, v) => n + v, 0)
@@ -78,12 +78,12 @@ export default function AuctionPanel({ view }: { view: SeatView }) {
             )
           })}
           <div className="text-xs text-[var(--mx-muted)]">{view.scenario.theme === 'kids'
-            ? '买到的东西在你的「线索」里，找线索的时候用得上。点上面的「继续」进入下一步。'
+            ? '拍到的工具在你的「我的线索」里，搜线索的时候用得上。点上面的「继续」进入下一步。'
             : '拍到的道具已放进你的「线索」，终局时可以使用。点上方「继续」进入下一幕。'}</div>
         </div>
       ) : a.myBids ? (
         <div className="mx-panel p-4 text-center space-y-1">
-          <div className="text-emerald-300 font-bold">{kids ? '你的出价已经偷偷交好了' : '暗标已交给拍卖师'}</div>
+          <div className="text-emerald-300 font-bold">{kids ? '你的出价已经交了（别人看不到）' : '暗标已交给拍卖师'}</div>
           <div className="text-xs text-[var(--mx-muted)]">{waitingFor.length === 0 ? '大家都出价了，正在揭晓……' : `等待 ${waitingFor.join('、')} 出价……`}</div>
         </div>
       ) : (
@@ -134,7 +134,7 @@ export default function AuctionPanel({ view }: { view: SeatView }) {
             </div>
           ) : (
             <button className="mx-btn mx-btn-gold w-full" disabled={over || invalid} onClick={() => setConfirm(true)}>
-              {over ? (view.scenario.currency ? '出价比你有的还多' : '合计超过现金') : kids ? '偷偷交出我的出价' : '交出暗标'}
+              {over ? (view.scenario.currency ? '出价比你有的还多' : '合计超过现金') : kids ? '交出我的出价（别人看不到）' : '交出暗标'}
             </button>
           )}
         </>

@@ -1,7 +1,7 @@
 // =====================
 // 剧本杀 · 多机器人端到端对局
 // 用法：先启动服务器（npm run start:mp 或 tsx server.ts），再运行
-//   npx tsx scripts/mystery-bots.ts [ws://127.0.0.1:3000/ws-mystery] [--players 2|3|4] [--story forest-cake]
+//   npx tsx scripts/mystery-bots.ts [ws://127.0.0.1:3000/ws-mystery] [--players 2|3|4] [--story museum-night]
 // 几个机器人会建房、加入、选角，并按通用策略把整局打完，最后打印结局。
 // =====================
 

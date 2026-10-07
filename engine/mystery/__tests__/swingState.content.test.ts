@@ -2,7 +2,7 @@
 import { readFileSync, readdirSync, statSync } from 'fs'
 import { join } from 'path'
 import { SCENARIO, CASE_FILES, ACCUSE } from '../scenarios/swing-state/content'
-import { SCENARIO as KIDS } from '../scenarios/forest-cake/content'
+import { SCENARIO as KIDS } from '../scenarios/museum-night/content'
 import { FINALE_CARDS, WILL, ITEMS } from '../scenarios/swing-state/finale'
 import { PUZZLE, EXPECTED } from '../scenarios/swing-state/puzzle'
 import { solveAll, necessaryClues } from '../solver'
@@ -257,7 +257,7 @@ describe('客户端不得引用剧本正文（防止剧透进前端包）', () =
   const files = [...walk(join(root, 'components', 'mystery')), ...walk(join(root, 'app', 'mystery')), join(root, 'store', 'mysteryStore.ts'), join(root, 'lib', 'mystery', 'client.ts')]
 
   // 剧本专有名词：人物、线索标题与关键情节词。前端源码里一个都不能出现（终局等界面文字一律由服务器下发）
-  // 两个剧本都要查：小学生剧本里"谁拿走了蛋糕"同样不能出现在前端
+  // 两个剧本都要查：小学生剧本里"谁拿走了恐龙蛋"同样不能出现在前端
   const FORBIDDEN = [...new Set([
     ...[SCENARIO, KIDS].flatMap(sc => [
       ...sc.roles.flatMap(r => [r.name, r.enName.split(' ')[0]]),
@@ -265,7 +265,7 @@ describe('客户端不得引用剧本正文（防止剧透进前端包）', () =
       ...sc.clues.filter(c => c.kind !== 'item').map(c => c.title.split(/[：:《》]/)).flat().filter(t => t.length >= 3),
     ]),
     '罗丝', '吉迪恩', '林梅', '遗嘱', '地高辛', '洋地黄', '好外公', '生父', '灯塔', '弗兰克',
-    '皮皮', '浣熊', '冰箱', '草莓蒂',
+    '隐藏者', '闪电花纹', '换手环', '蛋筐', 'XH-0071',
   ])]
   const clientFiles = [...files, join(root, 'lib', 'mystery', 'protocol.ts'), join(root, 'components', 'ModeSelect.tsx')]
 
@@ -282,7 +282,7 @@ describe('客户端不得引用剧本正文（防止剧透进前端包）', () =
       const isType = !!m[1]
       const spec = m[2]
       if (isType) continue
-      expect(spec).not.toMatch(/scenarios\/swing-state(?!\/finaleTypes)|scenarios\/forest-cake|scenarios\/index|mystery\/engine$|mystery\/core|testFixture/)
+      expect(spec).not.toMatch(/scenarios\/swing-state(?!\/finaleTypes)|scenarios\/museum-night|scenarios\/index|mystery\/engine$|mystery\/core|testFixture/)
     }
   })
 })

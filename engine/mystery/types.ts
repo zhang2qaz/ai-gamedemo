@@ -164,6 +164,8 @@ export type AccuseQuestion = {
   bonus?: number
   /** 只对某角色出现（个人问题） */
   onlyRole?: string
+  /** 不对某角色出现（例如隐藏者不答"是谁干的"） */
+  notRole?: string
 }
 
 export type StepKind =

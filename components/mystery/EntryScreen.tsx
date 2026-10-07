@@ -60,7 +60,7 @@ export default function EntryScreen() {
                   className={`mx-panel-2 p-3 text-left transition-all ${s.id === m.id ? 'ring-2 ring-[var(--mx-gold)]' : 'opacity-70 hover:opacity-100'}`}
                   aria-pressed={s.id === m.id}
                 >
-                  <div className="text-2xl leading-none">{s.theme === 'kids' ? '🎂' : '🕵️'}</div>
+                  <div className="text-2xl leading-none">{s.theme === 'kids' ? '🦖' : '🕵️'}</div>
                   <div className="font-black text-white text-[15px] mt-1 leading-5">《{s.title}》</div>
                   <div className="text-[11px] text-[var(--mx-gold)] mt-1">给{s.audience}玩 · {s.players}</div>
                   <div className="text-[11px] text-white/55">{s.duration}</div>

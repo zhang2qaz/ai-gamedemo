@@ -58,10 +58,10 @@ export default function GameScreen() {
 
   const tabs: { id: Tab; label: string; dot?: boolean; show: boolean }[] = [
     { id: 'stage', label: stageLabel(k, kids), show: true },
-    { id: 'script', label: kids ? '小剧本' : '剧本', show: true, dot: view.me.chapters.some(c => c.isNew) },
+    { id: 'script', label: '剧本', show: true, dot: view.me.chapters.some(c => c.isNew) },
     { id: 'search', label: kids ? '找线索' : '搜证', show: true, dot: k === 'search' },
     { id: 'clues', label: `${kids ? '我的线索' : '线索'} ${view.clues.length}`, show: true, dot: view.clues.length > seenClues && tab !== 'clues' },
-    { id: 'cases', label: kids ? '小测验' : '案卷', show: view.caseFiles.length > 0, dot: view.caseFiles.some(c => c.open && !c.solved) },
+    { id: 'cases', label: kids ? '推理题' : '案卷', show: view.caseFiles.length > 0, dot: view.caseFiles.some(c => c.open && !c.solved) },
     { id: 'feed', label: '记录', show: true },
   ]
 
@@ -170,10 +170,10 @@ export default function GameScreen() {
 
 function stageLabel(kind: SeatView['step']['kind'], kids: boolean) {
   switch (kind) {
-    case 'choice': return kids ? '选一选' : '抉择'
+    case 'choice': return kids ? '做选择' : '抉择'
     case 'auction': return '拍卖'
     case 'finale': return '终局'
-    case 'accuse': return kids ? '答题' : '指认'
+    case 'accuse': return kids ? '投票' : '指认'
     case 'ending': return '结局'
     default: return '当前'
   }
@@ -192,11 +192,11 @@ function stageHint(view: SeatView): string {
   if (view.scenario.theme === 'kids') {
     switch (view.step.kind) {
       case 'story': return '听电脑讲故事。大家都点「继续」，就到下一步。'
-      case 'read': return '点「小剧本」，读一读只给你看的小剧本。不要直接念给别人听哦。'
-      case 'search': return `点「找线索」：去不同的地方找一找，或者问问别人。每次都要用掉${view.scenario.ap.long}。找到的线索只有你看得见，你可以给大家看，也可以交给某一个人。`
-      case 'discuss': return '和大家说一说你发现了什么。在「小测验」里答对题，能得到橡果！'
-      case 'choice': return '自己偷偷选一选，别人看不到你选了什么。'
-      case 'auction': return '拍卖结束啦！买到的东西在「线索」里。大家都点「继续」，就到下一步。'
+      case 'read': return '点「剧本」，读只给你看的剧本。可以把内容说给别人听，但不要把原文念出来。'
+      case 'search': return `点「找线索」：去不同的地方找一找，或者问问别人。每次都要用掉${view.scenario.ap.long}。找到的线索只有你看得见：可以公开，可以交给某一个人，也可以留着。`
+      case 'discuss': return '和大家讨论你发现了什么，谁的话和证据对不上。在「推理题」里答对，能得金币。'
+      case 'choice': return '自己秘密地选，别人看不到你选了什么，选完一起揭晓。'
+      case 'auction': return '拍卖结束了！拍到的工具在「我的线索」里。大家都点「继续」，就到下一步。'
       default: return ''
     }
   }
@@ -233,7 +233,7 @@ function Stage({ view, goto }: { view: SeatView; goto: (t: Tab) => void }) {
         <QuickLink label="阅读剧本" icon="📜" onClick={() => goto('script')} />
         <QuickLink label="搜证问询" icon="🔎" onClick={() => goto('search')} />
         <QuickLink label="查看线索" icon="🗂️" onClick={() => goto('clues')} />
-        {view.caseFiles.length > 0 && <QuickLink label={kidsTheme ? '做小测验' : '递交案卷'} icon={kidsTheme ? '📝' : '💵'} onClick={() => goto('cases')} />}
+        {view.caseFiles.length > 0 && <QuickLink label={kidsTheme ? '做推理题' : '递交案卷'} icon={kidsTheme ? '📝' : '💵'} onClick={() => goto('cases')} />}
       </div>
     </div>
   )

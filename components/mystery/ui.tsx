@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useMysteryStore } from '@/store/mysteryStore'
 import type { Seat, SeatView } from '@/engine/mystery/types'
 
@@ -44,7 +44,7 @@ export function seatName(view: SeatView, seat: Seat): string {
   return role?.name ?? p?.name ?? '别人'
 }
 
-/** 钱的文字：默认美元；剧本可以换成别的（例如 🌰 橡果） */
+/** 钱的文字：默认美元；剧本可以换成别的（例如 🪙 金币） */
 export function moneyText(view: SeatView | null, n: number, forSpeech = false): string {
   const cur = view?.scenario.currency
   if (!cur) return forSpeech ? `${n}美元` : `$${n.toLocaleString('en-US')}`
@@ -65,7 +65,16 @@ export function RichText({ text, className = '', inline = false }: { text: strin
       {blocks.map((b, i) => {
         const t = b.trim()
         if (!t) return null
-        if (t.startsWith('## ')) return <h4 key={i}>{t.slice(3)}</h4>
+        if (t.startsWith('## ')) {
+          // 小标题只占第一行；紧跟在下面（没空行）的字照常成段
+          const [head, ...rest] = t.split('\n')
+          return (
+            <Fragment key={i}>
+              <h4>{head.slice(3)}</h4>
+              {rest.length > 0 && <p>{renderInline(rest.join('\n'))}</p>}
+            </Fragment>
+          )
+        }
         return <p key={i}>{renderInline(t)}</p>
       })}
     </div>

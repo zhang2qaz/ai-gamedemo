@@ -42,10 +42,10 @@ export function ScriptPanel({ view }: { view: SeatView }) {
       {view.me.goals.length > 0 && (
         <div className="mx-panel-2 p-3">
           <div className="flex items-center mb-1.5">
-            <div className="text-xs font-black text-[var(--mx-gold)] flex-1">{view.scenario.theme === 'kids' ? '怎么得星星' : '你的私人目标'}</div>
-            <SpeakButton id="script:goals" label={view.scenario.theme === 'kids' ? '怎么得星星' : '你的私人目标'} size="sm" text={`${view.scenario.theme === 'kids' ? '怎么得星星' : '你的私人目标'}。\n${view.me.goals.map(g => `${g.points}${view.scenario.scoreUnit}：${g.text}`).join('\n')}\n具体怎么算，到最后的环节会告诉你。`} />
+            <div className="text-xs font-black text-[var(--mx-gold)] flex-1">{view.scenario.theme === 'kids' ? '怎么得分' : '你的私人目标'}</div>
+            <SpeakButton id="script:goals" label={view.scenario.theme === 'kids' ? '怎么得分' : '你的私人目标'} size="sm" text={`${view.scenario.theme === 'kids' ? '怎么得分' : '你的私人目标'}。\n${view.me.goals.map(g => `${g.points}${view.scenario.scoreUnit}：${g.text}`).join('\n')}\n具体怎么算，到最后的环节会告诉你。`} />
           </div>
-          <div className="text-[11px] text-[var(--mx-muted)] mb-1.5">具体怎么算{view.scenario.theme === 'kids' ? '星星' : '分'}，到最后的环节会告诉你。</div>
+          <div className="text-[11px] text-[var(--mx-muted)] mb-1.5">具体怎么算分，到最后的环节会告诉你。</div>
           <ul className="space-y-1">
             {view.me.goals.map(g => (
               <li key={g.id} className="text-[13px] text-white/85 flex gap-2">
@@ -300,7 +300,7 @@ export function CasePanel({ view }: { view: SeatView }) {
     <div className="space-y-3">
       <div className="text-xs text-[var(--mx-muted)] leading-5">
         {view.scenario.theme === 'kids'
-          ? '自己偷偷答题：全都答对就有奖励（别人只知道你得了奖励，不知道你答了什么）。答错会扣一点，次数有限。'
+          ? '自己答题，别人看不到：全答对就有奖励（别人只知道你拿了奖励，不知道你答了什么）。答错会扣一点，次数有限。'
           : '私下向 DM 递交推理：全部答对即可领取酬金（别人只会知道你拿到了钱，不知道你答了什么）。答错会被扣钱，且提交次数有限。'}
       </div>
       {view.caseFiles.map(cf => {
@@ -323,7 +323,7 @@ export function CasePanel({ view }: { view: SeatView }) {
               />
             </div>
             {cf.solved ? (
-              <div className="text-emerald-300 text-sm font-bold">{view.scenario.theme === 'kids' ? '✅ 全答对了，奖励已经拿到啦' : '✅ 已破解，酬金已领取'}</div>
+              <div className="text-emerald-300 text-sm font-bold">{view.scenario.theme === 'kids' ? '✅ 全答对了，奖励已到账' : '✅ 已破解，酬金已领取'}</div>
             ) : (
               <>
                 {cf.questions.map(q => (
@@ -465,7 +465,7 @@ export function AccusePanel({ view }: { view: SeatView }) {
           <button className="mx-btn mx-btn-red" onClick={() => act({ type: 'accuse', answers })}>确认提交</button>
         </div>
       ) : (
-        <button className="mx-btn mx-btn-red w-full" disabled={!complete} onClick={() => setConfirm(true)}>{view.scenario.theme === 'kids' ? '交出我的答案' : '提交最终指认'}</button>
+        <button className="mx-btn mx-btn-red w-full" disabled={!complete} onClick={() => setConfirm(true)}>{view.scenario.theme === 'kids' ? '交出我的投票' : '提交最终指认'}</button>
       )}
     </div>
   )
@@ -537,7 +537,7 @@ export function ResultPanel({ view }: { view: SeatView }) {
                 {s.items.map((it, i) => (
                   <li key={i} className="flex text-[13px]">
                     <span className={`flex-1 ${it.got ? 'text-white/90' : 'text-white/35 line-through'}`}>{it.label}</span>
-                    <span className={`font-mono ${it.got ? 'text-emerald-300' : 'text-white/30'}`}>{it.got ? `+${it.points}` : 0}</span>
+                    <span className={`font-mono ${!it.got ? 'text-white/30' : it.points < 0 ? 'text-red-300' : 'text-emerald-300'}`}>{it.got ? (it.points < 0 ? `${it.points}` : `+${it.points}`) : 0}</span>
                   </li>
                 ))}
               </ul>
@@ -545,7 +545,7 @@ export function ResultPanel({ view }: { view: SeatView }) {
           ))}
           {r.accuseReview.length > 0 && (
             <div className="mx-panel-2 p-3 space-y-2">
-              <div className="text-xs font-black text-[var(--mx-gold)]">{view.scenario.theme === 'kids' ? '大家的答案' : '指认对照'}</div>
+              <div className="text-xs font-black text-[var(--mx-gold)]">{view.scenario.theme === 'kids' ? '大家的投票' : '指认对照'}</div>
               {r.accuseReview.map((q, i) => (
                 <div key={i} className="text-[13px]">
                   <div className="text-white/80">{q.prompt}</div>
