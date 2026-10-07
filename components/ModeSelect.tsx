@@ -5,7 +5,7 @@ import { useMultiplayerStore } from '@/store/multiplayerStore'
 import { useGameStore } from '@/store/gameStore'
 import AchievementWall from './AchievementWall'
 import Link from 'next/link'
-import { SCENARIO_META } from '@/engine/mystery/scenarios/meta'
+import { SCENARIO_METAS } from '@/engine/mystery/scenarios/meta'
 
 export default function ModeSelect() {
   const [view, setView] = useState<'main' | 'host' | 'join'>('main')
@@ -225,8 +225,8 @@ export default function ModeSelect() {
         <div className="flex items-center gap-4">
           <span className="text-3xl drop-shadow-lg">🕵️</span>
           <div>
-            <div className="font-black text-lg text-red-400 group-hover:text-red-300 transition-colors">剧本杀 ·《{SCENARIO_META.title}》</div>
-            <div className="text-stone-500 text-sm">{SCENARIO_META.era} · {SCENARIO_META.players}线上 · 电脑 DM</div>
+            <div className="font-black text-lg text-red-400 group-hover:text-red-300 transition-colors">线上剧本杀 · 电脑 DM</div>
+            <div className="text-stone-500 text-sm">{SCENARIO_METAS.map(m => `《${m.title}》${m.audience}`).join(' · ')}</div>
           </div>
           <div className="ml-auto text-stone-700 group-hover:text-stone-500 transition-colors">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>

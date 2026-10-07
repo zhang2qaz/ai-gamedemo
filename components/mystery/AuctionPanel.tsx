@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useMysteryStore } from '@/store/mysteryStore'
 import type { SeatView } from '@/engine/mystery/types'
-import { Money, RichText, seatName } from './ui'
+import { Money, RichText, moneyText, seatName } from './ui'
 import { SpeakButton } from './Speech'
 
 export default function AuctionPanel({ view }: { view: SeatView }) {
@@ -16,6 +16,9 @@ export default function AuctionPanel({ view }: { view: SeatView }) {
 
   const who = (seat: typeof view.seat) => (seat === view.seat ? '你' : seatName(view, seat))
   const waitingFor = view.seats.filter(s => s !== view.seat && !a.submitted.includes(s)).map(s => seatName(view, s))
+  // 加减按钮：美元一次 100 / 500；橡果一次 1 / 3
+  const small = view.scenario.currency?.step ?? 100
+  const big = view.scenario.currency ? small * 3 : 500
   const total = Object.values(bids).reduce((n, v) => n + v, 0)
   const over = total > view.me.money
   const invalid = a.lots.some(l => (bids[l.id] ?? 0) > 0 && (bids[l.id] ?? 0) < l.min)
@@ -50,7 +53,7 @@ export default function AuctionPanel({ view }: { view: SeatView }) {
               size="sm"
               text={() => a.lots.map(l => {
                 const r = a.results!.find(x => x.lot === l.id)!
-                return `${l.title}：${r.winner === view.seat ? `你拍到了，花了${r.price}美元` : r.winner ? `${who(r.winner)}拍到了` : r.tie ? a.tieLabel : '没人要'}。`
+                return `${l.title}：${r.winner === view.seat ? `你拍到了，花了${moneyText(view, r.price, true)}` : r.winner ? `${who(r.winner)}拍到了` : r.tie ? a.tieLabel : '没人要'}。`
               }).join('\n')}
             />
           </div>
@@ -83,7 +86,7 @@ export default function AuctionPanel({ view }: { view: SeatView }) {
       ) : (
         <>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-white/70">你的现金 <Money value={view.me.money} /></span>
+            <span className="text-white/70">{view.scenario.currency ? '你有' : '你的现金'} <Money value={view.me.money} /></span>
             <span className={over ? 'text-red-300 font-bold' : 'text-white/70'}>合计出价 <Money value={total} className={over ? '!text-red-300' : ''} /></span>
           </div>
           <div className="grid md:grid-cols-2 gap-3">
@@ -97,15 +100,15 @@ export default function AuctionPanel({ view }: { view: SeatView }) {
                       <div className="font-black text-white leading-5">{l.title}</div>
                       <div className="text-[12px] text-white/65 leading-5 mt-0.5">{l.desc}</div>
                       <div className="text-[11px] text-[var(--mx-gold)] mt-0.5">道具：{l.itemTitle} · 起拍 <Money value={l.min} /></div>
-                      <SpeakButton id={`lot:${l.id}`} label={l.title} size="sm" className="mt-1" text={`${l.title}。${l.desc}。拍到会得到道具：${l.itemTitle}。起拍价${l.min}美元。`} />
+                      <SpeakButton id={`lot:${l.id}`} label={l.title} size="sm" className="mt-1" text={`${l.title}。${l.desc}。拍到会得到道具：${l.itemTitle}。起拍价${moneyText(view, l.min, true)}。`} />
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <button className="mx-btn mx-btn-ghost !px-2 !py-1 text-xs" onClick={() => step(l.id, -500, l.min)}>−500</button>
-                    <button className="mx-btn mx-btn-ghost !px-2 !py-1 text-xs" onClick={() => step(l.id, -100, l.min)}>−100</button>
+                    <button className="mx-btn mx-btn-ghost !px-2 !py-1 text-xs" onClick={() => step(l.id, -big, l.min)}>−{big}</button>
+                    <button className="mx-btn mx-btn-ghost !px-2 !py-1 text-xs" onClick={() => step(l.id, -small, l.min)}>−{small}</button>
                     <div className="flex-1 min-w-[72px] text-center font-mono font-black text-lg whitespace-nowrap">{v === 0 ? <span className="text-white/35 text-sm">放弃</span> : <Money value={v} />}</div>
-                    <button className="mx-btn mx-btn-ghost !px-2 !py-1 text-xs" onClick={() => step(l.id, 100, l.min)}>+100</button>
-                    <button className="mx-btn mx-btn-ghost !px-2 !py-1 text-xs" onClick={() => step(l.id, 500, l.min)}>+500</button>
+                    <button className="mx-btn mx-btn-ghost !px-2 !py-1 text-xs" onClick={() => step(l.id, small, l.min)}>+{small}</button>
+                    <button className="mx-btn mx-btn-ghost !px-2 !py-1 text-xs" onClick={() => step(l.id, big, l.min)}>+{big}</button>
                   </div>
                 </div>
               )

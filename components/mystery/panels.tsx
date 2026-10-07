@@ -175,7 +175,7 @@ export function SearchPanel({ view }: { view: SeatView }) {
         <button className="mx-tab" data-active={tab === 'places'} onClick={() => setTab('places')}>🔎 搜查地点</button>
         <button className="mx-tab" data-active={tab === 'people'} onClick={() => setTab('people')}>🗣️ 问询人物</button>
         <span className="ml-auto text-sm">
-          行动点 <b className="text-[var(--mx-gold)] text-lg font-mono">{view.me.ap}</b>
+          {view.scenario.ap.long} <b className="text-[var(--mx-gold)] text-lg font-mono">{view.me.ap}</b>
         </span>
       </div>
       {!inSearch && <div className="text-xs text-[var(--mx-muted)]">当前不是搜证阶段，只能查看已获得的信息。</div>}
@@ -213,7 +213,7 @@ export function SearchPanel({ view }: { view: SeatView }) {
                           disabled={!inSearch || view.me.ap < s.cost}
                           onClick={() => act({ type: 'search', spotId: s.spotId })}
                         >
-                          搜 · {s.cost}AP
+                          搜 · {s.cost}{view.scenario.ap.short}
                         </button>
                       ) : (
                         <span className="text-[11px] text-[var(--mx-muted)]">{s.status === 'mine' ? '已获得' : '已被搜走'}</span>
@@ -269,7 +269,7 @@ export function SearchPanel({ view }: { view: SeatView }) {
                               disabled={!inSearch || view.me.ap < q.cost}
                               onClick={() => act({ type: 'ask', npcId: n.id, questionId: q.id })}
                             >
-                              问 · {q.cost}AP
+                              {q.cost === 0 ? '问 · 不花体力' : `问 · ${q.cost}${view.scenario.ap.short}`}
                             </button>
                           )}
                         </div>
@@ -299,7 +299,9 @@ export function CasePanel({ view }: { view: SeatView }) {
   return (
     <div className="space-y-3">
       <div className="text-xs text-[var(--mx-muted)] leading-5">
-        私下向 DM 递交推理：全部答对即可领取酬金（别人只会知道你拿到了钱，不知道你答了什么）。答错会被扣钱，且提交次数有限。
+        {view.scenario.theme === 'kids'
+          ? '自己偷偷答题：全都答对就有奖励（别人只知道你得了奖励，不知道你答了什么）。答错会扣一点，次数有限。'
+          : '私下向 DM 递交推理：全部答对即可领取酬金（别人只会知道你拿到了钱，不知道你答了什么）。答错会被扣钱，且提交次数有限。'}
       </div>
       {view.caseFiles.map(cf => {
         const a = answers[cf.id] ?? {}
@@ -309,7 +311,7 @@ export function CasePanel({ view }: { view: SeatView }) {
           <div key={cf.id} className="mx-panel-2 p-3 space-y-2">
             <div className="flex items-center gap-2">
               <div className="font-black text-white flex-1">{cf.title}</div>
-              <span className="text-xs">酬金 <Money value={cf.reward} /></span>
+              <span className="text-xs">{view.scenario.theme === 'kids' ? '奖励' : '酬金'} <Money value={cf.reward} /></span>
             </div>
             <div className="flex items-start gap-2">
               <div className="flex-1 text-[12px] text-white/60">{cf.desc}</div>
@@ -321,7 +323,7 @@ export function CasePanel({ view }: { view: SeatView }) {
               />
             </div>
             {cf.solved ? (
-              <div className="text-emerald-300 text-sm font-bold">✅ 已破解，酬金已领取</div>
+              <div className="text-emerald-300 text-sm font-bold">{view.scenario.theme === 'kids' ? '✅ 全答对了，奖励已经拿到啦' : '✅ 已破解，酬金已领取'}</div>
             ) : (
               <>
                 {cf.questions.map(q => (
@@ -377,11 +379,11 @@ export function ChoicePanel({ view }: { view: SeatView }) {
   if (!c) return <div className="text-center text-[var(--mx-muted)] py-10 text-sm">此阶段你无需抉择，等待其他人……</div>
   return (
     <div className="space-y-3">
-      <div className="mx-paper p-4 mx-serif text-[15px] leading-7 whitespace-pre-wrap">
+      <div className="mx-paper p-4 mx-serif text-[15px] leading-7">
         <div className="flex justify-end mb-1">
           <SpeakButton id={`choice:${view.step.id}`} label="抉择" tone="light" text={`${c.prompt}\n${c.options.map(o => `${o.label}${o.desc ? `：${o.desc}` : ''}`).join('\n')}`} />
         </div>
-        {c.prompt}
+        <RichText text={c.prompt} />
       </div>
       <div className="grid gap-2">
         {c.options.map(o => {
@@ -501,7 +503,7 @@ export function ResultPanel({ view }: { view: SeatView }) {
           ))}
           {r.secrets.length > 0 && (
             <div className="mx-panel-2 p-3">
-              <div className="text-xs font-black text-[var(--mx-gold)] mb-1">对局中的暗手</div>
+              <div className="text-xs font-black text-[var(--mx-gold)] mb-1">{view.scenario.theme === 'kids' ? '大家的选择' : '对局中的暗手'}</div>
               <ul className="text-[13px] text-white/80 space-y-1 list-disc pl-5">
                 {r.secrets.map((s, i) => <li key={i}>{s}</li>)}
               </ul>
@@ -528,8 +530,8 @@ export function ResultPanel({ view }: { view: SeatView }) {
             <div key={s.seat} className="mx-panel-2 p-3">
               <div className="flex items-center mb-2">
                 <div className="font-black text-white flex-1">{s.roleName}{s.seat === view.seat ? '（你）' : ''}</div>
-                <SpeakButton id={`score:${s.seat}`} label={`${s.roleName}的得分`} size="sm" className="mr-2" text={`${s.roleName}一共${s.total}分。\n${s.items.filter(it => it.got).map(it => `${it.label}，${it.points}分`).join('\n')}`} />
-                <div className="font-mono text-2xl font-black text-[var(--mx-gold)]">{s.total}</div>
+                <SpeakButton id={`score:${s.seat}`} label={`${s.roleName}的得分`} size="sm" className="mr-2" text={`${s.roleName}一共${s.total}${view.scenario.scoreUnit}。\n${s.items.filter(it => it.got).map(it => `${it.label}，${it.points}${view.scenario.scoreUnit}`).join('\n')}`} />
+                <div className="font-mono text-2xl font-black text-[var(--mx-gold)]">{s.total}<span className="text-sm ml-0.5">{view.scenario.scoreUnit}</span></div>
               </div>
               <ul className="space-y-1">
                 {s.items.map((it, i) => (
@@ -543,7 +545,7 @@ export function ResultPanel({ view }: { view: SeatView }) {
           ))}
           {r.accuseReview.length > 0 && (
             <div className="mx-panel-2 p-3 space-y-2">
-              <div className="text-xs font-black text-[var(--mx-gold)]">指认对照</div>
+              <div className="text-xs font-black text-[var(--mx-gold)]">{view.scenario.theme === 'kids' ? '大家的答案' : '指认对照'}</div>
               {r.accuseReview.map((q, i) => (
                 <div key={i} className="text-[13px]">
                   <div className="text-white/80">{q.prompt}</div>

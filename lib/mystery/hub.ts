@@ -7,7 +7,7 @@ import type { WebSocket } from 'ws'
 import { randomUUID } from 'crypto'
 import type { Seat, GameState } from '@/engine/mystery/types'
 import { SEATS } from '@/engine/mystery/types'
-import { createGame, reduce, tick, nextDeadline, viewFor, joinSeat, setPresence, vacateSeat, abandonSeat, unready, maxPlayers } from '@/engine/mystery/engine'
+import { DEFAULT_SCENARIO_ID, engineFor, hasScenario } from '@/engine/mystery/engine'
 import type { ClientMsg, ServerMsg } from './protocol'
 import { makeRoomCode, normalizeRoomCode, sanitizeName } from './protocol'
 
@@ -23,6 +23,11 @@ type SeatConn = {
   abandoned?: boolean
   /** 座位还挂着连接时收到的放弃：等这条连接断开再执行（凭令牌回到座位、或超过时限则作废） */
   pendingAbandon?: { final: boolean; notify: WebSocket; at: number }
+}
+
+/** 这个房间用的剧本引擎 */
+function E(room: Room) {
+  return engineFor(room.state.scenarioId)
 }
 
 type Room = {
@@ -120,7 +125,7 @@ export class MysteryHub {
         return
       case 'CREATE':
         if (typeof msg.name !== 'string') return this.send(ws, { type: 'ERROR', message: '请输入昵称' })
-        this.create(ws, msg.name)
+        this.create(ws, msg.name, hasScenario(msg.scenario) ? msg.scenario : DEFAULT_SCENARIO_ID)
         return
       case 'JOIN':
         if (typeof msg.name !== 'string' || typeof msg.code !== 'string') return this.send(ws, { type: 'ERROR', message: '请输入昵称和房间号' })
@@ -154,7 +159,7 @@ export class MysteryHub {
           this.send(ws, { type: 'ERROR', message: '阶段已经推进，刚才的操作没有生效', reason: 'stale', action: String(action.type) })
           return
         }
-        const result = reduce(room.state, ref.seat, action, this.now())
+        const result = E(room).reduce(room.state, ref.seat, action, this.now())
         if (result.error) {
           this.send(ws, { type: 'ERROR', message: result.error })
         }
@@ -178,7 +183,7 @@ export class MysteryHub {
     if (conn && conn.ws === ws) {
       conn.ws = null
       conn.offlineSince = this.now()
-      room.state = setPresence(room.state, ref.seat, false, this.now())
+      room.state = E(room).setPresence(room.state, ref.seat, false, this.now())
       this.afterChange(room)
       // 之前因为"座位还挂着这条连接"而暂缓的放弃，现在执行
       const p = conn.pendingAbandon
@@ -209,7 +214,7 @@ export class MysteryHub {
     this.send(ws, { type: 'LEFT', code: room.code, vacated })
     if (vacated) {
       delete room.seats[ref.seat]
-      room.state = vacateSeat(room.state, ref.seat, now)
+      room.state = E(room).vacateSeat(room.state, ref.seat, now)
       if (SEATS.every(s => !room.seats[s])) {
         this.dropRoom(room)
         return
@@ -217,7 +222,7 @@ export class MysteryHub {
     } else {
       conn.ws = null
       conn.offlineSince = now
-      room.state = setPresence(room.state, ref.seat, false, now, 'left')
+      room.state = E(room).setPresence(room.state, ref.seat, false, now, 'left')
     }
     this.afterChange(room)
   }
@@ -264,7 +269,7 @@ export class MysteryHub {
       this.send(ws, { type: 'LEFT', code, vacated: false, busy: true, token: tok })
       // 大厅里：主人已经要走了，先取消准备（只在第一次），免得对方抢在旧连接回收前一键开局
       if (!prev && room.state.stepIndex === -1) {
-        const next = unready(room.state, seat)
+        const next = E(room).unready(room.state, seat)
         if (next !== room.state) {
           room.state = next
           this.afterChange(room)
@@ -284,7 +289,7 @@ export class MysteryHub {
     if (room.state.stepIndex === -1) {
       this.send(notify, { type: 'LEFT', code: room.code, vacated: true, token })
       delete room.seats[seat]
-      room.state = vacateSeat(room.state, seat, now)
+      room.state = E(room).vacateSeat(room.state, seat, now)
       if (SEATS.every(s => !room.seats[s])) {
         this.dropRoom(room)
         return
@@ -295,13 +300,13 @@ export class MysteryHub {
     this.send(notify, { type: 'LEFT', code: room.code, vacated: false, token })
     if (final && !conn.abandoned) {
       conn.abandoned = true
-      room.state = abandonSeat(room.state, seat, now)
+      room.state = E(room).abandonSeat(room.state, seat, now)
       this.afterChange(room)
     }
   }
 
   // ── 建房 ──
-  private create(ws: WebSocket, rawName: string) {
+  private create(ws: WebSocket, rawName: string, scenario: string) {
     const name = sanitizeName(rawName)
     if (!name) {
       this.send(ws, { type: 'ERROR', message: '请输入昵称' })
@@ -333,7 +338,7 @@ export class MysteryHub {
     const seed = Math.floor(Math.random() * 0x7fffffff)
     const room: Room = {
       code,
-      state: createGame(code, seed, now),
+      state: engineFor(scenario).createGame(code, seed, now),
       seats: {},
       timer: null,
       lastActivity: now,
@@ -375,6 +380,7 @@ export class MysteryHub {
     }
     // 开局后不能再有人坐进来：空着的座位也不行（那会看到别人的私密剧本，人数也对不上）
     const inLobby = room.state.stepIndex === -1
+    const maxPlayers = E(room).maxPlayers
     const usable = SEATS.slice(0, maxPlayers)
     let seat = inLobby ? usable.find(s => !room.seats[s]) : undefined
     if (!seat && inLobby) {
@@ -385,7 +391,7 @@ export class MysteryHub {
       })
       if (seat) {
         delete room.seats[seat]
-        room.state = vacateSeat(room.state, seat, now)
+        room.state = E(room).vacateSeat(room.state, seat, now)
       }
     }
     if (!seat) {
@@ -438,7 +444,7 @@ export class MysteryHub {
     conn.pendingAbandon = undefined
     this.wsRoom.set(ws, { code, seat })
     this.send(ws, { type: 'WELCOME', code, seat, token: conn.token })
-    room.state = setPresence(room.state, seat, true, this.now())
+    room.state = E(room).setPresence(room.state, seat, true, this.now())
     this.afterChange(room)
   }
 
@@ -455,7 +461,7 @@ export class MysteryHub {
     room.seats[seat] = { name, token, ws, offlineSince: null, lastView: null }
     this.wsRoom.set(ws, { code: room.code, seat })
     this.send(ws, { type: 'WELCOME', code: room.code, seat, token })
-    room.state = joinSeat(room.state, seat, name, this.now())
+    room.state = E(room).joinSeat(room.state, seat, name, this.now())
     this.afterChange(room)
   }
 
@@ -471,7 +477,7 @@ export class MysteryHub {
       room.timer = null
     }
     if (!this.rooms.has(room.code)) return
-    const deadline = nextDeadline(room.state)
+    const deadline = E(room).nextDeadline(room.state)
     if (deadline === null) return
     const delay = Math.max(0, Math.min(deadline - this.now(), 2 ** 31 - 1))
     room.timer = setTimeout(() => this.onTimer(room), delay + 20)
@@ -481,7 +487,7 @@ export class MysteryHub {
   private onTimer(room: Room) {
     room.timer = null
     try {
-      const next = tick(room.state, this.now())
+      const next = E(room).tick(room.state, this.now())
       room.tickFailures = 0
       if (next !== room.state) {
         room.state = next
@@ -510,7 +516,7 @@ export class MysteryHub {
   private sendView(room: Room, seat: Seat) {
     const conn = room.seats[seat]
     if (!conn?.ws) return
-    const view = viewFor(room.state, seat, this.now())
+    const view = E(room).viewFor(room.state, seat, this.now())
     const key = JSON.stringify({ ...view, step: { ...view.step, serverNow: 0 } })
     if (key === conn.lastView) return
     conn.lastView = key
@@ -528,7 +534,7 @@ export class MysteryHub {
       const c = room.seats[s]
       if (!c || c.ws || c.offlineSince === null || now - c.offlineSince <= LOBBY_RECLAIM_MS) continue
       delete room.seats[s]
-      room.state = vacateSeat(room.state, s, now)
+      room.state = E(room).vacateSeat(room.state, s, now)
       changed = true
     }
     if (changed) this.afterChange(room)

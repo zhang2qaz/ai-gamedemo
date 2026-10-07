@@ -119,6 +119,27 @@ describe('MysteryHub', () => {
     expect(last(a, 'VIEW')!.view.step.index).toBe(0)
   })
 
+  test('开房时可以选剧本：小学生剧本 2 个人就能开局；不认识的剧本用默认的', () => {
+    tick()
+    const a = sock()
+    send(a, { type: 'CREATE', name: '小明', scenario: 'forest-cake' })
+    const v = last(a, 'VIEW')!.view
+    expect(v.scenario.id).toBe('forest-cake')
+    expect(v.scenario.theme).toBe('kids')
+    expect(v.minPlayers).toBe(2)
+    const b = sock()
+    send(b, { type: 'JOIN', code: last(a, 'WELCOME')!.code, name: '小红' })
+    expect(last(b, 'VIEW')!.view.scenario.id).toBe('forest-cake')
+    send(a, { type: 'ACT', action: { type: 'pickRole', roleId: 'rabbit' } })
+    send(b, { type: 'ACT', action: { type: 'pickRole', roleId: 'fox' } })
+    for (const f of [a, b]) send(f, { type: 'ACT', action: { type: 'ready', value: true } })
+    expect(last(a, 'VIEW')!.view.step.index).toBe(0)
+    tick()
+    const x = sock()
+    send(x, { type: 'CREATE', name: '甲', scenario: 'no-such-story' })
+    expect(last(x, 'VIEW')!.view.scenario.id).toBe('swing-state')
+  })
+
   test('LEAVE / 建房不会清零限流计数', () => {
     tick()
     const x = sock()

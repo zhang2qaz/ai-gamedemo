@@ -44,8 +44,16 @@ export function seatName(view: SeatView, seat: Seat): string {
   return role?.name ?? p?.name ?? '别人'
 }
 
+/** 钱的文字：默认美元；剧本可以换成别的（例如 🌰 橡果） */
+export function moneyText(view: SeatView | null, n: number, forSpeech = false): string {
+  const cur = view?.scenario.currency
+  if (!cur) return forSpeech ? `${n}美元` : `$${n.toLocaleString('en-US')}`
+  return forSpeech ? `${n}${cur.unit}` : `${cur.icon}${n}`
+}
+
 export function Money({ value, className = '' }: { value: number; className?: string }) {
-  return <span className={`font-mono font-bold text-[var(--mx-gold)] ${className}`}>${value.toLocaleString('en-US')}</span>
+  const view = useMysteryStore(s => s.view)
+  return <span className={`font-mono font-bold text-[var(--mx-gold)] ${className}`}>{moneyText(view, value)}</span>
 }
 
 /** 极简富文本：空行分段；以「## 」开头为小标题；**粗体** */

@@ -3,6 +3,7 @@
 // =====================
 
 import { create } from 'zustand'
+import { SCENARIO_METAS } from '@/engine/mystery/scenarios/meta'
 import type { MysteryAction, Seat, SeatView } from '@/engine/mystery/types'
 import { MysteryClient, loadSession, saveSession } from '@/lib/mystery/client'
 import type { SavedSession } from '@/lib/mystery/client'
@@ -26,6 +27,9 @@ type MysteryStore = {
   clockSkew: number
   toasts: Toast[]
   init: () => void
+  /** 入口页选中的剧本（开新房间时用；进了房间以房间的剧本为准） */
+  story: string
+  pickStory: (id: string) => void
   create: (name: string) => void
   join: (code: string, name: string) => void
   /** 回到主动离开的那一局 */
@@ -35,6 +39,19 @@ type MysteryStore = {
   act: (action: MysteryAction) => void
   leave: () => void
   dismissToast: (id: number) => void
+}
+
+const STORY_KEY = 'mystery:story'
+
+/** 入口页上次选的剧本；链接里带 ?story= 时以链接为准 */
+function readStory(): string {
+  if (typeof window === 'undefined') return SCENARIO_METAS[0].id
+  let id: string | null = null
+  try { id = new URLSearchParams(window.location.search).get('story') } catch { /* 忽略 */ }
+  if (!id) {
+    try { id = window.localStorage.getItem(STORY_KEY) } catch { /* 忽略 */ }
+  }
+  return SCENARIO_METAS.some(m => m.id === id) ? id! : SCENARIO_METAS[0].id
 }
 
 let client: MysteryClient | null = null
@@ -204,11 +221,18 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
       }
     },
 
+    story: readStory(),
+    pickStory: (id) => {
+      if (!SCENARIO_METAS.some(m => m.id === id)) return
+      try { window.localStorage.setItem(STORY_KEY, id) } catch { /* 忽略 */ }
+      set({ story: id })
+    },
+
     create: (name) => {
       const c = ensureClient()
       c.resumeWith = null
       pending = 'CREATE'
-      c.send({ type: 'CREATE', name })
+      c.send({ type: 'CREATE', name, scenario: get().story })
     },
 
     join: (code, name) => {

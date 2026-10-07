@@ -237,7 +237,20 @@ export type Scenario = {
   endings: EndingDef[]
   /** 复盘（结局页全部公开） */
   truth: { title: string; text: string }[]
+  /** 钱的叫法（不填为美元）：unit 如"颗橡果"，icon 如"🌰"，step 为出价的最小单位 */
+  currency?: Currency
+  /** 行动点的叫法（不填为 AP / 行动点） */
+  ap?: { short: string; long: string }
+  /** 界面风格（不填为 noir：黑色电影） */
+  theme?: Theme
+  /** 结局计分的单位（不填为"分"） */
+  scoreUnit?: string
+  /** 答对得钱的叫法（不填为"酬金"） */
+  rewardWord?: string
 }
+
+export type Currency = { unit: string; icon: string; step: number }
+export type Theme = 'noir' | 'kids'
 
 // ───────────────────────── 运行时状态 ─────────────────────────
 
@@ -285,6 +298,8 @@ export type SeatState = {
 }
 
 export type GameState = {
+  /** 这一局用的剧本（不填为默认剧本） */
+  scenarioId?: string
   code: string
   seed: number
   rngState: number
@@ -400,7 +415,13 @@ export type SeatView = {
   /** 几人开局 / 最多几人 */
   minPlayers: number
   maxPlayers: number
-  scenario: { id: string; title: string; subtitle: string; tagline: string; intro: string; era: string; duration: string }
+  scenario: {
+    id: string; title: string; subtitle: string; tagline: string; intro: string; era: string; duration: string
+    currency: Currency | null
+    ap: { short: string; long: string }
+    theme: Theme
+    scoreUnit: string
+  }
   roles: { id: string; name: string; enName: string; title: string; avatar: string; color: string; publicProfile: string; optional: boolean }[]
   /** 只有 seats 里的座位。money 只对自己（以及结局后）下发：别人的余额会泄露案卷对错与指认得分 */
   players: Partial<Record<Seat, { name: string | null; online: boolean; roleId: string | null; ready: boolean; money?: number; abandoned?: boolean }>>

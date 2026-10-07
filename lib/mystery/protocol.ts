@@ -5,7 +5,8 @@
 import type { Seat, MysteryAction, SeatView } from '@/engine/mystery/types'
 
 export type ClientMsg =
-  | { type: 'CREATE'; name: string }
+  /** scenario：用哪个剧本开房（不填或不认识就用默认剧本） */
+  | { type: 'CREATE'; name: string; scenario?: string }
   | { type: 'JOIN'; code: string; name: string }
   | { type: 'RESUME'; code: string; token: string }
   /**

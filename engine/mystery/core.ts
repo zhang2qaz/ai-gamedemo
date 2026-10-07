@@ -52,6 +52,11 @@ export function makeEngine(rt: ScenarioRuntime) {
   const caseById = new Map(sc.caseFiles.map(c => [c.id, c]))
   const spotClues = sc.clues.filter(c => c.location)
   const MAX_PLAYERS = Math.max(1, Math.min(sc.maxPlayers ?? 2, SEATS.length))
+  /** 出价的最小单位 */
+  const BID_STEP = sc.currency?.step ?? 100
+  const REWARD = sc.rewardWord ?? '酬金'
+  /** 钱怎么写：默认美元，剧本可以换成别的（例如橡果） */
+  const money = (n: number) => (sc.currency ? `${n} ${sc.currency.unit}` : `$${n.toLocaleString('en-US')}`)
   const MIN_PLAYERS = Math.max(1, Math.min(sc.minPlayers ?? 2, MAX_PLAYERS))
   /** 这个剧本用得到的座位 */
   const SEAT_LIST: Seat[] = SEATS.slice(0, MAX_PLAYERS)
@@ -288,7 +293,7 @@ export function makeEngine(rt: ScenarioRuntime) {
         }
         if (bonus > 0) state.seats[s].money += bonus
         log(state, now, 'DM', s, bonus > 0
-          ? `DM 核对了你的指认：酬金 $${bonus.toLocaleString('en-US')} 已到账。（只告诉你总额，不告诉你对在哪里。）`
+          ? `DM 核对了你的答案：${REWARD} ${money(bonus)} 已到账。（只告诉你总额，不告诉你对在哪里。）`
           : 'DM 核对了你的指认：这一次，你没有拿到酬金。', 'dm')
       }
     }
@@ -307,7 +312,7 @@ export function makeEngine(rt: ScenarioRuntime) {
       if (top === 0 || leaders.length > 1) {
         results.push({ lot: lot.id, winner: null, price: top, tie: top > 0 })
         lines.push(top > 0
-          ? `「${lot.title}」：最高出价相同（$${top.toLocaleString('en-US')}），${step.tie?.log ?? '流拍'}。`
+          ? `「${lot.title}」：最高出价相同（${money(top)}），${step.tie?.log ?? '流拍'}。`
           : `「${lot.title}」：无人出价，流拍。`)
         continue
       }
@@ -316,7 +321,7 @@ export function makeEngine(rt: ScenarioRuntime) {
       state.seats[winner].money = Math.max(0, state.seats[winner].money - price)
       grantClue(state, winner, lot.item, now, { quiet: true })
       results.push({ lot: lot.id, winner, price, tie: false })
-      lines.push(`「${lot.title}」：${seatName(state, winner)} 以 $${price.toLocaleString('en-US')} 拍得，获得道具【${itemTitle}】。`)
+      lines.push(`「${lot.title}」：${seatName(state, winner)} 以 ${money(price)} 拍得，获得道具【${itemTitle}】。`)
     }
     a.results = results
     log(state, now, 'DM', 'all', `🔨 拍卖结果\n${lines.join('\n')}`, 'event')
@@ -382,6 +387,7 @@ export function makeEngine(rt: ScenarioRuntime) {
 
   function createGame(code: string, seed: number, now: number): GameState {
     return {
+      scenarioId: sc.id,
       code,
       seed,
       rngState: seed | 0,
@@ -637,13 +643,13 @@ export function makeEngine(rt: ScenarioRuntime) {
         if (correct) {
           me.money += cf.reward
           me.flags[`case:${cf.id}`] = true
-          log(state, now, 'DM', seat, `✅ 案卷「${cf.title}」判定正确！酬金 $${cf.reward.toLocaleString('en-US')} 已到账。`, 'dm')
+          log(state, now, 'DM', seat, `✅ 案卷「${cf.title}」判定正确！${REWARD} ${money(cf.reward)} 已到账。`, 'dm')
           for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} 向 DM 递交了一份案卷，并且拿到了酬金。`, 'dm')
         } else {
           me.money = Math.max(0, me.money - cf.penalty)
           const left = cf.maxAttempts - attempts.length
           const hint = wrong === 1 ? '只差一处' : '不止一处有误'
-          log(state, now, 'DM', seat, `❌ 案卷「${cf.title}」判定不通过（${hint}）。扣除 $${cf.penalty.toLocaleString('en-US')}，剩余提交次数 ${left}。`, 'dm')
+          log(state, now, 'DM', seat, `❌ 案卷「${cf.title}」判定不通过（${hint}）。扣除 ${money(cf.penalty)}，剩余提交次数 ${left}。`, 'dm')
         }
         return
       }
@@ -674,8 +680,8 @@ export function makeEngine(rt: ScenarioRuntime) {
           const v = Math.floor(Number(raw[lot.id] ?? 0))
           if (!Number.isFinite(v) || v < 0) return '出价无效'
           if (v === 0) { clean[lot.id] = 0; continue }
-          if (v < lot.min) return `「${lot.title}」最低出价 $${lot.min}`
-          if (v % 100 !== 0) return '出价须为 $100 的整数倍'
+          if (v < lot.min) return `「${lot.title}」最低出价 ${money(lot.min)}`
+          if (v % BID_STEP !== 0) return `出价须为 ${money(BID_STEP)} 的整数倍`
           clean[lot.id] = v
           total += v
         }
@@ -914,7 +920,13 @@ export function makeEngine(rt: ScenarioRuntime) {
       seats,
       minPlayers: MIN_PLAYERS,
       maxPlayers: MAX_PLAYERS,
-      scenario: { id: sc.id, title: sc.title, subtitle: sc.subtitle, tagline: sc.tagline, intro: sc.intro, era: sc.era, duration: sc.duration },
+      scenario: {
+        id: sc.id, title: sc.title, subtitle: sc.subtitle, tagline: sc.tagline, intro: sc.intro, era: sc.era, duration: sc.duration,
+        currency: sc.currency ?? null,
+        ap: sc.ap ?? { short: 'AP', long: '行动点' },
+        theme: sc.theme ?? 'noir',
+        scoreUnit: sc.scoreUnit ?? '分',
+      },
       roles: sc.roles.map(r => ({ id: r.id, name: r.name, enName: r.enName, title: r.title, avatar: r.avatar, color: r.color, publicProfile: r.publicProfile, optional: !!r.optional })),
       players,
       step: {

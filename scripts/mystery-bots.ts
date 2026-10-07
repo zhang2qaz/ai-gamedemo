@@ -1,7 +1,7 @@
 // =====================
 // 剧本杀 · 多机器人端到端对局
 // 用法：先启动服务器（npm run start:mp 或 tsx server.ts），再运行
-//   npx tsx scripts/mystery-bots.ts [ws://127.0.0.1:3000/ws-mystery] [--players 3|4]
+//   npx tsx scripts/mystery-bots.ts [ws://127.0.0.1:3000/ws-mystery] [--players 2|3|4] [--story forest-cake]
 // 几个机器人会建房、加入、选角，并按通用策略把整局打完，最后打印结局。
 // =====================
 
@@ -15,8 +15,10 @@ const VERBOSE = process.argv.includes('--verbose')
 const TIMEOUT_MS = 120_000
 const argPlayers = process.argv.indexOf('--players')
 const PLAYERS = argPlayers > 0 ? Number(process.argv[argPlayers + 1]) : 3
-if (PLAYERS !== 3 && PLAYERS !== 4) {
-  console.error('❌ --players 只能是 3 或 4')
+const argStory = process.argv.indexOf('--story')
+const STORY = argStory > 0 ? process.argv[argStory + 1] : undefined
+if (![2, 3, 4].includes(PLAYERS)) {
+  console.error('❌ --players 只能是 2、3 或 4')
   process.exit(1)
 }
 
@@ -143,9 +145,10 @@ class Bot {
     if (k === 'auction') {
       const a = v.auction
       if (a && !a.myBids && !a.results) {
-        // 每个机器人各盯两件拍品；第三、四个机器人跟前面的人抢（会出现平局被截走）
-        const mine = v.seats.indexOf(v.seat) % 2 === 0 ? ['lot_lawyer', 'lot_yacht'] : ['lot_headline', 'lot_recount']
-        const bids = Object.fromEntries(a.lots.map(l => [l.id, mine.includes(l.id) ? l.min + 300 : 0]))
+        // 每个机器人各盯两件拍品（单数座位要第 1、3 件，双数座位要第 2、4 件）；第三、四个机器人跟前面的人抢（会出现平局被收走）
+        const parity = v.seats.indexOf(v.seat) % 2
+        const step = v.scenario.currency?.step ?? 100
+        const bids = Object.fromEntries(a.lots.map((l, i) => [l.id, i % 2 === parity ? l.min + 3 * step : 0]))
         this.once(`bid:${stepKey}`, () => this.act({ type: 'bid', bids }))
         return
       }
@@ -156,7 +159,9 @@ class Bot {
     if (k === 'choice') {
       const c = v.me.choice
       if (c && !c.chosen) {
-        const opt = c.options.find(o => !o.disabled)
+        // 第一个座位选最后一项（例如"说出来"），其他人选第一项
+        const usable = c.options.filter(o => !o.disabled)
+        const opt = v.seats.indexOf(v.seat) === 0 ? usable[usable.length - 1] : usable[0]
         if (opt) this.act({ type: 'choose', optionId: opt.id })
         return
       }
@@ -207,7 +212,7 @@ async function main() {
   const bots = NAMES.slice(0, PLAYERS).map(n => new Bot(n))
   for (const b of bots) await b.open()
   const [host, ...rest] = bots
-  host.send({ type: 'CREATE', name: host.name })
+  host.send({ type: 'CREATE', name: host.name, ...(STORY ? { scenario: STORY } : {}) })
   const code = await waitFor(() => host.view?.code ?? null)
   for (const b of rest) {
     b.send({ type: 'JOIN', code, name: b.name })
@@ -216,9 +221,9 @@ async function main() {
   const t0 = Date.now()
   const ending = await waitFor(() => (bots.every(b => b.view?.step.kind === 'ending') ? host.view : null), TIMEOUT_MS)
   const r = ending.result!
-  console.log(`✅ 房间 ${code}（${PLAYERS} 人）打完整局，用时 ${((Date.now() - t0) / 1000).toFixed(1)}s`)
+  console.log(`✅ 房间 ${code}（《${ending.scenario.title}》${PLAYERS} 人）打完整局，用时 ${((Date.now() - t0) / 1000).toFixed(1)}s`)
   console.log(`   结局：${r.headline}`)
-  for (const s of r.scores) console.log(`   ${s.roleName}：${s.total} 分`)
+  for (const s of r.scores) console.log(`   ${s.roleName}：${s.total} ${ending.scenario.scoreUnit}`)
   console.log(`   ${bots.map(b => `${b.name}获得线索 ${b.view!.clues.length} 条`).join('，')}`)
   console.log(`   ${r.endings.map(e => `${e.roleName}：「${e.title}」`).join('；')}`)
   const f = ending.finale as FinaleView | null

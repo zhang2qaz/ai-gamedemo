@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useMysteryStore } from '@/store/mysteryStore'
-import { SCENARIO_META } from '@/engine/mystery/scenarios/meta'
+import { SCENARIO_METAS } from '@/engine/mystery/scenarios/meta'
 import { ConnectionBadge } from './ui'
 import { SpeakButton, SpeechSettings } from './Speech'
 
@@ -17,6 +17,8 @@ export default function EntryScreen() {
   const pausedElsewhere = useMysteryStore(s => s.pausedElsewhere)
   const resume = useMysteryStore(s => s.resume)
   const forget = useMysteryStore(s => s.forget)
+  const story = useMysteryStore(s => s.story)
+  const pickStory = useMysteryStore(s => s.pickStory)
   // 本组件只在客户端挂载后渲染（见 MysteryApp），可直接读取 window
   const [roomFromUrl] = useState(() => (new URLSearchParams(window.location.search).get('room') ?? '').toUpperCase().slice(0, 4))
   const [name, setName] = useState(() => {
@@ -36,7 +38,7 @@ export default function EntryScreen() {
     try { window.localStorage.setItem(NAME_KEY, name.trim()) } catch { /* 忽略 */ }
   }
 
-  const m = SCENARIO_META
+  const m = SCENARIO_METAS.find(x => x.id === story) ?? SCENARIO_METAS[0]
   const canGo = name.trim().length > 0 && !busy
 
   return (
@@ -46,6 +48,27 @@ export default function EntryScreen() {
           <Link href="/" className="hover:text-white">← 返回弈战</Link>
           <ConnectionBadge />
         </div>
+
+        {mode === 'home' && !roomFromUrl && (
+          <div className="space-y-2">
+            <div className="text-[11px] font-bold tracking-wider text-[var(--mx-muted)] text-center">先选一个故事</div>
+            <div className="grid grid-cols-2 gap-2">
+              {SCENARIO_METAS.map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => pickStory(s.id)}
+                  className={`mx-panel-2 p-3 text-left transition-all ${s.id === m.id ? 'ring-2 ring-[var(--mx-gold)]' : 'opacity-70 hover:opacity-100'}`}
+                  aria-pressed={s.id === m.id}
+                >
+                  <div className="text-2xl leading-none">{s.theme === 'kids' ? '🎂' : '🕵️'}</div>
+                  <div className="font-black text-white text-[15px] mt-1 leading-5">《{s.title}》</div>
+                  <div className="text-[11px] text-[var(--mx-gold)] mt-1">给{s.audience}玩 · {s.players}</div>
+                  <div className="text-[11px] text-white/55">{s.duration}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 text-[11px] tracking-[0.3em] text-[var(--mx-gold)] font-bold">
@@ -149,7 +172,7 @@ export default function EntryScreen() {
 
         <div className="text-[11px] text-center text-[var(--mx-muted)] leading-5">
           {m.players} · {m.duration} · 电脑 DM 全程主持<br />
-          3–4 人一起玩，建议开语音通话；只用文字聊天也能玩完全程。
+          {m.players}一起玩，建议开语音通话；只用文字聊天也能玩完全程。{m.theme === 'kids' && <><br />每段文字旁边都有「🔊 读给我听」，不认字也能玩。</>}
         </div>
       </div>
     </div>

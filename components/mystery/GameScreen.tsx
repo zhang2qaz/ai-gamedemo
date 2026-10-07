@@ -45,6 +45,8 @@ export default function GameScreen() {
   const others = view.seats.filter(s => s !== view.seat)
   const me = view.players[view.seat] ?? { name: null, online: true, roleId: null, ready: false }
   const k = view.step.kind
+  // 小学生剧本：用孩子听得懂的词
+  const kids = view.scenario.theme === 'kids'
   if (readySent && (readySent.step !== view.step.index || me.ready === readySent.target)) setReadySent(null)
   const readyPending = !!readySent && readySent.step === view.step.index && me.ready !== readySent.target
   const latestChapter = view.me.chapters[view.me.chapters.length - 1]?.id ?? ''
@@ -55,11 +57,11 @@ export default function GameScreen() {
   useAutoRead(k === 'read' && latest ? { id: `chapter:${latest.id}`, label: latest.title, text: `${latest.title}。\n${latest.text}` } : null)
 
   const tabs: { id: Tab; label: string; dot?: boolean; show: boolean }[] = [
-    { id: 'stage', label: stageLabel(k), show: true },
-    { id: 'script', label: '剧本', show: true, dot: view.me.chapters.some(c => c.isNew) },
-    { id: 'search', label: '搜证', show: true, dot: k === 'search' },
+    { id: 'stage', label: stageLabel(k, kids), show: true },
+    { id: 'script', label: kids ? '小剧本' : '剧本', show: true, dot: view.me.chapters.some(c => c.isNew) },
+    { id: 'search', label: kids ? '找线索' : '搜证', show: true, dot: k === 'search' },
     { id: 'clues', label: `线索 ${view.clues.length}`, show: true, dot: view.clues.length > seenClues && tab !== 'clues' },
-    { id: 'cases', label: '案卷', show: view.caseFiles.length > 0, dot: view.caseFiles.some(c => c.open && !c.solved) },
+    { id: 'cases', label: kids ? '小测验' : '案卷', show: view.caseFiles.length > 0, dot: view.caseFiles.some(c => c.open && !c.solved) },
     { id: 'feed', label: '记录', show: true },
   ]
 
@@ -78,7 +80,7 @@ export default function GameScreen() {
           </div>
           <div className="ml-auto flex items-center gap-2">
             <Countdown deadline={view.step.deadline} />
-            {k === 'search' && <span className="text-xs bg-white/10 rounded-md px-2 py-0.5">AP <b className="font-mono text-[var(--mx-gold)]">{view.me.ap}</b></span>}
+            {k === 'search' && <span className="text-xs bg-white/10 rounded-md px-2 py-0.5">{view.scenario.ap.short} <b className="font-mono text-[var(--mx-gold)]">{view.me.ap}</b></span>}
             <span className="text-xs bg-white/10 rounded-md px-2 py-0.5 hidden sm:inline"><Money value={view.me.money} /></span>
             <SpeechSettings />
           </div>
@@ -130,7 +132,7 @@ export default function GameScreen() {
                     setTimeout(() => setReadySent(cur => (cur === sent ? null : cur)), 4000)
                   }}
                 >
-                  {me.ready ? '取消准备' : readyLabel(k)}
+                  {me.ready ? '取消准备' : readyLabel(k, kids)}
                 </button>
               </div>
             </div>
@@ -166,31 +168,42 @@ export default function GameScreen() {
   )
 }
 
-function stageLabel(kind: SeatView['step']['kind']) {
+function stageLabel(kind: SeatView['step']['kind'], kids: boolean) {
   switch (kind) {
-    case 'choice': return '抉择'
+    case 'choice': return kids ? '选一选' : '抉择'
     case 'auction': return '拍卖'
     case 'finale': return '终局'
-    case 'accuse': return '指认'
+    case 'accuse': return kids ? '答题' : '指认'
     case 'ending': return '结局'
     default: return '当前'
   }
 }
 
-function readyLabel(kind: SeatView['step']['kind']) {
+function readyLabel(kind: SeatView['step']['kind'], kids: boolean) {
   switch (kind) {
     case 'read': return '读完了'
-    case 'search': return '结束搜证'
-    case 'discuss': return '讨论完毕'
+    case 'search': return kids ? '找完了' : '结束搜证'
+    case 'discuss': return kids ? '说完了' : '讨论完毕'
     default: return '继续'
   }
 }
 
 function stageHint(view: SeatView): string {
+  if (view.scenario.theme === 'kids') {
+    switch (view.step.kind) {
+      case 'story': return '听电脑讲故事。大家都点「继续」，就到下一步。'
+      case 'read': return '点「小剧本」，读一读只给你看的小剧本。不要直接念给别人听哦。'
+      case 'search': return `点「找线索」：去不同的地方找一找，或者问问别人。每次都要用掉${view.scenario.ap.long}。找到的线索只有你看得见，你可以给大家看，也可以交给某一个人。`
+      case 'discuss': return '和大家说一说你发现了什么。在「小测验」里答对题，能得到橡果！'
+      case 'choice': return '自己偷偷选一选，别人看不到你选了什么。'
+      case 'auction': return '拍卖结束啦！买到的东西在「线索」里。大家都点「继续」，就到下一步。'
+      default: return ''
+    }
+  }
   switch (view.step.kind) {
     case 'story': return '请阅读 DM 的开场叙述。所有人都点「继续」后进入下一阶段。'
     case 'read': return '请在「剧本」中阅读你的私密剧本。不要把原文发给别人——你可以选择说什么、不说什么。'
-    case 'search': return '在「搜证」中消耗行动点搜查地点、问询人物。线索默认只有你可见，可以选择公开，或者交给某一个人。'
+    case 'search': return `在「搜证」中用${view.scenario.ap.long}搜查地点、问询人物。线索默认只有你可见，可以选择公开，或者交给某一个人。`
     case 'discuss': return '自由讨论：交换（或隐瞒）信息，对质疑点。可在「案卷」向 DM 递交推理领取酬金。'
     case 'choice': return '请做出你的秘密抉择。别人看不到你的选择。'
     case 'auction': return '拍卖结果已揭晓。拍到的道具在「线索」里，终局时可以用。所有人都点「继续」后进入第二幕。'
