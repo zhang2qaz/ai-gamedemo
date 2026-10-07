@@ -7,7 +7,7 @@ from rococo import cover_svg
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DOCS = os.path.abspath(os.path.join(ROOT, "..", ".."))
 OUT = os.path.abspath(os.path.join(ROOT, ".."))
-P3 = os.path.join(DOCS, "phase3")
+P3 = os.path.join(DOCS, "phase4")
 
 BOOKS = [
     # key, 源文件, 封面参数
@@ -19,9 +19,9 @@ BOOKS = [
     ("06-gengen", "characters/06-gengen.md", dict(no="No.06", name="半步爹", party="象", role="现任副总统 · 大象党接班人", slogan="我一直就在您身后半步。", prop="gengen")),
     ("07-qianduoduo", "characters/07-qianduoduo.md", dict(no="No.07", name="建国钱", party="象", role="开盒智能创始人 · 大象党头号金主", slogan="两边押，才叫稳。", prop="qianduoduo")),
     ("08-linda", "characters/08-linda.md", dict(no="No.08", name="狗登罗", party="象", role="大象党首席选举律师", slogan="我查过了，他是干净的。", prop="linda")),
-    ("09-dm-hosting", "dm/01-dm-hosting-manual.md", dict(no="DM·上", name="DM主持手册", party=None, role="上册 · 流程与主持（主持人：贾不睡）", slogan="今夜不睡，明天的总统还是今晚的总统吗？", prop="dm", kind="DM专用 · 上册", warn="仅限DM与场控阅读", color="#b8322a")),
-    ("10-dm-secret", "dm/02-dm-secret-appendix.md", dict(no="DM·下", name="DM机密附录", party=None, role="下册 · 真相、机密册、账本与结局", slogan="账，总是要还的。", prop="dm", kind="DM专用 · 下册 · 绝密", warn="开本前请勿让任何玩家看到", color="#1b1a17")),
-    ("11-public", "public/01-public-materials.md", dict(no="公共", name="节目单与规则书", party=None, role="《今夜不睡·大选特别季》公共物料", slogan="你支持的候选人，可能也在支持你的对手。", prop="public", kind="全员公开物料", warn="可在开本时分发给所有玩家", color="#1f4e9c")),
+    ("09-dm", "dm/dm-manual.md", dict(no="DM", name="DM主持手册", party=None, role="流程、主持词与机密附录（主持人：贾不睡）", slogan="今夜不睡，明天的总统还是今晚的总统吗？", prop="dm", kind="DM专用 · 含机密", warn="开本前请勿让任何玩家看到", color="#b8322a")),
+    ("10-print", "public/cards-print.md", dict(no="印厂", name="卡面与物料印刷册", party=None, role="全部卡面正文（含机密，只交印厂与DM）", slogan="账，总是要还的。", prop="dm", kind="印厂与DM专用 · 含机密", warn="不得交给玩家", color="#1b1a17")),
+    ("11-rules", "public/rules.md", dict(no="规则", name="节目单与规则书", party=None, role="《今夜不睡·大选特别季》公共物料", slogan="你支持的候选人，可能也在支持你的对手。", prop="public", kind="全员公开物料", warn="可在开本时分发给所有玩家", color="#1f4e9c")),
 ]
 
 CSS = """
@@ -109,6 +109,8 @@ def normalize_md(text):
 
 def build_html(key, src, cv):
     md_text = normalize_md(open(os.path.join(P3, src), encoding="utf-8").read())
+    if key.startswith("09-dm"):
+        md_text += "\n\n# 附录 · 全员演绎台本（DM朗读版）\n\n" + "\n\n".join(f"<!--演绎:{w}-->" for w in SHARED)
     md_text = inject_yanyi(md_text, cv["name"] if cv.get("party") else None)
     body = markdown.markdown(md_text, extensions=["tables", "sane_lists", "md_in_html", "attr_list"])
     color = cv.get("color") or ("#1f4e9c" if cv.get("party") == "驴" else "#b8322a" if cv.get("party") == "象" else "#1b1a17")
