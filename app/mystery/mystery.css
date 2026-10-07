@@ -121,6 +121,8 @@
   white-space: nowrap;
   position: relative;
 }
+/* 手机上标签多（孩子的剧本有"我的线索"），收紧一点，让最后的"记录"也露在屏幕里 */
+@media (max-width: 430px) { .mx-tab { padding: 8px 8px; } }
 .mx-tab[data-active="true"] { background: rgba(255, 255, 255, 0.1); color: #fff; }
 .mx-tab .mx-dot {
   position: absolute; top: 4px; right: 4px; width: 7px; height: 7px; border-radius: 999px; background: var(--mx-red);

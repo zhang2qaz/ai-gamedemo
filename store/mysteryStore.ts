@@ -205,6 +205,10 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
     toasts: [],
 
     init: () => {
+      if (typeof window !== 'undefined') {
+        const story = readStory()
+        if (story !== get().story) set({ story })
+      }
       if (!syncingStorage && typeof window !== 'undefined') {
         syncingStorage = true
         window.addEventListener('storage', e => {
@@ -221,7 +225,8 @@ export const useMysteryStore = create<MysteryStore>((set, get) => {
       }
     },
 
-    story: readStory(),
+    // 服务器渲染和第一次渲染都用默认剧本（否则界面风格对不上、React 也不会修正）；init() 再读本地记住的
+    story: SCENARIO_METAS[0].id,
     pickStory: (id) => {
       if (!SCENARIO_METAS.some(m => m.id === id)) return
       try { window.localStorage.setItem(STORY_KEY, id) } catch { /* 忽略 */ }

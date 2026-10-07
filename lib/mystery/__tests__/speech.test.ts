@@ -18,6 +18,8 @@ describe('朗读文本整理', () => {
     expect(toSpeechText('第 2/3 轮')).toBe('第 2/3 轮')
     expect(toSpeechText('吉迪恩·万斯')).toBe('吉迪恩万斯')
     expect(toSpeechText('第 1 轮 · 05:00')).toBe('第 1 轮，5点整')
+    // 小学生剧本：星星、橡果是当字用的
+    expect(toSpeechText('一共 12颗⭐，剩下 🌰5')).toBe('一共 12颗星，剩下 橡果5')
   })
 
   test('不使用旧版 Safari 不支持的正则写法（后行断言会让整个页面打不开）', () => {

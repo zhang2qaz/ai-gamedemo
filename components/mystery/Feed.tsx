@@ -6,6 +6,8 @@ import type { LogEntry, SeatView } from '@/engine/mystery/types'
 import { SpeakButton } from './Speech'
 
 const QUICK = ['我先说说我知道的', '你在撒谎', '证据呢？', '我们交换线索吧', '先别急着公开', '我同意']
+/** 给小学生的快捷话：不说"你在撒谎" */
+const QUICK_KIDS = ['我先说说我知道的', '我找到一条线索！', '证据呢？', '我们交换线索吧', '我觉得是……', '我同意']
 
 function nameOf(view: SeatView, from: LogEntry['from']) {
   if (from === 'DM') return 'DM'
@@ -55,7 +57,7 @@ export default function Feed({ compact = false, active = true }: { compact?: boo
       </div>
       <div className="border-t border-white/5 p-2 space-y-2">
         <div className="flex gap-1.5 overflow-x-auto pb-0.5">
-          {QUICK.map(q => (
+          {(view.scenario.theme === 'kids' ? QUICK_KIDS : QUICK).map(q => (
             <button key={q} onClick={() => send(q)} className="shrink-0 text-[11px] px-2 py-1 rounded-full bg-white/5 border border-white/10 text-white/70 hover:text-white">
               {q}
             </button>
@@ -114,7 +116,7 @@ function Entry({ e, view }: { e: LogEntry; view: SeatView }) {
   return (
     <div className="text-[12px] text-sky-100/90 whitespace-pre-wrap bg-[var(--mx-blue-soft)] rounded-lg px-2.5 py-1.5 flex gap-1">
       <span className="flex-1">
-        <span className="text-[10px] font-black text-sky-300 mr-1">{e.to === 'all' ? 'DM' : 'DM·私'}</span>
+        <span className="text-[10px] font-black text-sky-300 mr-1">{view.scenario.theme === 'kids' ? (e.to === 'all' ? '主持人' : '主持人悄悄说') : (e.to === 'all' ? 'DM' : 'DM·私')}</span>
         {e.text}
       </span>
       <SpeakButton id={`log:${e.id}`} label="DM" size="sm" className="self-start" text={e.text} />

@@ -53,7 +53,7 @@ export const KIDS_META: ScenarioMeta = {
 （故事里没有坏人被抓走，也没有吓人的情节。适合小学生，也适合爸爸妈妈陪孩子一起玩。）`,
   tags: ['小学生', '推理入门', '找线索', '橡果拍卖', '2–4 人', '电脑 DM'],
   players: '2–4 人',
-  duration: '约 40 分钟',
+  duration: '约 40–50 分钟',
   audience: '小学生',
   theme: 'kids',
 }

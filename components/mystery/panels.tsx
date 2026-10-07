@@ -42,10 +42,10 @@ export function ScriptPanel({ view }: { view: SeatView }) {
       {view.me.goals.length > 0 && (
         <div className="mx-panel-2 p-3">
           <div className="flex items-center mb-1.5">
-            <div className="text-xs font-black text-[var(--mx-gold)] flex-1">你的私人目标</div>
-            <SpeakButton id="script:goals" label="你的私人目标" size="sm" text={`你的私人目标。\n${view.me.goals.map(g => `${g.points}分：${g.text}`).join('\n')}\n具体怎么算分，到最后的环节会告诉你。`} />
+            <div className="text-xs font-black text-[var(--mx-gold)] flex-1">{view.scenario.theme === 'kids' ? '怎么得星星' : '你的私人目标'}</div>
+            <SpeakButton id="script:goals" label={view.scenario.theme === 'kids' ? '怎么得星星' : '你的私人目标'} size="sm" text={`${view.scenario.theme === 'kids' ? '怎么得星星' : '你的私人目标'}。\n${view.me.goals.map(g => `${g.points}${view.scenario.scoreUnit}：${g.text}`).join('\n')}\n具体怎么算，到最后的环节会告诉你。`} />
           </div>
-          <div className="text-[11px] text-[var(--mx-muted)] mb-1.5">具体怎么算分，到最后的环节会告诉你。</div>
+          <div className="text-[11px] text-[var(--mx-muted)] mb-1.5">具体怎么算{view.scenario.theme === 'kids' ? '星星' : '分'}，到最后的环节会告诉你。</div>
           <ul className="space-y-1">
             {view.me.goals.map(g => (
               <li key={g.id} className="text-[13px] text-white/85 flex gap-2">
@@ -196,7 +196,7 @@ export function SearchPanel({ view }: { view: SeatView }) {
                     id={`loc:${loc.id}`}
                     label={loc.name}
                     size="sm"
-                    text={`${loc.name}。${loc.desc}\n${spots.length ? `可以搜：${spots.map(s => `${s.spot}${s.status === 'open' ? `，要${s.cost}点行动点` : s.status === 'mine' ? '，你已经搜过了' : '，已经被搜走了'}`).join('；')}。` : '暂时没有可以搜的地方。'}`}
+                    text={`${loc.name}。${loc.desc}\n${spots.length ? `可以搜：${spots.map(s => `${s.spot}${s.status === 'open' ? `，要${s.cost}点${view.scenario.ap.long}` : s.status === 'mine' ? '，你已经搜过了' : '，已经被搜走了'}`).join('；')}。` : '暂时没有可以搜的地方。'}`}
                   />
                 </div>
                 <div className="mt-2 space-y-1.5">
@@ -261,7 +261,7 @@ export function SearchPanel({ view }: { view: SeatView }) {
                             id={`q:${n.id}:${q.id}`}
                             label={n.name}
                             size="sm"
-                            text={`问：${q.present ? `（出示${q.present.title}）` : ''}${q.ask}${q.answer ? `\n${n.name}回答：${q.answer}` : `\n问一次要${q.cost}点行动点。`}`}
+                            text={`问：${q.present ? `（出示${q.present.title}）` : ''}${q.ask}${q.answer ? `\n${n.name}回答：${q.answer}` : (q.cost === 0 ? `\n问这个不花${view.scenario.ap.long}。` : `\n问一次要${q.cost}点${view.scenario.ap.long}。`)}`}
                           />
                           {!q.asked && (
                             <button
@@ -465,7 +465,7 @@ export function AccusePanel({ view }: { view: SeatView }) {
           <button className="mx-btn mx-btn-red" onClick={() => act({ type: 'accuse', answers })}>确认提交</button>
         </div>
       ) : (
-        <button className="mx-btn mx-btn-red w-full" disabled={!complete} onClick={() => setConfirm(true)}>提交最终指认</button>
+        <button className="mx-btn mx-btn-red w-full" disabled={!complete} onClick={() => setConfirm(true)}>{view.scenario.theme === 'kids' ? '交出我的答案' : '提交最终指认'}</button>
       )}
     </div>
   )

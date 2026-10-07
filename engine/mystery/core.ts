@@ -55,6 +55,9 @@ export function makeEngine(rt: ScenarioRuntime) {
   /** 出价的最小单位 */
   const BID_STEP = sc.currency?.step ?? 100
   const REWARD = sc.rewardWord ?? '酬金'
+  const AP_NAME = sc.ap?.long ?? '行动点'
+  /** 给小学生的剧本：DM 的话用孩子听得懂的词 */
+  const KIDS = sc.theme === 'kids'
   /** 钱怎么写：默认美元，剧本可以换成别的（例如橡果） */
   const money = (n: number) => (sc.currency ? `${n} ${sc.currency.unit}` : `$${n.toLocaleString('en-US')}`)
   const MIN_PLAYERS = Math.max(1, Math.min(sc.minPlayers ?? 2, MAX_PLAYERS))
@@ -156,8 +159,9 @@ export function makeEngine(rt: ScenarioRuntime) {
     if (!def) return
     const existing = state.clues[clueId]
     if (existing && !existing.destroyed) {
-      // 已存在：只让该座位“看见”
-      if (!existing.seenBy.includes(seat)) existing.seenBy.push(seat)
+      // 已存在：只让该座位“看见”（已经看得到的人不再提醒，例如自己的小秘密卡被公开时）
+      if (existing.owner === seat || existing.seenBy.includes(seat)) return
+      existing.seenBy.push(seat)
       if (!opts.quiet) log(state, now, 'DM', seat, `你获得了线索【${def.title}】。`, 'dm')
       return
     }
@@ -275,6 +279,7 @@ export function makeEngine(rt: ScenarioRuntime) {
           if (opt) {
             chosen = opt.id
             state.seats[s].choices[step.id] = chosen
+            state.seats[s].flags[`auto:${step.id}`] = true
             log(state, now, 'DM', s, `时间到，系统替你选择了「${opt.label}」。`, 'dm')
           }
         }
@@ -293,8 +298,8 @@ export function makeEngine(rt: ScenarioRuntime) {
         }
         if (bonus > 0) state.seats[s].money += bonus
         log(state, now, 'DM', s, bonus > 0
-          ? `DM 核对了你的答案：${REWARD} ${money(bonus)} 已到账。（只告诉你总额，不告诉你对在哪里。）`
-          : 'DM 核对了你的指认：这一次，你没有拿到酬金。', 'dm')
+          ? (KIDS ? `主持人看了你的答案：${REWARD} ${money(bonus)} 已经给你啦！（只告诉你一共多少，不告诉你哪题对了。）` : `DM 核对了你的答案：${REWARD} ${money(bonus)} 已到账。（只告诉你总额，不告诉你对在哪里。）`)
+          : (KIDS ? '主持人看了你的答案：这一次没有奖励。' : `DM 核对了你的指认：这一次，你没有拿到${REWARD}。`), 'dm')
       }
     }
   }
@@ -313,7 +318,7 @@ export function makeEngine(rt: ScenarioRuntime) {
         results.push({ lot: lot.id, winner: null, price: top, tie: top > 0 })
         lines.push(top > 0
           ? `「${lot.title}」：最高出价相同（${money(top)}），${step.tie?.log ?? '流拍'}。`
-          : `「${lot.title}」：无人出价，流拍。`)
+          : `「${lot.title}」：${KIDS ? '没有人要' : '无人出价，流拍'}。`)
         continue
       }
       const winner = leaders[0]
@@ -535,7 +540,7 @@ export function makeEngine(rt: ScenarioRuntime) {
         if (spot !== 'mine' && !spotReachable(state, seat, def)) return '还不能搜这里'
         if (spot === 'mine' || spot === 'taken') return '这里已经被搜过了'
         const cost = def.cost ?? 1
-        if (me.ap < cost) return '行动点不足'
+        if (me.ap < cost) return `${AP_NAME}不足`
         me.ap -= cost
         me.ready = false
         grantClue(state, seat, def.id, now)
@@ -558,7 +563,7 @@ export function makeEngine(rt: ScenarioRuntime) {
         if (!questionAvailable(state, seat, q)) return '这个问题还不能问'
         if (state.qa.some(r => r.npc === npc.id && r.q === q.id && r.seat === seat)) return '你已经问过了'
         const cost = q.cost ?? 1
-        if (me.ap < cost) return '行动点不足'
+        if (me.ap < cost) return `${AP_NAME}不足`
         me.ap -= cost
         me.ready = false
         state.qa.push({ npc: npc.id, q: q.id, seat, ts: now })
@@ -621,7 +626,7 @@ export function makeEngine(rt: ScenarioRuntime) {
         if (!evalCond(state, seat, opt.requires)) return '你无法选择这一项'
         me.choices[step.id] = opt.id
         me.ready = true
-        for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} 已做出选择。`, 'dm')
+        for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} ${KIDS ? '已经选好了' : '已做出选择'}。`, 'dm')
         return
       }
 
@@ -643,13 +648,15 @@ export function makeEngine(rt: ScenarioRuntime) {
         if (correct) {
           me.money += cf.reward
           me.flags[`case:${cf.id}`] = true
-          log(state, now, 'DM', seat, `✅ 案卷「${cf.title}」判定正确！${REWARD} ${money(cf.reward)} 已到账。`, 'dm')
-          for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} 向 DM 递交了一份案卷，并且拿到了酬金。`, 'dm')
+          log(state, now, 'DM', seat, KIDS ? `✅「${cf.title}」全答对了！${REWARD} ${money(cf.reward)} 已经给你啦。` : `✅ 案卷「${cf.title}」判定正确！${REWARD} ${money(cf.reward)} 已到账。`, 'dm')
+          for (const o of othersOf(state, seat)) log(state, now, 'DM', o, KIDS ? `${seatName(state, seat)} 做对了「${cf.title}」，得到了${REWARD}。` : `${seatName(state, seat)} 向 DM 递交了一份案卷，并且拿到了${REWARD}。`, 'dm')
         } else {
           me.money = Math.max(0, me.money - cf.penalty)
           const left = cf.maxAttempts - attempts.length
-          const hint = wrong === 1 ? '只差一处' : '不止一处有误'
-          log(state, now, 'DM', seat, `❌ 案卷「${cf.title}」判定不通过（${hint}）。扣除 ${money(cf.penalty)}，剩余提交次数 ${left}。`, 'dm')
+          const hint = KIDS ? (wrong === 1 ? '只差一题' : '不止一题不对') : (wrong === 1 ? '只差一处' : '不止一处有误')
+          log(state, now, 'DM', seat, KIDS
+            ? `❌「${cf.title}」还没全对（${hint}）。扣了 ${money(cf.penalty)}，还能再试 ${left} 次。`
+            : `❌ 案卷「${cf.title}」判定不通过（${hint}）。扣除 ${money(cf.penalty)}，剩余提交次数 ${left}。`, 'dm')
         }
         return
       }
@@ -665,7 +672,7 @@ export function makeEngine(rt: ScenarioRuntime) {
           else if (typeof v === 'string' && q.options.some(o => o.id === v)) clean[q.id] = v
         }
         me.accuse = clean
-        for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} 已提交最终指认。`, 'dm')
+        for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} ${KIDS ? '交好答案了' : '已提交最终指认'}。`, 'dm')
         return
       }
 
@@ -685,9 +692,9 @@ export function makeEngine(rt: ScenarioRuntime) {
           clean[lot.id] = v
           total += v
         }
-        if (total > me.money) return '总出价超过了你的现金'
+        if (total > me.money) return sc.currency ? `出价加起来，比你有的${sc.currency.unit.replace(/^颗/, '')}还多` : '总出价超过了你的现金'
         state.auction.bids[seat] = clean
-        for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} 已经把暗标交给了拍卖师。`, 'dm')
+        for (const o of othersOf(state, seat)) log(state, now, 'DM', o, `${seatName(state, seat)} ${KIDS ? '已经偷偷交好了出价' : '已经把暗标交给了拍卖师'}。`, 'dm')
         return
       }
 

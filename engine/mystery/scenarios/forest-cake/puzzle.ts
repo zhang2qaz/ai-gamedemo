@@ -16,8 +16,8 @@ export const PUZZLE: Puzzle = {
   ],
   constraints: [
     // ── 谁拿走的 ──
-    { id: 'sink_prints', clues: ['sink', 'poster'], vars: ['taker'], desc: '水池边五根长手指的湿手印＝浣熊（海报）；全校唯一的小浣熊是皮皮', test: a => a.taker === 'pippi' },
-    { id: 'hall_prints', clues: ['wet_prints', 'poster'], vars: ['taker'], desc: '走廊上五根长手指的湿手印，从二班门口往厨房去＝浣熊', test: a => a.taker === 'pippi' },
+    { id: 'sink_prints', clues: ['sink', 'poster'], vars: ['taker'], desc: '水池边像小手一样的湿脚印＝浣熊（海报）；全校唯一的小浣熊是皮皮', test: a => a.taker === 'pippi' },
+    { id: 'hall_prints', clues: ['wet_prints', 'poster'], vars: ['taker'], desc: '走廊上像小手一样的湿脚印，从二班门口往厨房去＝浣熊', test: a => a.taker === 'pippi' },
     { id: 'note_homework', clues: ['note', 'homework'], vars: ['taker'], desc: '纸条是三班的作业纸、把"借"写成"惜"；皮皮的作业本也这么写，还被撕掉了一页', test: a => a.taker === 'pippi' },
     { id: 'note_owl', clues: ['note', 'owl_pippi'], vars: ['taker'], desc: '校长说皮皮老把"借"写成"惜"', test: a => a.taker === 'pippi' },
     { id: 'mask', clues: ['squirrel_saw', 'poster'], vars: ['taker'], desc: '"眼睛周围黑黑的"小影子：浣熊或熊猫', test: a => a.taker === 'pippi' || a.taker === 'panda' },
@@ -28,7 +28,9 @@ export const PUZZLE: Puzzle = {
     { id: 'bird', clues: ['bird_saw', 'poster'], vars: ['taker', 'berry'], desc: '小鸟看见戴黑眼罩、条纹尾巴的小家伙把蛋糕放进冰箱，还吃了大草莓', test: a => a.taker === 'pippi' && a.berry === 'pippi' },
     { id: 'fridge_hand', clues: ['fridge_print', 'fridge_cake', 'poster'], vars: ['taker', 'berry'], desc: '蛋糕在冰箱里，冰箱门上是五根长手指的草莓汁手印', test: a => a.taker === 'pippi' && a.berry === 'pippi' },
     { id: 'pippi_note', clues: ['pippi_note'], vars: ['taker'], desc: '皮皮承认纸条是他写的', test: a => a.taker === 'pippi' },
-    { id: 'confession', clues: ['pippi_truth'], vars: ['taker', 'where', 'why', 'berry'], desc: '皮皮说出了全部经过', test: a => a.taker === 'pippi' && a.where === 'fridge' && a.why === 'melt' && a.berry === 'pippi' },
+    { id: 'confession', clues: ['pippi_truth'], vars: ['taker', 'where', 'why'], desc: '皮皮承认把蛋糕放进冰箱、是怕奶油化掉（草莓的事他不认）', test: a => a.taker === 'pippi' && a.where === 'fridge' && a.why === 'melt' },
+    { id: 'pippi_berry', clues: ['pippi_berry'], vars: ['berry'], desc: '拿出草莓蒂，皮皮承认吃了草莓', test: a => a.berry === 'pippi' },
+    { id: 'note_zoom', clues: ['note_zoom', 'poster'], vars: ['taker'], desc: '纸条背面有五根长手指的奶油印＝写纸条的是浣熊', test: a => a.taker === 'pippi' },
 
     // ── 在哪里、为什么 ──
     { id: 'found', clues: ['fridge_cake'], vars: ['where', 'berry'], desc: '蛋糕好好地在厨房冰箱里，只少了最大的草莓', test: a => a.where === 'fridge' && a.berry !== 'nobody' },
@@ -42,7 +44,7 @@ export const PUZZLE: Puzzle = {
     // ── 什么时候 ──
     { id: 'at_1210', clues: ['rabbit_saw'], vars: ['when'], desc: '12:10 跳跳看见蛋糕还在', test: a => a.when === 'noon' || a.when === 'after' },
     { id: 'at_10', clues: ['fox_secret'], vars: ['when'], desc: '上午 10:00 橙橙尝奶油时蛋糕还在', test: a => a.when !== 'morning' },
-    { id: 'locked', clues: ['sheep_door'], vars: ['when'], desc: '12:30 门已经锁上，一直锁到大家回来', test: a => a.when !== 'after' },
+    { id: 'locked', clues: ['sheep_door'], vars: ['when'], desc: '12:35 门已经锁上，一直锁到大家回来', test: a => a.when !== 'after' },
     { id: 'seen_1230', clues: ['squirrel_saw'], vars: ['when'], desc: '12:30 果果看见有人抱着白白的东西往厨房跑', test: a => a.when !== 'after' },
   ],
 }

@@ -282,7 +282,7 @@ describe('客户端不得引用剧本正文（防止剧透进前端包）', () =
       const isType = !!m[1]
       const spec = m[2]
       if (isType) continue
-      expect(spec).not.toMatch(/scenarios\/swing-state(?!\/finaleTypes)|scenarios\/index|mystery\/engine$|mystery\/core|testFixture/)
+      expect(spec).not.toMatch(/scenarios\/swing-state(?!\/finaleTypes)|scenarios\/forest-cake|scenarios\/index|mystery\/engine$|mystery\/core|testFixture/)
     }
   })
 })

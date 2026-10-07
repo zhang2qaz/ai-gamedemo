@@ -3,7 +3,9 @@ import { makeEngine } from '../core'
 import { forestCake } from '../scenarios/forest-cake'
 import { SCENARIO, ACCUSE, CASE_FILES } from '../scenarios/forest-cake/content'
 import { PUZZLE, EXPECTED } from '../scenarios/forest-cake/puzzle'
-import { KIDS_META } from '../scenarios/meta'
+import { KIDS_META, SCENARIO_METAS } from '../scenarios/meta'
+import { RUNTIMES } from '../scenarios'
+import { ACORNS_PER_STAR, ALL_TOLD_BONUS, TOLD_STARS } from '../scenarios/forest-cake/result'
 import { solveAll } from '../solver'
 import type { Cond, GameState, MysteryAction, Seat } from '../types'
 
@@ -107,6 +109,31 @@ describe('《草莓蛋糕不见了！》内容', () => {
       const grants = SCENARIO.flow.flatMap(s => s.onEnter ?? []).filter(e => 'giveClue' in e && e.role === r.id).map(e => (e as { giveClue: string }).giveClue)
       expect(grants).toContain(`${r.id}_secret`)
       expect(r.script[0].text).toMatch(/你可以先不说，也可以勇敢地说出来/)
+    }
+  })
+
+  test('"怎么得星星"写的和真正算星星的一样', () => {
+    for (const r of SCENARIO.roles) {
+      const g = Object.fromEntries(r.goals.map(x => [x.id, x.points]))
+      for (const q of ACCUSE) expect(g[`g_${q.id}`]).toBe(q.points)
+      expect(g.g_secret).toBe(TOLD_STARS)
+      expect(r.goals.find(x => x.id === 'g_secret')!.text).toContain(`每人再多 ${ALL_TOLD_BONUS} 颗`)
+      expect(r.goals.find(x => x.id === 'g_acorn')!.text).toContain(`每 ${ACORNS_PER_STAR} 颗换 1 颗`)
+    }
+  })
+
+  test('说出小秘密的星星比不说多（不奖励藏起错误）；勇气时刻在第二次找线索之前（说出来能洗清嫌疑）', () => {
+    const order = SCENARIO.flow.map(s => s.id)
+    expect(order.indexOf('courage')).toBeLessThan(order.indexOf('search2'))
+    expect(TOLD_STARS).toBeGreaterThan(0)
+  })
+
+  test('入口页能选的故事，服务器上都有；顺序一致（第一个是默认）', () => {
+    expect(SCENARIO_METAS.map(m => m.id).sort()).toEqual(Object.keys(RUNTIMES).sort())
+    for (const m of SCENARIO_METAS) {
+      const sc = RUNTIMES[m.id].scenario
+      expect(sc.title).toBe(m.title)
+      expect(sc.theme ?? 'noir').toBe(m.theme)
     }
   })
 
@@ -234,7 +261,7 @@ describe('《草莓蛋糕不见了！》整局', () => {
 
   test('橡果拍卖：一颗一颗地出；出得一样多，校长收回去', () => {
     let s = until(start(), 'auction')
-    expect(err(s, 'P1', { type: 'bid', bids: { lot_star: 11 } })).toBe('总出价超过了你的现金')
+    expect(err(s, 'P1', { type: 'bid', bids: { lot_star: 11 } })).toBe('出价加起来，比你有的橡果还多')
     s = ok(s, 'P1', { type: 'bid', bids: { lot_flashlight: 3, lot_star: 2 } })
     s = ok(s, 'P2', { type: 'bid', bids: { lot_flashlight: 3, lot_bread: 1 } })
     expect(s.clues.item_flashlight).toBeUndefined()
@@ -279,23 +306,26 @@ describe('《草莓蛋糕不见了！》整局', () => {
     expect(s.seats.P1.money).toBe(13)
   })
 
-  test('勇气时刻：说出来的人，小秘密卡大家都能看到；所有人都说了，每人多 2 颗星', () => {
+  test('勇气时刻：说出来的人，小秘密卡大家都能看到；有人没说，就没有"所有人都说了"的那一颗', () => {
     let s = until(start(3), 'courage')
     s = ok(s, 'P1', { type: 'choose', optionId: 'tell' })
     s = ok(s, 'P2', { type: 'choose', optionId: 'tell' })
     // 大家同时揭晓：还没走完这一步之前，别人看不到
     expect(E.viewFor(s, 'P3', now).clues.map(c => c.id)).not.toContain('rabbit_secret')
     s = ok(s, 'P3', { type: 'choose', optionId: 'keep' })
-    s = until(s, 'talk2')
+    s = until(s, 'read2')
     expect(E.viewFor(s, 'P3', now).clues.map(c => c.id)).toEqual(expect.arrayContaining(['rabbit_secret', 'fox_secret']))
     expect(E.viewFor(s, 'P1', now).clues.map(c => c.id)).not.toContain('panda_secret')
     s = until(s, 'ending')
     const r = E.viewFor(s, 'P1', now).result!
     const item = (role: string, prefix: string) => r.scores.find(x => x.roleName === role)!.items.find(i => i.label.startsWith(prefix))!
-    expect(item('跳跳', '勇气星').points).toBe(1)
-    expect(item('圆圆', '秘密星').points).toBe(2)
-    expect(item('跳跳', '全班都说出了').got).toBe(false)
-    expect(r.endings.find(e => e.roleName === '圆圆')!.title).toBe('悄悄改错的小熊猫')
+    expect(item('跳跳', '勇气星')).toMatchObject({ points: TOLD_STARS, got: true })
+    expect(item('圆圆', '勇气星').got).toBe(false)
+    expect(item('跳跳', '所有小侦探都说出了').got).toBe(false)
+    expect(r.endings.find(e => e.roleName === '圆圆')!.title).toBe('还没准备好的小熊猫')
+    // 说了的人比没说的人星星多（其他都一样）
+    const total = (role: string) => r.scores.find(x => x.roleName === role)!.total
+    expect(total('跳跳')).toBeGreaterThan(total('圆圆'))
   })
 
   test('整局打完（四个人都说出秘密、全都答对）：星星、结局、真相都对', () => {
@@ -306,21 +336,66 @@ describe('《草莓蛋糕不见了！》整局', () => {
     expect(r.endings).toHaveLength(4)
     expect(r.headline).toMatch(/全都猜对了/)
     for (const sc of r.scores) {
-      expect(sc.items.find(i => i.label.startsWith('全班都说出了'))!.got).toBe(true)
-      // 4 道题 9 颗 + 勇气 1 + 全班 2 + 橡果：10 + 答对奖励 5 = 15 颗 → 5 颗星
-      expect(sc.total).toBe(9 + 1 + 2 + 5)
+      expect(sc.items.find(i => i.label.startsWith('所有小侦探都说出了'))!.got).toBe(true)
+      // 4 道题 9 颗 + 勇气 2 + 所有人都说 1 + 橡果：10 + 答对奖励 5 = 15 颗 → 7 颗星
+      expect(sc.total).toBe(9 + TOLD_STARS + ALL_TOLD_BONUS + Math.floor(15 / ACORNS_PER_STAR))
     }
+    expect(r.endings[0].text).toMatch(/金牌小侦探/)
     expect(r.truth[0].text).toMatch(/皮皮/)
     expect(r.truth.length).toBeGreaterThanOrEqual(4)
     s = E.tick(s, now + 10_000)
     expect(stepId(s)).toBe('ending')
   })
 
-  test('超时也能走完：勇气时刻没选的人，电脑替他选"先不说"', () => {
+  test('有人中途放弃：剩下的人都说出了小秘密，照样能一起分蛋糕；说出秘密的人不会被提醒"获得了自己的卡"', () => {
+    let s = until(start(3), 'search1')
+    s = E.abandonSeat(s, 'P3', now)
+    for (let guard = 0; stepId(s) !== 'courage'; guard++) {
+      if (guard > 40) throw new Error('卡住了')
+      const k = E.scenario.flow[s.stepIndex].kind
+      const at = s.stepIndex
+      for (const seat of ['P1', 'P2'] as Seat[]) {
+        if (s.stepIndex !== at) break
+        s = ok(s, seat, k === 'auction' && !s.auction?.results ? { type: 'bid', bids: {} } : { type: 'ready', value: true })
+      }
+    }
+    s = ok(ok(s, 'P1', { type: 'choose', optionId: 'tell' }), 'P2', { type: 'choose', optionId: 'tell' })
+    s = until(s, 'read2')
+    // 开局拿到卡时提醒过一次；说出来的时候不再提醒自己
+    expect(E.viewFor(s, 'P1', now).log.filter(e => e.text.includes('你获得了线索【跳跳的小秘密】'))).toHaveLength(1)
+    expect(E.viewFor(s, 'P2', now).log.some(e => e.text.includes('你获得了线索【跳跳的小秘密】'))).toBe(true)
+    for (let guard = 0; stepId(s) !== 'ending'; guard++) {
+      if (guard > 10) throw new Error('卡住了')
+      const at = s.stepIndex
+      for (const seat of ['P1', 'P2'] as Seat[]) {
+        if (s.stepIndex !== at) break
+        s = ok(s, seat, E.scenario.flow[s.stepIndex].kind === 'accuse' ? { type: 'accuse', answers: {} } : { type: 'ready', value: true })
+      }
+    }
+    const r = E.viewFor(s, 'P1', now).result!
+    expect(r.scores.find(x => x.roleName === '跳跳')!.items.find(i => i.label.startsWith('所有小侦探都说出了'))!.got).toBe(true)
+  })
+
+  test('超时也能走完：勇气时刻没选的人，电脑替他选"先不说"；慢一点的小朋友不会害别人拿不到"所有人都说了"', () => {
     let s = until(start(), 'courage')
+    s = ok(s, 'P1', { type: 'choose', optionId: 'tell' })
     now = E.nextDeadline(s)! + 1
     s = E.tick(s, now)
-    expect(stepId(s)).toBe('talk2')
-    expect(s.seats.P1.flags.told).toBe(false)
+    expect(stepId(s)).toBe('read2')
+    expect(s.seats.P2.flags.told).toBe(false)
+    s = until(s, 'ending')
+    const r = E.viewFor(s, 'P1', now).result!
+    expect(r.scores.find(x => x.roleName === '跳跳')!.items.find(i => i.label.startsWith('所有小侦探都说出了'))!.got).toBe(true)
+  })
+
+  test('皮皮先只认"把蛋糕冰起来"，草莓的事要拿出草莓蒂才认', () => {
+    let s = until(start(), 'search2')
+    s = ok(s, 'P1', search(s, 'fridge_cake'))
+    s = ok(s, 'P1', { type: 'ask', npcId: 'pippi', questionId: 'p_cake' })
+    expect(E.viewFor(s, 'P1', now).log.at(-2)!.text).toMatch(/什么草莓/)
+    expect(err(s, 'P1', { type: 'ask', npcId: 'pippi', questionId: 'p_berry' })).toBe('这个问题还不能问')
+    s = ok(s, 'P1', search(s, 'trash_stem'))
+    s = ok(s, 'P1', { type: 'ask', npcId: 'pippi', questionId: 'p_berry' })
+    expect(s.clues.pippi_berry.owner).toBe('P1')
   })
 })

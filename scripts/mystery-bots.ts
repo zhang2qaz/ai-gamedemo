@@ -214,6 +214,11 @@ async function main() {
   const [host, ...rest] = bots
   host.send({ type: 'CREATE', name: host.name, ...(STORY ? { scenario: STORY } : {}) })
   const code = await waitFor(() => host.view?.code ?? null)
+  const hv = host.view!
+  if (PLAYERS < hv.minPlayers || PLAYERS > hv.maxPlayers) {
+    console.error(`❌ 《${hv.scenario.title}》要 ${hv.minPlayers}–${hv.maxPlayers} 个人，--players ${PLAYERS} 开不了局${STORY && hv.scenario.id !== STORY ? `（没有叫 ${STORY} 的剧本）` : ''}`)
+    process.exit(1)
+  }
   for (const b of rest) {
     b.send({ type: 'JOIN', code, name: b.name })
     await waitFor(() => b.view?.code ?? null)

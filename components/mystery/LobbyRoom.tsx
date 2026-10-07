@@ -30,7 +30,8 @@ export default function LobbyRoom() {
   })
   if (readySent && me.ready === readySent.target) setReadySent(null)
   const readyPending = !!readySent && me.ready !== readySent.target
-  const link = typeof window !== 'undefined' ? `${window.location.origin}/mystery?room=${view.code}` : ''
+  // 链接里带上剧本：没玩过的设备打开时，入口页显示的就是这个故事（小学生不会先看到大人的故事）
+  const link = typeof window !== 'undefined' ? `${window.location.origin}/mystery?room=${view.code}&story=${view.scenario.id}` : ''
 
   async function copy() {
     try {
@@ -94,7 +95,7 @@ export default function LobbyRoom() {
                     <div className="min-w-0">
                       <div className="font-black text-lg text-white">{r.name}</div>
                       <div className="text-[11px] text-[var(--mx-muted)]">{r.enName} · {r.title}</div>
-                      {r.optional && <div className="text-[11px] text-sky-300 mt-0.5">可选角色：第 {view.maxPlayers} 个人来了才需要有人演</div>}
+                      {r.optional && <div className="text-[11px] text-sky-300 mt-0.5">可选角色：人多的时候才需要有人演，没人演时由电脑扮演</div>}
                     </div>
                     {mine && <span className="ml-auto text-xs font-bold shrink-0" style={{ color: r.color }}>你的角色</span>}
                     {takenByOther && <span className="ml-auto text-xs text-[var(--mx-muted)] shrink-0 max-w-[40%] truncate">{taker!.name ?? '别人'}已选</span>}
@@ -110,7 +111,9 @@ export default function LobbyRoom() {
 
         <div className="mx-panel p-4 space-y-3">
           <div className="text-xs text-[var(--mx-muted)] leading-5">
-            开局后，电脑 DM 会按幕推送你的私密剧本。<b className="text-white/80">不要把剧本原文直接念给别人</b>——你可以撒谎、隐瞒、交易，但别忘了：每个谎言都可能被证据揭穿。
+            {view.scenario.theme === 'kids'
+              ? <>开始以后，电脑会把只给你看的小剧本发给你。<b className="text-white/80">不要直接念给别人听</b>——你可以选择先说什么、先不说什么。找到证据，就知道谁说的是真的啦！</>
+              : <>开局后，电脑 DM 会按幕推送你的私密剧本。<b className="text-white/80">不要把剧本原文直接念给别人</b>——你可以撒谎、隐瞒、交易，但别忘了：每个谎言都可能被证据揭穿。</>}
           </div>
           <div className="text-xs text-amber-200/90 leading-5 rounded-lg bg-amber-500/10 p-2">
             ⚠️ <b>人到齐了再点准备。</b>所有人都点了「准备好了」就会马上开局，开局以后就不能再有人加入了。

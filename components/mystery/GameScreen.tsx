@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMysteryStore } from '@/store/mysteryStore'
 import type { SeatView } from '@/engine/mystery/types'
-import { ConnectionBadge, Countdown, Money, seatName } from './ui'
+import { ConnectionBadge, Countdown, Money, RichText, seatName } from './ui'
 import Feed from './Feed'
 import { AccusePanel, CasePanel, ChoicePanel, CluePanel, ResultPanel, ScriptPanel, SearchPanel } from './panels'
 import FinalePanel, { FinaleSummary } from './FinalePanel'
@@ -60,7 +60,7 @@ export default function GameScreen() {
     { id: 'stage', label: stageLabel(k, kids), show: true },
     { id: 'script', label: kids ? '小剧本' : '剧本', show: true, dot: view.me.chapters.some(c => c.isNew) },
     { id: 'search', label: kids ? '找线索' : '搜证', show: true, dot: k === 'search' },
-    { id: 'clues', label: `线索 ${view.clues.length}`, show: true, dot: view.clues.length > seenClues && tab !== 'clues' },
+    { id: 'clues', label: `${kids ? '我的线索' : '线索'} ${view.clues.length}`, show: true, dot: view.clues.length > seenClues && tab !== 'clues' },
     { id: 'cases', label: kids ? '小测验' : '案卷', show: view.caseFiles.length > 0, dot: view.caseFiles.some(c => c.open && !c.solved) },
     { id: 'feed', label: '记录', show: true },
   ]
@@ -213,6 +213,7 @@ function stageHint(view: SeatView): string {
 
 function Stage({ view, goto }: { view: SeatView; goto: (t: Tab) => void }) {
   const k = view.step.kind
+  const kidsTheme = view.scenario.theme === 'kids'
   if (k === 'choice') return <ChoicePanel view={view} />
   if (k === 'auction') return <AuctionPanel view={view} />
   if (k === 'finale') return <FinalePanel view={view} />
@@ -221,18 +222,18 @@ function Stage({ view, goto }: { view: SeatView; goto: (t: Tab) => void }) {
   return (
     <div className="space-y-3">
       {view.step.text && (
-        <div className="mx-paper p-5 mx-serif text-[15px] leading-8 whitespace-pre-wrap mx-in">
-          <div className="flex justify-end mb-1 whitespace-normal">
+        <div className="mx-paper p-5 mx-serif text-[15px] leading-8 mx-in">
+          <div className="flex justify-end mb-1">
             <SpeakButton id={`step:${view.step.id}`} label={view.step.title} text={view.step.text} tone="light" size="lg" />
           </div>
-          {view.step.text}
+          <RichText text={view.step.text} />
         </div>
       )}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <QuickLink label="阅读剧本" icon="📜" onClick={() => goto('script')} />
         <QuickLink label="搜证问询" icon="🔎" onClick={() => goto('search')} />
         <QuickLink label="查看线索" icon="🗂️" onClick={() => goto('clues')} />
-        {view.caseFiles.length > 0 && <QuickLink label="递交案卷" icon="💵" onClick={() => goto('cases')} />}
+        {view.caseFiles.length > 0 && <QuickLink label={kidsTheme ? '做小测验' : '递交案卷'} icon={kidsTheme ? '📝' : '💵'} onClick={() => goto('cases')} />}
       </div>
     </div>
   )
