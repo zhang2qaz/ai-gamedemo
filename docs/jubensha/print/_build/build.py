@@ -12,10 +12,10 @@ P3 = os.path.join(DOCS, "phase4")
 BOOKS = [
     # key, 源文件, 封面参数
     ("01-lajiao", "characters/01-lajiao.md", dict(no="No.01", name="皮拉提", party="驴", role="驴友党众议员 · 厨房直播网红", slogan="锅都热了，你还凉着？", prop="lajiao")),
-    ("02-gaowen", "characters/02-gaowen.md", dict(no="No.02", name="烦高", party="驴", role="冲浪州州长 · 建制派领跑者", slogan="风再大，发型不乱。", prop="gaowen")),
-    ("03-andefu", "characters/03-andefu.md", dict(no="No.03", name="下木", party="驴", role="驴友党众议院党鞭", slogan="我不记仇，我记账。", prop="andefu")),
+    ("02-gaowen", "characters/02-gaowen.md", dict(no="No.02", name="烦高", party="驴", role="加利福尼亚州州长 · 驴友党呼声最高的人之一", slogan="风再大，发型不乱。", prop="gaowen")),
+    ("03-andefu", "characters/03-andefu.md", dict(no="No.03", name="下木", party="驴", role="俄亥俄州联邦众议员 · 驴友党党鞭", slogan="我不记仇，我记账。", prop="andefu")),
     ("04-mei", "characters/04-mei.md", dict(no="No.04", name="梅戏", party="驴", role="驴友党通讯总监 · 前调查记者", slogan="我有个独家，下次告诉你。", prop="mei")),
-    ("05-maike", "characters/05-maike.md", dict(no="No.05", name="麦克播", party="象", role="播客之王 · 大象党初选挑战者", slogan="这事儿咱展开聊三小时。", prop="maike")),
+    ("05-maike", "characters/05-maike.md", dict(no="No.05", name="麦克播", party="象", role="得克萨斯 · 播客之王", slogan="这事儿咱展开聊三小时。", prop="maike")),
     ("06-gengen", "characters/06-gengen.md", dict(no="No.06", name="半步爹", party="象", role="现任副总统 · 大象党接班人", slogan="我一直就在您身后半步。", prop="gengen")),
     ("07-qianduoduo", "characters/07-qianduoduo.md", dict(no="No.07", name="建国钱", party="象", role="开盒智能创始人 · 大象党头号金主", slogan="两边押，才叫稳。", prop="qianduoduo")),
     ("08-linda", "characters/08-linda.md", dict(no="No.08", name="狗登罗", party="象", role="大象党首席选举律师", slogan="我查过了，他是干净的。", prop="linda")),
@@ -129,14 +129,14 @@ def build_html(key, src, cv):
     svg = cover_svg(**cv)
     is_char = cv.get("party") is not None
     note = ("本剧本分为四幕与结局。请只阅读DM允许的那一幕，看到“请停止阅读”立即合上剧本。"
-            "<br>游戏中只能口述自己的信息，禁止出示本册原文、卡片与DM给你的任何物件。") if is_char else \
-           ("本册供DM与场控使用。开本前请完整通读并完成上岗考核（见上册第一章）。") if "dm" in key else \
+            "<br>不能出示本册原文；线索卡和拍到的遗物线索可以给人看，不能转手。") if is_char else \
+           ("本册供DM使用，单DM可开，场控可选。开本前请完整通读一遍。") if "dm" in key else \
            ("本册为公开物料，可在片头分发给全体玩家。")
     title = f'''<section class="titlepage">
   <p class="t1">摇摆！</p><div class="rule"></div>
   <p class="t2">{cv["name"]}</p><p class="t3">{cv["role"]}</p>
   <div class="note">{note}</div>
-  <p class="t3" style="margin-top:14mm">Ascham工作室 · 城限欢乐阵营本 · 6–8人 · 约8小时</p>
+  <p class="t3" style="margin-top:14mm">Ascham工作室 · 城限欢乐阵营本 · 6–8人 · 约6小时</p>
 </section>'''
     html = f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>摇摆！· {cv["name"]}</title>
 <style>{font_css()}{css}</style></head><body>
