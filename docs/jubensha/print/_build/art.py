@@ -45,9 +45,11 @@ CROPS = {"01-lajiao": (34, 74, 444, 649), "03-andefu": (514, 236, 896, 772),
 # 裁进来的别的角色的脸做虚化压暗，当背景人物（页面比例坐标 x0, y0, x1, y1）
 # 每项：x0, y0, x1, y1, 模糊半径, 亮度倍数, 羽化半径
 SOFTEN = {"01-lajiao": [(.57, .34, 1.05, .78, 26, .3, 70)],
-          "03-andefu": [(.7, -.05, 1.05, .3, 22, .42, 25), (.6, -.05, .75, .07, 22, .42, 25)],
-          "04-mei": [(-.05, .08, .13, .62, 18, .5, 40), (.87, .1, 1.05, .66, 18, .5, 40)],
-          "05-maike": [(.64, .14, 1.05, .70, 22, .42, 70), (.45, -.05, 1.05, .1, 18, .5, 30)]}
+          "03-andefu": [(.7, -.05, 1.05, .34, 22, .42, 65), (.6, -.05, .75, .07, 22, .42, 25)],
+          "04-mei": [(-.05, .08, .13, .62, 18, .5, 40), (.87, .1, 1.05, .66, 18, .5, 40),
+                     (.15, -.05, .30, .075, 18, .5, 15), (.12, .26, .2, .58, 14, .6, 20)],
+          "05-maike": [(.64, .14, 1.05, .70, 22, .42, 70), (.45, -.05, 1.05, .1, 18, .5, 30),
+                       (-.05, -.05, .2, .1, 0, .55, 40)]}  # 最后一项只压暗不模糊：编号“05”底下
 
 
 def sr_crops(model_path, keys=None):
@@ -160,7 +162,7 @@ def standin_page(key):
     im = im.filter(ImageFilter.UnsharpMask(radius=1.0, percent=35, threshold=2))
     im = ImageEnhance.Brightness(im).enhance(1.06)
     for x0, y0, x1, y1, blur, bright, feather in SOFTEN.get(key, []):
-        soft = ImageEnhance.Brightness(im.filter(ImageFilter.GaussianBlur(blur))).enhance(bright)
+        soft = ImageEnhance.Brightness(im.filter(ImageFilter.GaussianBlur(blur)) if blur else im).enhance(bright)
         m = Image.new("L", im.size, 0)
         ImageDraw.Draw(m).rectangle([int(x0 * FULL_W), int(y0 * FULL_H), int(x1 * FULL_W), int(y1 * FULL_H)], fill=255)
         im = Image.composite(soft, im, m.filter(ImageFilter.GaussianBlur(feather)))

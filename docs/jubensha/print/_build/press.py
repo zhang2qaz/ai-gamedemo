@@ -50,15 +50,16 @@ def page_css(label, color):
             fonts += (f"\n@font-face{{font-family:'{fam}';font-weight:{w};font-style:normal;"
                       f"src:url(file://{ROOT}/fonts/static/{f}.ttf) format('truetype');}}")
     b = BLEED
-    # 页宽多写0.2mm：Chromium 把154mm的页面取整成437.04pt，按154mm排的满版图右边会差0.17mm；写154.2mm时PDF仍是437.04pt且铺满
+    # Chromium 把页面尺寸取整到0.01英寸：154mm→437.04pt（满版图右边会差0.17mm）、216mm→612pt（上下出血只剩2.95mm）。
+    # 所以写成154.2×216.2mm（实得437.04×612.96pt，四边出血都≥3mm），满版块高216.3mm正好铺满且不多出一页。
     return fonts + f"""
-@page {{ size: {TRIM_W + 2 * b + 0.2}mm {TRIM_H + 2 * b}mm; margin: {16 + b}mm {13 + b}mm {17 + b}mm {13 + b}mm;
+@page {{ size: {TRIM_W + 2 * b + 0.2}mm {TRIM_H + 2 * b + 0.2}mm; margin: {16 + b}mm {13 + b}mm {17 + b}mm {13 + b}mm;
   @bottom-left {{ content: "{lab}"; font-family: 'Noto Sans SC'; font-size: 7pt; color: #4a4a48; }}
   @bottom-right {{ content: counter(page); font-family: 'Noto Sans SC'; font-size: 7pt; color: #4a4a48; }} }}
 @page cover {{ margin: 0; @bottom-left {{ content: none; }} @bottom-right {{ content: none; }} }}
 @page bare {{ @bottom-left {{ content: none; }} @bottom-right {{ content: none; }} }}
 """ + base + f"""
-.cover {{ page: cover; position: relative; width: 100%; height: {TRIM_H + 2 * b}mm; overflow: hidden; break-before: page; break-after: page; }}
+.cover {{ page: cover; position: relative; width: 100%; height: {TRIM_H + 2 * b + 0.3}mm; overflow: hidden; break-before: page; break-after: page; }}
 .cover > img.bg {{ position: absolute; left: 0; top: 0; width: 100%; height: 100%; }}
 .cover > svg {{ position: absolute; overflow: visible; }}
 .titlepage {{ page: bare; height: 172mm; }}
@@ -103,6 +104,8 @@ h2.dipai {{ break-before: page; }}
 table.dipai {{ break-inside: avoid; }}
 blockquote {{ box-shadow: none; border-right: 1.3mm solid {color}; border-bottom: 1.3mm solid {color}; -webkit-box-decoration-break: clone; box-decoration-break: clone; }}
 blockquote.long {{ break-inside: auto; }}
+blockquote p {{ orphans: 3; widows: 3; }}
+p.keep {{ break-inside: avoid; }}
 .note, .sealbox, .stop, .yanyi, pre, blockquote {{ box-sizing: border-box; margin-right: 0.6mm; }}
 .titlepage .note {{ align-self: stretch; margin-left: 0.3mm; }}
 .mock {{ border: 0.5mm solid #1b1a17; border-radius: 1mm; padding: 2.5mm 3.5mm; margin: 2mm 0 4mm; font-family: 'Noto Sans SC'; font-size: 8.8pt; line-height: 1.6; break-inside: avoid; max-width: 104mm; background: #fffdf8; box-sizing: border-box; }}
@@ -111,13 +114,16 @@ blockquote.long {{ break-inside: auto; }}
 .mock .r {{ text-align: right; }}
 .mock .i {{ padding-left: 2em; }}
 .mock .i3 {{ padding-left: 3em; }}
+.mock .lr {{ display: flex; justify-content: space-between; }}
 .mock .mk-gap {{ height: 0.7em; }}
 .mock .mk-hr {{ border-top: 0.3mm solid #8a8270; margin: 1mm 0; }}
 .mock .mk-cols {{ display: grid; column-gap: 5mm; row-gap: 0.4mm; }}
 .nb {{ white-space: nowrap; }}
 table.short {{ break-inside: avoid; }}
 table.kv td:first-child {{ width: 26%; white-space: nowrap; font-family: 'Noto Sans SC'; font-weight: 700; }}
-.yanyi p:last-child {{ break-before: avoid; }}
+.yanyi {{ padding-bottom: 1.6mm; }}
+.yanyi p:nth-last-child(-n+2) {{ break-before: avoid; }}  /* 最后三段连在一起：要换页就至少带三段过去，不留一两行的框尾 */
+.yanyi p {{ margin-bottom: 1.3mm; }}
 """
 
 
@@ -138,13 +144,25 @@ def _corner(x, y, sx, sy):
             '<path d="M8,8 L13,13" stroke-width="2.4"/></g>')
 
 
+FRAME_GAP = {"05": (150, 640)}  # 麦克播紧贴海报左边，左框线在他脸的高度断开（人物压在框前）
+
+
+def frame(x, y, w, h, sw, gap=None):
+    if not gap:
+        return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="none" stroke="url(#gold)" stroke-width="{sw}"/>'
+    g0, g1 = gap
+    return (f'<path d="M{x},{g0} V{y} H{x + w} V{y + h} H{x} V{g1}" fill="none" stroke="url(#gold)" stroke-width="{sw}"/>')
+
+
 def standin_layer(no, name, party_role):
     """补做封面的金框、编号、ASCHAM、角色名、党派身份、标语，仿出品方封面版式。"""
     ls = 40 if len(name) == 2 else 10
+    gap = FRAME_GAP.get(no)
     out = [
-        '<rect x="11" y="11" width="1002" height="1514" fill="none" stroke="url(#gold)" stroke-width="2.4"/>',
-        '<rect x="17" y="17" width="990" height="1502" fill="none" stroke="url(#gold)" stroke-width=".9"/>',
+        frame(11, 11, 1002, 1514, 2.4, gap), frame(17, 17, 990, 1502, .9, gap),
         _corner(17, 17, 1, 1), _corner(1007, 17, -1, 1), _corner(17, 1519, 1, -1), _corner(1007, 1519, -1, -1),
+        f'<text x="42" y="80" font-family="Cormorant Garamond" font-weight="600" font-size="50" fill="#140c04" opacity=".55" '
+        f'filter="url(#sh)" style="font-variant-numeric: lining-nums; font-feature-settings: \'lnum\' 1">{no}</text>',
         f'<text x="42" y="80" font-family="Cormorant Garamond" font-weight="600" font-size="50" fill="url(#gold)" style="font-variant-numeric: lining-nums; font-feature-settings: \'lnum\' 1">{no}</text>',
         '<text x="516" y="50" text-anchor="middle" font-family="Cinzel" font-weight="500" font-size="17" letter-spacing="9" fill="url(#gold)">ASCHAM</text>',
         '<path d="M462,64 H500 M524,64 H562" stroke="url(#goldh)" stroke-width="1.2"/><path d="M512,58 L518,64 L512,70 L506,64 Z" fill="url(#gold)"/>',
@@ -237,6 +255,13 @@ def mock_html(block):
     行首缩进≥7居中、3—6缩进、无框文件里≥16靠右；行内两个以上空格隔开的几段排成等宽栏。"""
     lines = block.split("\n")
     boxed = lines[0].lstrip().startswith("┌")
+
+    def inner(ln):
+        t = ln.strip()
+        return t.strip("│").rstrip() if boxed else ln.rstrip()
+    body = [inner(l) for l in lines if not l.lstrip().startswith(("┌", "└", "├"))]
+    leads = [len(t) - len(t.lstrip(" ")) for t in body if t.strip()]
+    all_center = boxed and leads and min(leads) >= 3  # 每行都缩进的小卡片（胸牌、地点牌）：整体居中
     rows = []
     for ln in lines:
         t = ln.rstrip()
@@ -256,13 +281,17 @@ def mock_html(block):
             rows.append('<div class="mk-gap"></div>')
             continue
         segs = re.split(r" {2,}", t)
+        if len(segs) == 2 and re.search(r" {8,}", t):  # 同一行里隔得很远的两项：一左一右（〔底注〕……〔编号〕）
+            rows.append(f'<div class="lr"><span>{H.escape(segs[0])}</span><span>{H.escape(segs[1])}</span></div>')
+            continue
         if lead >= 8 and rows and isinstance(rows[-1], list):
             segs = [""] + segs  # 缩进续行：对齐到上一行的第二栏
         if len(segs) > 1:
             rows.append(segs)
             continue
-        cls = ("r" if lead >= 16 and not boxed else "i3" if t.startswith("□") and lead >= 3
-               else "c" if lead >= 7 and boxed else "i" if lead >= 3 else "")  # □选项续行与上一行的选项对齐
+        cls = ("c" if all_center else "r" if lead >= 16 and not boxed else "i3" if t.startswith("□") and lead >= 3
+               else "r" if lead >= 12 and boxed else "c" if lead >= 7 and boxed else "i" if lead >= 3 else "")
+        # □选项续行与上一行的选项对齐；框里行首空12格以上的（编号、签名）靠右
         rows.append(f'<div class="{cls}">{H.escape(t)}</div>')
     out, i = [], 0
     while i < len(rows):  # 连续的分栏行合成一个网格，列宽一致，上下对齐
@@ -281,7 +310,7 @@ def mock_html(block):
     return f'\n\n<div class="mock{"" if boxed else " plain"}">{"".join(out)}</div>\n\n'
 
 
-def md_html(md_text, name=None):
+def md_html(md_text, name=None, script=False):
     md_text = FENCE_RE.sub(lambda m: mock_html(m.group(1)), md_text)
     md_text = re.sub(r"(?m)^ {2,3}([-*+] |\d+[.)] )", r"    \1", md_text)  # 2—3格缩进的子列表
     md_text = PATH_RE.sub(lambda m: m.group(0).replace("/", "/\u200b"), md_text)  # 长路径允许折行
@@ -299,22 +328,32 @@ def md_html(md_text, name=None):
     h = re.sub(r"<table>(\s*<thead>\s*<tr>\s*<th[^>]*>物料</th>\s*<th[^>]*>尺寸)", r'<table class="spec">\1', h)
     # 【我的底牌】：片头只读这一页，整张表从新的一页开始、不跨页
     h = re.sub(r"<h2>(【我的底牌】[^<]*)</h2>(\s*)<table>", r'<h2 class="dipai">\1</h2>\2<table class="dipai">', h)
-    h = re.sub(r"<p>(<strong>(?:(?!</p>).)*</strong>)</p>", r'<p class="lead">\1</p>', h, flags=re.S)
+    # 整行粗体的小标题（“第2步……”“人物关系简表……”）和下文同页；以句号叹号问号收尾的粗体是正文强调，不算
+    h = re.sub(r"<p>(<strong>(?:(?!</p>).)*</strong>)</p>",
+               lambda m: m.group(0) if re.search(r"[。！？”\"]</strong>$", m.group(1)) else f'<p class="lead">{m.group(1)}</p>', h, flags=re.S)
     h = re.sub(r"<p>(?=(?:(?!</?p[ >]).)*[：:]</p>)", '<p class="lead">', h, flags=re.S)
-    h = re.sub(r"<blockquote>((?:(?!</blockquote>).){500,}?)</blockquote>", r'<blockquote class="long">\1</blockquote>', h, flags=re.S)
+    # 引用块：三行以上的允许跨页（前一页至少留3行），免得整块连同引导语推到下一页、留下大片空白
+    h = re.sub(r"<blockquote>((?:(?!</blockquote>).){150,}?)</blockquote>", r'<blockquote class="long">\1</blockquote>', h, flags=re.S)
 
     def lead_before_block(m):  # 短段落后面紧跟引用块／表格／卡片：和后面排在一起
         txt = re.sub(r"<[^>]+>", "", m.group(2))
         return (f'<p class="lead">{m.group(2)}</p>' if len(txt) <= 60 else m.group(1)) + m.group(3)
     h = re.sub(r'(<p>((?:(?!</?p[ >]).){1,400}?)</p>)(\s*<(?:blockquote|table|div class="mock))', lead_before_block, h, flags=re.S)
-    h = re.sub(r"【[^】<]{1,10}】", lambda m: f'<span class="nb">{m.group(0)}</span>', h)  # 【可删】之类不拆行
+    tagnb = lambda x: re.sub(r"【[^】<]{1,10}】", lambda m: f'<span class="nb">{m.group(0)}</span>', x)
+    # 台本里的【可删】【6人局跳过】不拆行（台词左对齐，不会撑开字距）；正文两端对齐，不加
+    h = tagnb(h) if script else re.sub(r'<div class="yanyi"[^>]*>.*?</div>', lambda m: tagnb(m.group(0)), h, flags=re.S)
+    h = re.sub(r"(第.幕|哪一幕)·第.条", lambda m: f'<span class="nb">{m.group(0)}</span>', h)
     h = re.sub(r"\d+×\d+mm", lambda m: f'<span class="nb">{m.group(0)}</span>', h)
 
     def short_table(m):
         rows = m.group(0).count("<tr>")
-        return m.group(0).replace("<table>", '<table class="short">', 1) if rows <= 5 else m.group(0)
+        chars = len(re.sub(r"<[^>]+>|\s", "", m.group(0)))
+        small = rows <= 11 and chars <= 220  # 行少且字少的表才整张不拆，长表照常跨页（重复表头）
+        return m.group(0).replace("<table>", '<table class="short">', 1) if small else m.group(0)
     h = re.sub(r"<table>\s*<thead>\s*<tr>(.*?)</tr>\s*</thead>\s*<tbody>\s*<tr>(.*?)</tr>\s*</tbody>\s*</table>", kv_table, h, flags=re.S)
     h = re.sub(r"<table>.*?</table>", short_table, h, flags=re.S)
+    # 三行以内的短段不拆到两页（避免页首只剩一两个字）
+    h = re.sub(r"<p>((?:(?!</?p[ >]).){1,150}?)</p>", lambda m: f'<p class="keep">{m.group(1)}</p>' if len(re.sub(r"<[^>]+>", "", m.group(1))) <= 110 else m.group(0), h, flags=re.S)
     return h
 
 
@@ -444,7 +483,7 @@ def scripts_jobs():
         md = open(os.path.join(P3, "shared", f), encoding="utf-8").read()
         css = page_css(f"摇摆！· 全员演绎台本 · {t}", "#7a5c2e")
         jobs.append(Job(os.path.join(PRESS, "演绎台本", f"台本-{i + 1}-{t}.pdf"), f"摇摆！· 演绎台本 · {t}", css,
-                        [f'<main><div class="yanyi">{md_html(md)}</div></main>'], lambda: [], lambda k: k % 2))
+                        [f'<main><div class="yanyi">{md_html(md, script=True)}</div></main>'], lambda: [], lambda k: k % 2))
     return jobs
 
 
