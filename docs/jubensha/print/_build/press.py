@@ -50,14 +50,15 @@ def page_css(label, color):
             fonts += (f"\n@font-face{{font-family:'{fam}';font-weight:{w};font-style:normal;"
                       f"src:url(file://{ROOT}/fonts/static/{f}.ttf) format('truetype');}}")
     b = BLEED
+    # 页宽多写0.2mm：Chromium 把154mm的页面取整成437.04pt，按154mm排的满版图右边会差0.17mm；写154.2mm时PDF仍是437.04pt且铺满
     return fonts + f"""
-@page {{ size: {TRIM_W + 2 * b}mm {TRIM_H + 2 * b}mm; margin: {16 + b}mm {13 + b}mm {17 + b}mm {13 + b}mm;
+@page {{ size: {TRIM_W + 2 * b + 0.2}mm {TRIM_H + 2 * b}mm; margin: {16 + b}mm {13 + b}mm {17 + b}mm {13 + b}mm;
   @bottom-left {{ content: "{lab}"; font-family: 'Noto Sans SC'; font-size: 7pt; color: #4a4a48; }}
   @bottom-right {{ content: counter(page); font-family: 'Noto Sans SC'; font-size: 7pt; color: #4a4a48; }} }}
 @page cover {{ margin: 0; @bottom-left {{ content: none; }} @bottom-right {{ content: none; }} }}
 @page bare {{ @bottom-left {{ content: none; }} @bottom-right {{ content: none; }} }}
 """ + base + f"""
-.cover {{ page: cover; position: relative; width: {TRIM_W + 2 * b}mm; height: {TRIM_H + 2 * b}mm; overflow: hidden; break-before: page; break-after: page; }}
+.cover {{ page: cover; position: relative; width: 100%; height: {TRIM_H + 2 * b}mm; overflow: hidden; break-before: page; break-after: page; }}
 .cover > img.bg {{ position: absolute; left: 0; top: 0; width: 100%; height: 100%; }}
 .cover > svg {{ position: absolute; overflow: visible; }}
 .titlepage {{ page: bare; height: 172mm; }}
@@ -67,7 +68,7 @@ def page_css(label, color):
 .blank {{ height: 172mm; position: relative; }}
 .blank .mark {{ position: absolute; right: 0; top: 80mm; width: 30mm; font-family: 'Noto Sans SC'; font-size: 6.5pt; color: #b0a894; text-align: right; line-height: 1.5; }}
 .seal {{ break-before: page; }}
-.seal .stop {{ break-after: auto; margin: 0 0 6mm; }}
+.seal .stop {{ break-after: auto; margin: 0 0.6mm 6mm 0; }}
 .sealintro {{ break-before: page; }}
 .sealintro h1 {{ break-before: avoid; }}
 .sealbox {{ margin-top: 8mm; padding: 4mm 5mm; border: 0.5mm solid #1b1a17; background: #f3e9d4; font-family: 'Noto Sans SC'; font-size: 9.5pt; line-height: 1.8; }}
@@ -109,9 +110,14 @@ blockquote.long {{ break-inside: auto; }}
 .mock .c {{ text-align: center; }}
 .mock .r {{ text-align: right; }}
 .mock .i {{ padding-left: 2em; }}
+.mock .i3 {{ padding-left: 3em; }}
 .mock .mk-gap {{ height: 0.7em; }}
 .mock .mk-hr {{ border-top: 0.3mm solid #8a8270; margin: 1mm 0; }}
-.mock .mk-cols {{ display: grid; column-gap: 4mm; }}
+.mock .mk-cols {{ display: grid; column-gap: 5mm; row-gap: 0.4mm; }}
+.nb {{ white-space: nowrap; }}
+table.short {{ break-inside: avoid; }}
+table.kv td:first-child {{ width: 26%; white-space: nowrap; font-family: 'Noto Sans SC'; font-weight: 700; }}
+.yanyi p:last-child {{ break-before: avoid; }}
 """
 
 
@@ -139,7 +145,7 @@ def standin_layer(no, name, party_role):
         '<rect x="11" y="11" width="1002" height="1514" fill="none" stroke="url(#gold)" stroke-width="2.4"/>',
         '<rect x="17" y="17" width="990" height="1502" fill="none" stroke="url(#gold)" stroke-width=".9"/>',
         _corner(17, 17, 1, 1), _corner(1007, 17, -1, 1), _corner(17, 1519, 1, -1), _corner(1007, 1519, -1, -1),
-        f'<text x="42" y="80" font-family="Cormorant Garamond" font-weight="600" font-size="50" fill="url(#gold)">{no}</text>',
+        f'<text x="42" y="80" font-family="Cormorant Garamond" font-weight="600" font-size="50" fill="url(#gold)" style="font-variant-numeric: lining-nums; font-feature-settings: \'lnum\' 1">{no}</text>',
         '<text x="516" y="50" text-anchor="middle" font-family="Cinzel" font-weight="500" font-size="17" letter-spacing="9" fill="url(#gold)">ASCHAM</text>',
         '<path d="M462,64 H500 M524,64 H562" stroke="url(#goldh)" stroke-width="1.2"/><path d="M512,58 L518,64 L512,70 L506,64 Z" fill="url(#gold)"/>',
         f'<text x="{512 + ls / 2}" y="1326" text-anchor="middle" font-family="Noto Serif SC" font-weight="900" font-size="150" letter-spacing="{ls}" fill="#2a1a06" opacity=".22" filter="url(#sh)" transform="translate(3,5)">{name}</text>',
@@ -250,13 +256,29 @@ def mock_html(block):
             rows.append('<div class="mk-gap"></div>')
             continue
         segs = re.split(r" {2,}", t)
+        if lead >= 8 and rows and isinstance(rows[-1], list):
+            segs = [""] + segs  # 缩进续行：对齐到上一行的第二栏
         if len(segs) > 1:
-            cells = "".join(f"<span>{H.escape(x)}</span>" for x in segs)
-            rows.append(f'<div class="mk-cols" style="grid-template-columns:repeat({len(segs)},auto)">{cells}</div>')
+            rows.append(segs)
             continue
-        cls = ("r" if lead >= 16 and not boxed else "c" if lead >= 7 and boxed else "i" if lead >= 3 else "")
+        cls = ("r" if lead >= 16 and not boxed else "i3" if t.startswith("□") and lead >= 3
+               else "c" if lead >= 7 and boxed else "i" if lead >= 3 else "")  # □选项续行与上一行的选项对齐
         rows.append(f'<div class="{cls}">{H.escape(t)}</div>')
-    return f'\n\n<div class="mock{"" if boxed else " plain"}">{"".join(rows)}</div>\n\n'
+    out, i = [], 0
+    while i < len(rows):  # 连续的分栏行合成一个网格，列宽一致，上下对齐
+        if isinstance(rows[i], list):
+            grp = [rows[i]]
+            while i + 1 < len(rows) and isinstance(rows[i + 1], list):
+                i += 1
+                grp.append(rows[i])
+            n = max(len(g) for g in grp)
+            cells = "".join(f"<span>{H.escape(x)}</span>" for g in grp for x in g + [""] * (n - len(g)))
+            cols = "max-content " * (n - 1) + "minmax(0, 1fr)"  # 最后一栏可折行，不撑出版心
+            out.append(f'<div class="mk-cols" style="grid-template-columns:{cols}">{cells}</div>')
+        else:
+            out.append(rows[i])
+        i += 1
+    return f'\n\n<div class="mock{"" if boxed else " plain"}">{"".join(out)}</div>\n\n'
 
 
 def md_html(md_text, name=None):
@@ -280,7 +302,30 @@ def md_html(md_text, name=None):
     h = re.sub(r"<p>(<strong>(?:(?!</p>).)*</strong>)</p>", r'<p class="lead">\1</p>', h, flags=re.S)
     h = re.sub(r"<p>(?=(?:(?!</?p[ >]).)*[：:]</p>)", '<p class="lead">', h, flags=re.S)
     h = re.sub(r"<blockquote>((?:(?!</blockquote>).){500,}?)</blockquote>", r'<blockquote class="long">\1</blockquote>', h, flags=re.S)
+
+    def lead_before_block(m):  # 短段落后面紧跟引用块／表格／卡片：和后面排在一起
+        txt = re.sub(r"<[^>]+>", "", m.group(2))
+        return (f'<p class="lead">{m.group(2)}</p>' if len(txt) <= 60 else m.group(1)) + m.group(3)
+    h = re.sub(r'(<p>((?:(?!</?p[ >]).){1,400}?)</p>)(\s*<(?:blockquote|table|div class="mock))', lead_before_block, h, flags=re.S)
+    h = re.sub(r"【[^】<]{1,10}】", lambda m: f'<span class="nb">{m.group(0)}</span>', h)  # 【可删】之类不拆行
+    h = re.sub(r"\d+×\d+mm", lambda m: f'<span class="nb">{m.group(0)}</span>', h)
+
+    def short_table(m):
+        rows = m.group(0).count("<tr>")
+        return m.group(0).replace("<table>", '<table class="short">', 1) if rows <= 5 else m.group(0)
+    h = re.sub(r"<table>\s*<thead>\s*<tr>(.*?)</tr>\s*</thead>\s*<tbody>\s*<tr>(.*?)</tr>\s*</tbody>\s*</table>", kv_table, h, flags=re.S)
+    h = re.sub(r"<table>.*?</table>", short_table, h, flags=re.S)
     return h
+
+
+def kv_table(m):
+    """只有一行数据的宽表（角色信息：姓名、性别、年龄、身份……）转成“项目｜内容”两列竖表。"""
+    heads = re.findall(r"<th[^>]*>(.*?)</th>", m.group(1), re.S)
+    cells = re.findall(r"<td[^>]*>(.*?)</td>", m.group(2), re.S)
+    if len(heads) < 6 or len(heads) != len(cells) or not any("姓名" in x for x in heads):
+        return m.group(0)
+    rows = "".join(f"<tr><td>{a}</td><td>{b}</td></tr>" for a, b in zip(heads, cells))
+    return f'<table class="kv"><thead><tr><th>项目</th><th>内容</th></tr></thead><tbody>{rows}</tbody></table>'
 
 
 def titlepage(t2, t3, t4, note):
@@ -439,14 +484,14 @@ body { font-family: 'Noto Sans SC'; color: #1b1a17; font-size: 8.4pt; line-heigh
 .hd span { font-size: 8pt; color: #4a4a48; }
 h3 { font-size: 9.4pt; font-weight: 900; margin: 2.4mm 0 1mm; }
 h3 small { font-weight: 400; color: #4a4a48; font-size: 7.6pt; margin-left: 2mm; }
-table { border-collapse: collapse; width: 100%; }
+table { border-collapse: collapse; width: calc(100% - 0.8mm); }
 th, td { border: 0.25mm solid #6d675c; padding: 0.3mm 1.2mm; vertical-align: middle; height: 5.2mm; line-height: 1.2; }
 th { background: #ece4d3; font-weight: 700; font-size: 7.8pt; }
 td.c { text-align: center; }
 td.w { height: 5.2mm; }
 .grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 8mm; }
 .grid h3 { margin-top: 2mm; }
-.box { display: inline-block; width: 3.2mm; height: 3.2mm; border: 0.3mm solid #1b1a17; vertical-align: -0.6mm; margin: 0 0.6mm 0 1.6mm; }
+.box { display: inline-block; width: 3.2mm; height: 3.2mm; border: 0.3mm solid #1b1a17; vertical-align: -0.6mm; margin: 0 2.6mm 0 0.5mm; }
 .line { display: inline-block; border-bottom: 0.25mm solid #1b1a17; min-width: 18mm; margin: 0 1mm; }
 .row { margin: 1.2mm 0; }
 .lines div { border-bottom: 0.25mm solid #9b9486; height: 6mm; }

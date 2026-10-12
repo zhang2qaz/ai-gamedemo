@@ -40,14 +40,17 @@ PROVIDED = {"02-gaowen": "02-gaowen.webp", "06-gengen": "06-gengen.webp",
             "07-qianduoduo": "07-qianduoduo.webp", "08-linda": "08-linda.webp", "poster": "poster.webp"}
 # 海报裁切（海报像素坐标，2:3）
 CROPS = {"01-lajiao": (34, 74, 444, 649), "03-andefu": (514, 236, 896, 772),
-         "04-mei": (199, 236, 591, 786), "05-maike": (34, 598, 368, 1067)}
+         "04-mei": (199, 236, 591, 786), "05-maike": (34, 628, 368, 1097)}
 # 补做的四张按整页（含出血 154×216）比例裁，直接满版，不用补边
 # 裁进来的别的角色的脸做虚化压暗，当背景人物（页面比例坐标 x0, y0, x1, y1）
-SOFTEN = {"01-lajiao": [(.57, .34, 1.05, .78)], "05-maike": [(.64, .2, 1.05, .76), (.72, -.05, 1.05, .14)],
-          "03-andefu": [(.55, -.05, 1.05, .3)]}
+# 每项：x0, y0, x1, y1, 模糊半径, 亮度倍数, 羽化半径
+SOFTEN = {"01-lajiao": [(.57, .34, 1.05, .78, 26, .3, 70)],
+          "03-andefu": [(.7, -.05, 1.05, .3, 22, .42, 25), (.6, -.05, .75, .07, 22, .42, 25)],
+          "04-mei": [(-.05, .08, .13, .62, 18, .5, 40), (.87, .1, 1.05, .66, 18, .5, 40)],
+          "05-maike": [(.64, .14, 1.05, .70, 22, .42, 70), (.45, -.05, 1.05, .1, 18, .5, 30)]}
 
 
-def sr_crops(model_path):
+def sr_crops(model_path, keys=None):
     """重做 art/gen：裁海报四人并用 EDSR×4 超分。需要 opencv-contrib-python 和 EDSR_x4.pb。"""
     import cv2
     poster = cv2.cvtColor(np.array(Image.open(os.path.join(SRC, "poster.webp")).convert("RGB")), cv2.COLOR_RGB2BGR)
@@ -56,6 +59,8 @@ def sr_crops(model_path):
     sr.setModel("edsr", 4)
     os.makedirs(GEN, exist_ok=True)
     for key, (x0, y0, x1, y1) in CROPS.items():
+        if keys and key not in keys:
+            continue
         up = sr.upsample(poster[y0:y1, x0:x1])
         Image.fromarray(cv2.cvtColor(up, cv2.COLOR_BGR2RGB)).save(os.path.join(GEN, f"{key}.jpg"), quality=93)
         print("超分", key, up.shape)
@@ -154,12 +159,11 @@ def standin_page(key):
     im = Image.open(os.path.join(GEN, f"{key}.jpg")).convert("RGB").resize((FULL_W, FULL_H), Image.LANCZOS)
     im = im.filter(ImageFilter.UnsharpMask(radius=1.0, percent=35, threshold=2))
     im = ImageEnhance.Brightness(im).enhance(1.06)
-    if key in SOFTEN:
-        soft = ImageEnhance.Brightness(im.filter(ImageFilter.GaussianBlur(22))).enhance(.42)
+    for x0, y0, x1, y1, blur, bright, feather in SOFTEN.get(key, []):
+        soft = ImageEnhance.Brightness(im.filter(ImageFilter.GaussianBlur(blur))).enhance(bright)
         m = Image.new("L", im.size, 0)
-        for x0, y0, x1, y1 in SOFTEN[key]:
-            ImageDraw.Draw(m).rectangle([int(x0 * FULL_W), int(y0 * FULL_H), int(x1 * FULL_W), int(y1 * FULL_H)], fill=255)
-        im = Image.composite(soft, im, m.filter(ImageFilter.GaussianBlur(70)))
+        ImageDraw.Draw(m).rectangle([int(x0 * FULL_W), int(y0 * FULL_H), int(x1 * FULL_W), int(y1 * FULL_H)], fill=255)
+        im = Image.composite(soft, im, m.filter(ImageFilter.GaussianBlur(feather)))
     shade = np.clip(1 - np.arange(FULL_H) / (FULL_H * .14), 0, 1)[:, None, None] * .38
     im = Image.fromarray((np.asarray(im, np.float32) * (1 - shade)).astype("uint8"))
     panel = parchment_panel(FULL_W, FULL_H, ART_Y + int(ART_PX_H * .735), seed=sum(map(ord, key)))
@@ -215,8 +219,10 @@ def cover_page(key):
 def back_page(key):
     art = art_canvas(key)
     bg = _cover_fill(art, FULL_W, FULL_H).filter(ImageFilter.GaussianBlur(38))
-    bg = ImageEnhance.Brightness(bg).enhance(.36)
-    return ImageEnhance.Color(bg).enhance(.8)
+    bg = ImageEnhance.Color(ImageEnhance.Brightness(bg).enhance(.36), ).enhance(.8)
+    # 下部（底栏羊皮纸虚化后偏亮）再压暗，底部小字对比度够
+    k = 1 - .55 * np.clip((np.arange(FULL_H) / FULL_H - .55) / .3, 0, 1)
+    return Image.fromarray((np.asarray(bg, np.float32) * k[:, None, None]).astype("uint8"))
 
 
 def ensure(key):
@@ -235,7 +241,7 @@ def ensure(key):
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 2 and sys.argv[1] == "sr":
-        sr_crops(sys.argv[2])
+        sr_crops(sys.argv[2], sys.argv[3:])
     elif len(sys.argv) > 1 and sys.argv[1] == "fix02":
         fix_02()
     else:
