@@ -50,9 +50,10 @@ def esc(s):
 
 
 def inline(s):
-    """表格单元格 → HTML：转义，保留 <br>，**粗体**。"""
+    """表格单元格 → HTML：转义，保留 <br>，**粗体**；句末落款（——某某）整体不断开。"""
     s = H.escape(s, quote=False).replace("&lt;br&gt;", "<br>")
-    return re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", s)
+    s = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", s)
+    return re.sub(r"(——[^—<]{1,10})$", r'<span class="nw">\1</span>', s)
 
 
 def box_lines(block):
@@ -101,7 +102,8 @@ body {{ margin: 0; font-family: 'Noto Serif SC'; color: {INK}; text-spacing-trim
 .body.top {{ justify-content: flex-start; }}
 .ft {{ display: flex; justify-content: space-between; align-items: flex-end; gap: 3mm; margin-top: 2mm; }}
 .no {{ font-family: 'Noto Sans SC'; color: #7d735f; white-space: nowrap; margin-left: auto; }}
-.tx {{ text-align: left; }}  /* 短行里夹着不能断开的英文词（如“Happy”）时，两端对齐会把字距拉开 */
+.tx {{ text-align: left; text-wrap: pretty; }}
+.nw {{ white-space: nowrap; }}  /* 短行里夹着不能断开的英文词（如“Happy”）时，两端对齐会把字距拉开 */
 .tx p {{ margin: 0 0 1.4mm; }}
 .sm {{ font-family: 'Noto Sans SC'; line-height: 1.5; color: #5d5547; }}
 .s .hd {{ font-size: 7pt; }} .m .hd, .l .hd {{ font-size: 8pt; }}
@@ -201,10 +203,10 @@ def auction(md):
 .score .holes i { width: 3mm; height: 3mm; border-radius: 50%; background: #d9cdb2; display: block; }
 .score .ttl { font-family: 'Noto Sans SC'; font-weight: 900; font-size: 13pt; color: #23401a; text-align: center; margin-bottom: 1mm; }
 .score .sub { font-family: 'Noto Sans SC'; font-size: 7.5pt; color: #4f5d45; text-align: center; margin-bottom: 3mm; }
-.score .fine { font-size: 6.4pt; color: #4f5d45; margin-top: 3mm; text-align: right; font-family: 'Noto Sans SC'; }
+.score .ft .sm { margin-left: auto; text-align: right; color: #4f5d45; font-size: 6.4pt; }
 .phone { flex: 1; border: 0.5mm solid #333; border-radius: 4mm; background: #f4f4f6; padding: 3mm 2.8mm; display: flex; flex-direction: column; }
 .phone .bar { font-family: 'Noto Sans SC'; font-size: 6.6pt; color: #777; display: flex; justify-content: space-between; }
-.phone .from { margin: 2.5mm 0 4mm; height: 7mm; border-radius: 1mm; background: #cfcfd3;
+.phone .from { margin: 1mm 0 4.5mm; height: 7mm; border-radius: 1mm; background: #cfcfd3;
    -webkit-mask: linear-gradient(#000, #000) 0 1.4mm / 100% 100% no-repeat, conic-gradient(from -45deg at 50% 1.4mm, #000 90deg, transparent 0) 0 0 / 2.8mm 1.4mm repeat-x; }
 .phone .from span { display: block; font-family: 'Noto Sans SC'; font-size: 6.6pt; color: #888; padding: 2.2mm 1.6mm; }
 .phone .bub { align-self: flex-start; max-width: 86%; background: #fff; border: 0.25mm solid #ddd; border-radius: 3mm; padding: 2.6mm 3.2mm;
@@ -218,22 +220,20 @@ def auction(md):
         body = (f'<div class="nm">{esc(name)}</div><div class="orn">◆◆◆</div>'
                 f'<div class="kv"><b>得到</b>{esc(get)}<br><b>起拍</b>{price}资金</div>')
         pages.append(front(body, f"两头吃遗物 · 拍品{n}", cls="au", foot="举手跟价 · 一件最多出5 · 同价猜拳"))
-        hd = f"拍品{n} · 背面（只给得主看）"
+        hd = f"拍品{n} · 背面"
         if n == "1":  # 真记分卡样式
             names = re.findall(r"([^、：（]+)（(\d+)岁）", back_text)
             trs = "".join(f"<tr><td>{esc(a.strip())}</td><td>{b}</td><td></td><td></td></tr>" for a, b in names)
             note = re.search(r"（卡背角落小字）(.+)$", back_text)
             body = (f'<div class="score"><div class="holes"><i></i><i></i><i></i></div><div class="ttl">第18洞记分卡</div>'
                     f'<div class="sub">最后一组 · 四人</div>'
-                    f'<table><tr><th>球员</th><th>年龄</th><th>杆数</th><th>签名</th></tr>{trs}</table>'
-                    f'<div class="fine">{esc(note.group(1)) if note else ""}</div></div>')
-            pages.append(front(body, hd, cls="aub"))
+                    f'<table><tr><th>球员</th><th>年龄</th><th>杆数</th><th>签名</th></tr>{trs}</table></div>')
+            pages.append(front(body, None, cls="aub score", foot=esc(note.group(1)) if note else ""))  # 角落小字放右下角
         elif n == "8":  # 手机截图样式，发信人一栏撕掉
             msg = re.search(r'"(.+)"', back_text).group(1)
-            body = (f'<div class="phone"><div class="bar"><span>12月18日 周六 08:02</span><span>已读</span></div>'
-                    f'<div class="from"><span>发信人：</span></div><div class="bub">{esc(msg)}</div>'
-                    f'<div class="rd">两头吃手机里最后一条已读短信</div></div>')
-            pages.append(front(body, hd, cls="aub", top=True))
+            body = (f'<div class="phone"><div class="from"><span>发信人：</span></div><div class="bub">{esc(msg)}</div>'
+                    f'<div class="rd">已读</div></div>')
+            pages.append(front(body, None, cls="aub", top=True))
         else:
             pages.append(front(f'<div class="tx">{inline(back_text)}</div>', hd, cls="aub"))
     return Card("01", "拍品卡", 90, 130, pages, css_,
@@ -246,7 +246,7 @@ ROUNDS = [("第一轮", ["内华达（6分）"]), ("第二轮", ["威斯康星�
 
 def money_slip(md):
     css_ = """
-.slip .t1 { font-family: 'Noto Sans SC'; font-weight: 900; font-size: 11.5pt; line-height: 1.45; margin: 1mm 0 4mm; }
+.slip .t1 { font-family: 'Noto Sans SC'; font-weight: 900; font-size: 10.4pt; line-height: 1.45; margin: 1mm 0 4mm; white-space: nowrap; }
 .slip .tx { font-size: 10.5pt; }
 .slip table { width: 100%; border-collapse: collapse; margin: 4mm 0 4mm; }
 .slip th { font-family: 'Noto Sans SC'; font-weight: 700; font-size: 8pt; text-align: left; border-bottom: 0.35mm solid #1b1a17; padding: 1.2mm 0; }
@@ -266,11 +266,11 @@ def money_slip(md):
     for rnd, states in ROUNDS:
         rows = "".join(f"<tr><td>{s}</td><td class='v'><span></span></td><td class='v'><span></span></td></tr>" for s in states)
         extra = '<div class="bold">真相题答题卡还没交的，现在一起封进信封。</div>' if rnd == "第三轮" else ""
-        body = (f'<div class="t1">摇摆之夜 · {rnd}<br>我往信封里装了多少</div><div class="tx">我是：<span class="ln" style="min-width:34mm"></span></div>'
+        body = (f'<div class="t1">摇摆之夜 · {rnd} · 我往信封里装了多少</div><div class="tx">我是：<span class="ln" style="min-width:34mm"></span></div>'
                 f'<table><tr><th>州</th><th>驴友党提名票</th><th>大象党提名票</th></tr>{rows}</table>'
                 f'<div class="tx">合计<span class="ln" style="min-width:14mm"></span>资金 ＝ 信封内资金</div>'
                 f'<div class="sm" style="margin-top:2mm">可以投0 · 可以投给任何一张提名票</div>{extra}')
-        pages.append(front(body, "装钱单 · 交给DM", cls="slip", top=True))
+        pages.append(front(body, None, cls="slip", top=True))
         calc = "".join(
             f'<div class="st">{s}</div><table><tr><th></th><th>信封里<br>的钱</th><th>＋欠条<br>张数</th><th>＋撑场<br>块数×2</th><th>＝合计</th></tr>'
             f'<tr><td>驴友党提名票</td><td></td><td>张</td><td>块</td><td></td></tr>'
@@ -316,7 +316,7 @@ def answer_sheet(md):
     sec = section(md, "四、真相题答题卡")
     lines = [l.strip() for l in box_lines(fences(sec)[0]) if l.strip()]
     qs = [l for l in lines if re.match(r"[①②③④]", l)]
-    tips = [l for l in lines if l.endswith("。") and not re.match(r"[①②③④]", l)]
+    tips = [l for l in lines if not re.match(r"[①②③④]|《|答题人|＿", l)]
     css_ = """
 .ans .tx { font-size: 10.5pt; }
 .ans .q { font-size: 10.5pt; margin-top: 3.4mm; }
@@ -340,7 +340,6 @@ def badges(md):
 .bd .in svg { display: block; margin: 0.6mm auto 0; }
 .bd .pn { font-family: 'Noto Sans SC'; font-weight: 900; font-size: 10.5pt; letter-spacing: .3em; margin-left: .3em; }
 .bd .cn { font-family: 'Noto Serif SC'; font-weight: 900; font-size: 13pt; letter-spacing: .1em; margin: 0.4mm 0 0 .1em; line-height: 1.3; }
-.bd .nb { font-family: 'Cinzel'; font-weight: 700; font-size: 6.2pt; letter-spacing: .3em; margin-left: .3em; opacity: .85; }
 """
     pages = []
     for cn, no in NO.items():
@@ -348,7 +347,7 @@ def badges(md):
         color = DONKEY if party == "驴友党" else ELEPHANT
         icon = donkey("23mm") if party == "驴友党" else elephant("23mm")
         pages.append(f'<section class="pg bd"><div class="disc" style="background:{color}"></div><div class="ring"></div>'
-                     f'<div class="in"><div class="pn">{party}</div>{icon}<div class="cn">{cn}</div><div class="nb">No.{no}</div></div></section>')
+                     f'<div class="in"><div class="pn">{party}</div>{icon}<div class="cn">{cn}</div></div></section>')
     return Card("05", "胸牌", 58, 58, pages, css_, bleed=6.0,
                 note="直径58mm马口铁胸章，8枚各不相同；文件每页70×70mm，含包边，成品圆直径58mm居中；两党图样同风格、同饱和度，不印任何与心有关的字或色")
 
@@ -382,14 +381,13 @@ def ledger(md):
     pages = []
     for page, who, when, text in rows:
         n = re.match(r"第(\d)页", page).group(1)
-        six = "6人局" in page
         hand = " hand" if n == "9" else ""
         body = (f'<div class="post"><div class="who"><div class="av">账</div><div class="hn">@午夜账房</div></div>'
                 f'<div class="pt">账本·第{n}页（共九页）</div><div class="bd2{hand}">{inline(text)}</div><div class="grow"></div>'
                 f'<div class="sig">签名 8302-7716-5590-4418-0001</div></div>')
         pages.append(f'<section class="pg lg">{body}</section>')
         who2 = "结账" if n == "9" else who
-        pages.append(f'<section class="pg lgb"><div class="dmline">第{n}页｜{esc(who2)}｜{esc(when)}{"（6人局版）" if six else ""}</div></section>')
+        pages.append(f'<section class="pg lgb"><div class="dmline">第{n}页｜{esc(who2)}｜{esc(when)}</div></section>')
     return Card("07", "账本页", 148, 210, pages, css_,
                 note="A5双面，共10张（第1—9页＋6人局版第8页）；正面网帖样式，第9页手写体；背面一行DM用小字")
 
@@ -434,7 +432,8 @@ def place_cards(md):
     pages = []
     for scn, locs in t:
         for loc in locs.split("／"):
-            face = (f'<div class="hf"></div><div class="face"><div class="big">{esc(loc)}</div><div class="orn">◆◆◆</div>'
+            big = re.sub(r"（[^）]*）", lambda m: f'<span class="nw">{m.group(0)}</span>', esc(loc))
+            face = (f'<div class="hf"></div><div class="face"><div class="big">{big}</div><div class="orn">◆◆◆</div>'
                     f'<div class="scn">{esc(scn.split("（")[0])}</div></div>')
             pages.append(f'<section class="pg f pl"><div class="half top">{face}</div><div class="fold"></div><div class="half bot">{face}</div></section>')
     return Card("09", "地点牌", 100, 140, pages, css_,
@@ -446,9 +445,12 @@ def envelopes(md):
     tbs = tables(sec)
     mole, others = tbs[0][1:], tbs[1][1:]
     tmpl = "今晚没有人要你做决定，这一页只给你一条消息：{}。下面两格随手勾一格，折好交回。"
-    merged = re.search(r'\*\*6人局皮拉提合并版[^\n]*\n"(.+?)"', sec, re.S).group(1)
+    merged = re.search(r'\*\*6人局皮拉提合并版[^\n]*\n"(.+?)"', sec, re.S).group(1).replace("'", '"')
     css_ = ".ev .tx { font-size: 11.4pt; line-height: 1.85; } .ev .ft .sm { font-family: 'Noto Serif SC'; font-size: 11pt; color: #1b1a17; letter-spacing: .1em; }"
-    items = [(who, text) for who, text in mole] + [(who, tmpl.format(clue)) for who, clue in others]
+    def fill(clue):  # 线索本身以句号（或句号加引号）收尾时，模板里的句号不再补
+        t = tmpl.format(clue)
+        return t.replace(clue + "。", clue, 1) if re.search(r"""[。！？]["'”’]?$""", clue) else t
+    items = [(who, text) for who, text in mole] + [(who, fill(clue)) for who, clue in others]
     items.sort(key=lambda x: NO[x[0]])
     ck = '<span class="box"></span>坚守　　<span class="box"></span>倒戈'
     pages = [front(f'<div class="tx">{inline(text)}</div>', "党代会之夜 · 信封", no=NO[who], cls="ev", foot=ck) for who, text in items]
@@ -574,7 +576,7 @@ def poll(md):
 .pc .sc i { display: block; width: 9mm; border-top: 0.7mm solid #a9843a; }
 """
     sc = "".join(f"<div><span>{i}</span><i></i></div>" for i in range(11))
-    return Card("17", "民调牌", 63, 120, [front(f'<div class="ttl">民调</div><div class="sc">{sc}</div>', None, cls="pc", top=True)], css_,
+    return Card("17", "民调牌", 63, 120, [front(f'<div class="sc">{sc}</div>', None, cls="pc", top=True)], css_,
                 note="单面，同款，只印0—10刻度；每块配夹子1只，夹在当前数值的刻度线上")
 
 
