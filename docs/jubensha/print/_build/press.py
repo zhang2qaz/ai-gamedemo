@@ -117,6 +117,8 @@ p.keep {{ break-inside: avoid; }}
 .mock .mk-cols {{ display: grid; column-gap: 5mm; row-gap: 0.4mm; }}
 .nb {{ white-space: nowrap; }}
 table.short {{ break-inside: avoid; }}
+tbody tr:first-child {{ break-after: avoid; }}
+tbody tr:last-child {{ break-before: avoid; }}
 table.kv td:first-child {{ width: 26%; white-space: nowrap; font-family: 'Noto Sans SC'; font-weight: 700; }}
 .yanyi {{ padding-bottom: 1.6mm; }}
 .yanyi p:nth-last-child(-n+2) {{ break-before: avoid; }}  /* 最后三段连在一起：要换页就至少带三段过去，不留一两行的框尾 */
@@ -303,7 +305,7 @@ def md_html(md_text, name=None, script=False):
     def short_table(m):
         rows = m.group(0).count("<tr>")
         chars = len(re.sub(r"<[^>]+>|\s", "", m.group(0)))
-        small = rows <= 11 and chars <= 220  # 行少且字少的表才整张不拆，长表照常跨页（重复表头）
+        small = rows <= 4 and chars <= 220  # 三行以内的小表整张不拆；其余照常跨页（重复表头），前后各至少两行
         return m.group(0).replace("<table>", '<table class="short">', 1) if small else m.group(0)
     h = re.sub(r"<table>\s*<thead>\s*<tr>(.*?)</tr>\s*</thead>\s*<tbody>\s*<tr>(.*?)</tr>\s*</tbody>\s*</table>", kv_table, h, flags=re.S)
     h = re.sub(r"<table>.*?</table>", short_table, h, flags=re.S)
