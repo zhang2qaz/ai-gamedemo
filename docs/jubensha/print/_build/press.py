@@ -1,5 +1,5 @@
 """《摇摆！》印刷文件：按 DM手册1.2／卡面册印制总表拆册排版，出带3mm出血的PDF。
-用法：python3 press.py [角色key或 rules/dm/print/scripts/forms ...]   不带参数则全部重出。
+用法：python3 press.py [角色key或 rules/dm/print/scripts/forms/cards ...]   不带参数则全部重出。
       python3 press.py proof   全部重出，另在 ../ 下出合订校对版（几册接起来、裁到成品尺寸，只供屏幕通读，不提交）。
 输出：../印刷文件/   交印厂的文件（A5＋3mm出血，TrimBox 已标；装订册页数为4的倍数，可骑马钉）
 依赖：python-markdown、Pillow、numpy、pypdf、Playwright Chromium（node）。"""
@@ -35,17 +35,24 @@ SCRIPTS = [("序幕", "prologue.md"), ("第二幕", "act2.md"), ("第三幕", "a
 
 # ───────────────────────── 样式 ─────────────────────────
 
+def font_faces():
+    """正文、标题、装饰、手写体的 @font-face（绝对路径，HTML 放在哪都能用）。"""
+    fonts = B.font_css().replace("url(fonts/", f"url(file://{ROOT}/fonts/")
+    for fam, files in (("Cinzel", ((500, "Cinzel-Medium"), (700, "Cinzel-Bold"))),
+                       ("Cormorant Garamond", ((500, "CormorantGaramond-Medium"), (600, "CormorantGaramond-SemiBold"),
+                                               (700, "CormorantGaramond-Bold"))),
+                       ("Long Cang", ((400, "LongCang-Regular"),)), ("Ma Shan Zheng", ((400, "MaShanZheng-Regular"),))):
+        for w, f in files:
+            fonts += (f"\n@font-face{{font-family:'{fam}';font-weight:{w};font-style:normal;"
+                      f"src:url(file://{ROOT}/fonts/static/{f}.ttf) format('truetype');}}")
+    return fonts
+
+
 def page_css(label, color):
     base = re.sub(r"@page[^}]*}\n", "", B.CSS)
     base = re.sub(r"\.cover[^}]*}\n", "", base).replace("VAR_C", color)
     lab = label.replace('"', '\\"')
-    fonts = B.font_css().replace("url(fonts/", f"url(file://{ROOT}/fonts/")
-    for fam, files in (("Cinzel", ((500, "Cinzel-Medium"), (700, "Cinzel-Bold"))),
-                       ("Cormorant Garamond", ((500, "CormorantGaramond-Medium"), (600, "CormorantGaramond-SemiBold"),
-                                               (700, "CormorantGaramond-Bold")))):
-        for w, f in files:
-            fonts += (f"\n@font-face{{font-family:'{fam}';font-weight:{w};font-style:normal;"
-                      f"src:url(file://{ROOT}/fonts/static/{f}.ttf) format('truetype');}}")
+    fonts = font_faces()
     b = BLEED
     # Chromium 把页面尺寸取整到0.01英寸：154mm→437.04pt（满版图右边会差0.17mm）、216mm→612pt（上下出血只剩2.95mm）。
     # 所以写成154.2×216.2mm（实得437.04×612.96pt，四边出血都≥3mm），满版块高216.3mm正好铺满且不多出一页。
@@ -603,17 +610,21 @@ def render(pairs):
         sys.exit("内容超出版心宽度：\n" + "\n".join(bad))
 
 
-def finish(pdf_in, pdf_out, title, trim=(TRIM_W, TRIM_H)):
-    """标 TrimBox（居中成品尺寸）、BleedBox，写标题。"""
+def finish(pdf_in, pdf_out, title, trim=(TRIM_W, TRIM_H), crop=None):
+    """标 TrimBox（居中成品尺寸）、BleedBox，写标题。crop＝(左, 上, 宽, 高)mm：先把页面裁到这一块（卡牌用）。"""
     r = PdfReader(pdf_in)
     w = PdfWriter()
     for pg in r.pages:
+        if crop:
+            x0, top = crop[0] * MM, float(pg.mediabox.top) - crop[1] * MM
+            pg.mediabox = RectangleObject([x0, top - crop[3] * MM, x0 + crop[2] * MM, top])
+            pg.cropbox = pg.mediabox
         mb = pg.mediabox
         W, Hh = float(mb.width), float(mb.height)
         tw, th = min(W, trim[0] * MM), min(Hh, trim[1] * MM)
-        x0, y0 = (W - tw) / 2, (Hh - th) / 2
+        x0, y0 = float(mb.left) + (W - tw) / 2, float(mb.bottom) + (Hh - th) / 2
         pg.trimbox = RectangleObject([x0, y0, x0 + tw, y0 + th])
-        pg.bleedbox = RectangleObject([0, 0, W, Hh])
+        pg.bleedbox = RectangleObject(mb)
         w.add_page(pg)
     w.add_metadata({"/Title": title, "/Author": "Ascham工作室"})
     os.makedirs(os.path.dirname(pdf_out), exist_ok=True)
@@ -657,7 +668,7 @@ def run(jobs):
         second.append((hp, os.path.join(WORK, f"f{n}.pdf")))
     render(second)
     for n, j in enumerate(jobs):
-        j.pages = finish(second[n][1], j.out, j.title, j.trim)
+        j.pages = finish(second[n][1], j.out, j.title, j.trim, getattr(j, "crop", None))
         print(f"{j.pages:3d}页  {os.path.relpath(j.out, OUT)}")
 
 
@@ -667,12 +678,12 @@ def write_manifest(groups):
     L = ["# 《摇摆！》印刷清单", "",
          "> 本清单由排版程序（print/_build/press.py）随文件一起生成，页数与本目录文件一致。",
          "", "## 通用要求", "",
-         "- **成品尺寸**：除注明 A4 的以外，全部是 A5（148×210mm）。PDF 每页已含四边各 3mm 出血（154×216mm），每页都标了 TrimBox（裁切框）和 BleedBox。",
+         "- **成品尺寸**：角色本、规则书、演绎台本、DM手册、卡面册是 A5（148×210mm），PDF 每页已含四边各 3mm 出血（154×216mm）；DM台账与评星表是 A4；卡牌物料各按成品尺寸加出血，见“卡牌物料”一节。每页都标了 TrimBox（裁切框）和 BleedBox。",
          "- **颜色**：PDF 为 RGB，请印厂按常规转 CMYK。封面、封底是彩色满版；内页以黑白为主，有少量彩色（党派色标题条、✅⛔🎭小图标、演绎台本里本人台词的浅黄底），黑白印也能分辨。",
          "- **字体**：已全部嵌入。",
-         "- **装订**：角色本每册、节目单册、DM手册、卡面册的页数都是 4 的倍数，按页序骑马钉即可；第1页是封面，最后一页是封底。如要用厚封面纸：第1、2页和最后两页在同一张纸上。DM手册 72 页，骑马钉或胶装都可以。",
+         "- **装订**：角色本每册、节目单册、DM手册、卡面册的页数都是 4 的倍数，按页序骑马钉即可；第1页是封面，最后一页是封底。如要用厚封面纸：第1、2页和最后两页在同一张纸上。DM手册 " + (f"{groups['dm'][0].pages} 页，" if groups.get("dm") else "") + "骑马钉或胶装都可以。",
          "- **单页物料**：规则卡单面印；演绎台本一张正反两面；DM台账与评星表是 A4 单面。",
-         "- **卡牌与其他物料**（拍品卡、欠条、线索卡、账本页等）：尺寸、正反、数量见《卡面与物料印刷册》第一页的“印制总表”，卡面正文在册内各节；目前没有单独排成逐张的印刷文件。",
+         "- **卡牌与其他物料**（拍品卡、欠条、线索卡、账本页等）：逐张排好的印刷文件在 卡牌物料/，见下文“卡牌物料”一节；《卡面与物料印刷册》是卡面正文和印制要求的依据，供印厂和DM核对。",
          "", "## 角色本（每人四册，按人数印）", "",
          "8人局印全部 8 套；7人局不印 08 狗登罗；6人局再不印 04 梅戏。每套四册分开装订，片头发第一幕册，以后每幕开头发当幕一册。", "",
          "| 角色 | 第一幕册 | 第二幕册 | 第三幕册 | 终局册 | 终局册封口贴位置 |", "|---|---|---|---|---|---|"]
@@ -703,7 +714,29 @@ def write_manifest(groups):
         other.append((rel(j), j.pages, "A5", "双面", 1, 1, 1, "交印厂做卡牌物料的依据，也给DM备查；含机密，不发玩家"))
     for r in other:
         L.append("| " + " | ".join(str(x) for x in r) + " |")
-    L += ["", "另需：封口贴 16 枚（7人局 14、6人局 12）。", ""]
+    if groups.get("cards"):
+        import cards
+        sp = cards.spec()
+        L += ["", "## 卡牌物料", "",
+              "每张卡一页，PDF 页面＝成品尺寸＋四边出血（卡片 3mm；胸牌按 70×70mm 包边排，成品圆直径 58mm 居中），TrimBox 已标。"
+              "双面的按“正、背、正、背……”排，按页序双面印、长边翻转；单面的只有正面。同款卡（欠条、答题卡、纸条、民调牌等）文件里只排一张，按下表数量印。"
+              "同一种卡的背面完全一样，不印任何区分记号（线索卡背面按卡面册规定印幕名和地点）。", "",
+              "| 文件 | 页数 | 成品尺寸 | 正反 | 8人局 | 7人局 | 6人局 | 说明 |", "|---|---|---|---|---|---|---|---|"]
+        for j in groups["cards"]:
+            c = j.card
+            size, side, n8, n7, n6, _ = sp[c.name]
+            L.append(f"| {rel(j)} | {j.pages} | {size} | {side} | {n8} | {n7} | {n6} | {c.note} |")
+        buy = [(k, v) for k, v in sp.items() if v[1] == "—"]
+        L += ["", "## 另购物料（不用印）", "", "| 物料 | 规格 | 8人局 | 7人局 | 6人局 | 说明 |", "|---|---|---|---|---|---|"]
+        for k, v in buy:
+            L.append(f"| {k} | {v[0]} | {v[2]} | {v[3]} | {v[4]} | {v[5]} |")
+        L += ["| 封口贴 | 圆形不干胶 | 16 | 14 | 12 | 终局册两张结局页各一枚，见上文“封口页” |",
+              "| 民调牌夹子 | 小号长尾夹 | 8 | 7 | 6 | 每块民调牌一只，夹在当前数值的刻度线上 |",
+              "| 座位袋 | 不透光文件袋 | 8 | 7 | 6 | 袋面写座位编号，装开局物料（见DM手册1.3） |",
+              "| 资金筹码 | 通用筹码 | 约250枚 | 约250枚 | 约250枚 | DM保管 |"]
+    else:
+        L += ["", "另需：封口贴 16 枚（7人局 14、6人局 12）。"]
+    L.append("")
     open(os.path.join(PRESS, "印刷清单.md"), "w", encoding="utf-8").write("\n".join(L))
 
 
@@ -727,6 +760,9 @@ def main(argv=()):
         groups["print"] = [print_job()]
     if not want or "forms" in want:
         groups["forms"] = [forms_job()]
+    if not want or "cards" in want:
+        import cards
+        groups["cards"] = cards.jobs()
     jobs = [j for g in groups.values() for j in g]
     if not jobs:
         return

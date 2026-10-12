@@ -22,6 +22,10 @@ for (const j of jobs) {
     }
     return out.slice(0, 5);
   });
+  // 卡牌：版心（.safe）里的字排不下会被裁掉，也报出来
+  over.push(...await page.evaluate(() => [...document.querySelectorAll('.safe, .cd .post, .cd .doc')].flatMap((el, i) =>
+    el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1
+      ? ['card#' + (Array.from(document.querySelectorAll('.pg')).indexOf(el.closest('.pg')) + 1) + ' +' + (el.scrollHeight - el.clientHeight) + 'px ' + el.textContent.slice(0, 30).replace(/\s+/g, ' ')] : []).slice(0, 8)));
   for (const o of over) console.log('OVERFLOW', j.html, o);
   await page.pdf({ path: j.pdf, printBackground: true, preferCSSPageSize: true });
   console.log('PDF', j.pdf);

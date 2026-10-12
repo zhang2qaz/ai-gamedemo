@@ -15,3 +15,8 @@ get "Cinzel" 500 Cinzel-Medium.ttf; get "Cinzel" 700 Cinzel-Bold.ttf
 get "Cormorant+Garamond" 500 CormorantGaramond-Medium.ttf
 get "Cormorant+Garamond" 600 CormorantGaramond-SemiBold.ttf
 get "Cormorant+Garamond" 700 CormorantGaramond-Bold.ttf
+# 手写体：账本第9页（Long Cang）、交权书签名（下木用 Ma Shan Zheng 工整，建国钱用 Long Cang）
+# （CSS 接口对中文手写体只给拉丁子集，所以直接从 google/fonts 仓库取完整字体）
+for f in longcang/LongCang-Regular.ttf mashanzheng/MaShanZheng-Regular.ttf; do
+  [ -s "static/${f#*/}" ] || { curl -sSL -o "static/${f#*/}" "https://raw.githubusercontent.com/google/fonts/main/ofl/$f"; echo "static/${f#*/}"; }
+done
