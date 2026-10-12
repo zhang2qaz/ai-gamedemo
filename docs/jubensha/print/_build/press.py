@@ -95,6 +95,11 @@ table.intel th:nth-child(1), table.intel td:nth-child(1) {{ width: 32%; }}
 table.intel th:nth-child(2), table.intel td:nth-child(2) {{ width: 40%; }}
 h1, h2, h3, h4, p.lead {{ break-after: avoid; }}
 .titlepage p, .back p {{ text-align: center; }}
+.yanyi p {{ text-align: left; }}
+.yanyi p strong {{ white-space: nowrap; }}
+p {{ orphans: 2; widows: 2; }}
+h2.dipai {{ break-before: page; }}
+table.dipai {{ break-inside: avoid; }}
 blockquote {{ box-shadow: none; border-right: 1.3mm solid {color}; border-bottom: 1.3mm solid {color}; -webkit-box-decoration-break: clone; box-decoration-break: clone; }}
 blockquote.long {{ break-inside: auto; }}
 .note, .sealbox, .stop, .yanyi, pre, blockquote {{ box-sizing: border-box; margin-right: 0.6mm; }}
@@ -259,7 +264,8 @@ def md_html(md_text, name=None):
     md_text = re.sub(r"(?m)^ {2,3}([-*+] |\d+[.)] )", r"    \1", md_text)  # 2—3格缩进的子列表
     md_text = PATH_RE.sub(lambda m: m.group(0).replace("/", "/\u200b"), md_text)  # 长路径允许折行
     md_text = B.inject_yanyi(B.normalize_md(md_text), name)
-    h = markdown.markdown(md_text, extensions=["tables", "sane_lists", "md_in_html", "attr_list"])
+    # nl2br：源文件里一行就是一行（对白、逐条念的规则），不并段
+    h = markdown.markdown(md_text, extensions=["tables", "sane_lists", "md_in_html", "attr_list", "nl2br"])
 
     def cell(m):  # 短格不折行，免得表格自动列宽把人名、编号、时刻挤成一字一行
         txt = H.unescape(re.sub(r"<[^>]+>", "", m.group(2))).strip()
@@ -269,6 +275,8 @@ def md_html(md_text, name=None):
     h = CELL_RE.sub(cell, h)
     h = re.sub(r"<table>(\s*<thead>\s*<tr>\s*<th[^>]*>✅)", r'<table class="intel">\1', h)
     h = re.sub(r"<table>(\s*<thead>\s*<tr>\s*<th[^>]*>物料</th>\s*<th[^>]*>尺寸)", r'<table class="spec">\1', h)
+    # 【我的底牌】：片头只读这一页，整张表从新的一页开始、不跨页
+    h = re.sub(r"<h2>(【我的底牌】[^<]*)</h2>(\s*)<table>", r'<h2 class="dipai">\1</h2>\2<table class="dipai">', h)
     h = re.sub(r"<p>(<strong>(?:(?!</p>).)*</strong>)</p>", r'<p class="lead">\1</p>', h, flags=re.S)
     h = re.sub(r"<p>(?=(?:(?!</?p[ >]).)*[：:]</p>)", '<p class="lead">', h, flags=re.S)
     h = re.sub(r"<blockquote>((?:(?!</blockquote>).){500,}?)</blockquote>", r'<blockquote class="long">\1</blockquote>', h, flags=re.S)

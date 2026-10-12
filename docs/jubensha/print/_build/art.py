@@ -43,7 +43,8 @@ CROPS = {"01-lajiao": (34, 74, 444, 649), "03-andefu": (514, 236, 896, 772),
          "04-mei": (199, 236, 591, 786), "05-maike": (34, 598, 368, 1067)}
 # 补做的四张按整页（含出血 154×216）比例裁，直接满版，不用补边
 # 裁进来的别的角色的脸做虚化压暗，当背景人物（页面比例坐标 x0, y0, x1, y1）
-SOFTEN = {"01-lajiao": (.57, .34, 1.05, .78), "05-maike": (.64, .2, 1.05, .76)}
+SOFTEN = {"01-lajiao": [(.57, .34, 1.05, .78)], "05-maike": [(.64, .2, 1.05, .76), (.72, -.05, 1.05, .14)],
+          "03-andefu": [(.55, -.05, 1.05, .3)]}
 
 
 def sr_crops(model_path):
@@ -154,10 +155,10 @@ def standin_page(key):
     im = im.filter(ImageFilter.UnsharpMask(radius=1.0, percent=35, threshold=2))
     im = ImageEnhance.Brightness(im).enhance(1.06)
     if key in SOFTEN:
-        x0, y0, x1, y1 = SOFTEN[key]
         soft = ImageEnhance.Brightness(im.filter(ImageFilter.GaussianBlur(22))).enhance(.42)
         m = Image.new("L", im.size, 0)
-        ImageDraw.Draw(m).rectangle([int(x0 * FULL_W), int(y0 * FULL_H), int(x1 * FULL_W), int(y1 * FULL_H)], fill=255)
+        for x0, y0, x1, y1 in SOFTEN[key]:
+            ImageDraw.Draw(m).rectangle([int(x0 * FULL_W), int(y0 * FULL_H), int(x1 * FULL_W), int(y1 * FULL_H)], fill=255)
         im = Image.composite(soft, im, m.filter(ImageFilter.GaussianBlur(70)))
     shade = np.clip(1 - np.arange(FULL_H) / (FULL_H * .14), 0, 1)[:, None, None] * .38
     im = Image.fromarray((np.asarray(im, np.float32) * (1 - shade)).astype("uint8"))
