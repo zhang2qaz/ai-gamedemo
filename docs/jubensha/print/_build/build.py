@@ -1,8 +1,6 @@
-"""《摇摆！》打印版排版：Markdown → HTML（A5 印刷样式＋封面）→ PDF（Playwright Chromium）。
-用法：python3 build.py [书目key ...]   不带参数则构建全部已有源文件。"""
-import json, os, re, subprocess, sys
+"""《摇摆！》排版公用件：书目、正文样式、台本注入、字体。出PDF见 press.py（python3 build.py 等同 python3 press.py）。"""
+import os, re, sys
 import markdown
-from rococo import cover_svg
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DOCS = os.path.abspath(os.path.join(ROOT, "..", ".."))
@@ -65,7 +63,7 @@ code { font-family: 'Noto Sans SC'; background: #f3e9d4; padding: 0 1mm; }
 .yanyi p.mine { background: #fff1a8; margin-left: -2mm; padding: 0.6mm 2mm; border-left: 1.4mm solid VAR_C; }
 """
 
-SHARED = {"序幕": "prologue.md", "第二幕": "act2.md", "第三幕": "act3.md", "终幕": "finale.md"}
+SHARED = {"序幕": "prologue.md", "第二幕": "act2.md", "第三幕": "act3.md", "终局": "finale.md"}
 YANYI_RE = re.compile(r"<!--\s*演绎[:：]\s*(\S+?)\s*-->")
 
 
@@ -118,50 +116,6 @@ def normalize_md(text):
     return "\n".join(out)
 
 
-def build_html(key, src, cv):
-    md_text = normalize_md(open(os.path.join(P3, src), encoding="utf-8").read())
-    if key.startswith("09-dm"):
-        md_text += "\n\n# 附录 · 全员演绎台本（DM朗读版）\n\n" + "\n\n".join(f"<!--演绎:{w}-->" for w in SHARED)
-    md_text = inject_yanyi(md_text, cv["name"] if cv.get("party") else None)
-    body = markdown.markdown(md_text, extensions=["tables", "sane_lists", "md_in_html", "attr_list"])
-    color = cv.get("color") or ("#1f4e9c" if cv.get("party") == "驴" else "#b8322a" if cv.get("party") == "象" else "#1b1a17")
-    css = CSS.replace("VAR_C", color)
-    svg = cover_svg(**cv)
-    is_char = cv.get("party") is not None
-    note = ("本剧本分为四幕与结局。请只阅读DM允许的那一幕，看到“请停止阅读”立即合上剧本。"
-            "<br>不能出示本册原文；线索卡和拍到的遗物线索可以给人看，不能转手。") if is_char else \
-           ("本册供DM使用，单DM可开，场控可选。开本前请完整通读一遍。") if "dm" in key else \
-           ("本册为公开物料，可在片头分发给全体玩家。")
-    title = f'''<section class="titlepage">
-  <p class="t1">摇摆！</p><div class="rule"></div>
-  <p class="t2">{cv["name"]}</p><p class="t3">{cv["role"]}</p>
-  <div class="note">{note}</div>
-  <p class="t3" style="margin-top:14mm">Ascham工作室 · 城限欢乐阵营本 · 6–8人 · 约6小时</p>
-</section>'''
-    html = f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>摇摆！· {cv["name"]}</title>
-<style>{font_css()}{css}</style></head><body>
-<section class="cover">{svg}</section>{title}
-<main>{body}</main></body></html>'''
-    path = os.path.join(ROOT, f"{key}.html")
-    open(path, "w", encoding="utf-8").write(html)
-    return path, cv["name"]
-
-
-def main():
-    want = set(sys.argv[1:])
-    jobs = []
-    for key, src, cv in BOOKS:
-        if want and key not in want:
-            continue
-        if not os.path.exists(os.path.join(P3, src)):
-            print(f"跳过 {key}：源文件不存在"); continue
-        html, label = build_html(key, src, cv)
-        jobs.append({"html": html, "pdf": os.path.join(OUT, f"{key}.pdf"), "label": label})
-    if not jobs:
-        return
-    json.dump(jobs, open(os.path.join(ROOT, "jobs.json"), "w"), ensure_ascii=False)
-    subprocess.run(["node", os.path.join(ROOT, "render.mjs"), os.path.join(ROOT, "jobs.json")], check=True)
-
-
 if __name__ == "__main__":
-    main()
+    import press
+    press.main(sys.argv[1:])

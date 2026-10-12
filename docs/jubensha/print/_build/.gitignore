@@ -7,3 +7,5 @@ one-*.png
 pages.*
 __pycache__/
 fonts/static/
+_press/
+art/out/

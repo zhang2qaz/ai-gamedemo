@@ -1,4 +1,4 @@
-// HTML → PDF（A5，页脚页码）。用法：node render.mjs jobs.json
+// HTML → PDF。页面尺寸、页边、页脚都由 HTML 里的 @page 决定（页脚用 CSS 页边框）。用法：node render.mjs jobs.json
 import { createRequire } from 'module';
 import fs from 'fs';
 const require = createRequire('/opt/node-tools/node_modules/');
@@ -10,12 +10,20 @@ const page = await browser.newPage();
 for (const j of jobs) {
   await page.goto('file://' + j.html, { waitUntil: 'networkidle' });
   await page.evaluate(() => document.fonts.ready);
-  await page.pdf({
-    path: j.pdf, width: '148mm', height: '210mm', printBackground: true, preferCSSPageSize: true,
-    displayHeaderFooter: true,
-    headerTemplate: '<div></div>',
-    footerTemplate: `<div style="width:100%;font-size:7pt;color:#4a4a48;padding:0 13mm;display:flex;justify-content:space-between;font-family:'WenQuanYi Zen Hei',sans-serif"><span>摇摆！· ${j.label}</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>`,
+  // 版心宽122mm：有元素超出时 Chromium 打印会整本缩小，先报出来
+  await page.emulateMedia({ media: 'print' });
+  await page.setViewportSize({ width: Math.round(122 / 25.4 * 96), height: 900 });
+  const over = await page.evaluate(() => {
+    const m = document.querySelector('main'); if (!m) return [];
+    const W = m.getBoundingClientRect().right + 1, out = [];
+    for (const el of m.querySelectorAll('*')) {
+      const r = el.getBoundingClientRect();
+      if (r.right > W && !['TBODY', 'THEAD', 'TR'].includes(el.tagName)) out.push(el.tagName + ' +' + Math.round(r.right - W) + 'px ' + (el.textContent || '').slice(0, 40).replace(/\s+/g, ' '));
+    }
+    return out.slice(0, 5);
   });
+  for (const o of over) console.log('OVERFLOW', j.html, o);
+  await page.pdf({ path: j.pdf, printBackground: true, preferCSSPageSize: true });
   console.log('PDF', j.pdf);
 }
 await browser.close();
