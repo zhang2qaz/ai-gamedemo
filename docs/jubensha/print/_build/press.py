@@ -94,6 +94,7 @@ table.intel th:nth-child(1), table.intel td:nth-child(1) {{ width: 32%; }}
 table.intel th:nth-child(2), table.intel td:nth-child(2) {{ width: 40%; }}
 h1, h2, h3, h4, p.lead {{ break-after: avoid; }}
 .titlepage p, .back p {{ text-align: center; }}
+body {{ text-spacing-trim: space-all; }}  /* 标点保持全角；Chromium 默认的标点挤压遇到弯引号会让满版页被整体缩小 */
 .yanyi p {{ text-align: left; }}
 .yanyi p strong {{ white-space: nowrap; }}
 p {{ orphans: 2; widows: 2; }}
@@ -119,6 +120,7 @@ p.keep {{ break-inside: avoid; }}
 table.short {{ break-inside: avoid; }}
 tbody tr:first-child {{ break-after: avoid; }}
 tbody tr:last-child {{ break-before: avoid; }}
+li > ul, li > ol {{ break-before: avoid; }}
 table.kv td:first-child {{ width: 26%; white-space: nowrap; font-family: 'Noto Sans SC'; font-weight: 700; }}
 .yanyi {{ padding-bottom: 1.6mm; }}
 .yanyi p:nth-last-child(-n+2) {{ break-before: avoid; }}  /* 最后三段连在一起：要换页就至少带三段过去，不留一两行的框尾 */
@@ -210,6 +212,7 @@ CELL_RE = re.compile(r"<(td|th)>(.*?)</\1>", re.S)
 def mock_html(block):
     """卡面册里用框线字符画的样张 → 带边框的HTML卡片（不靠等宽对齐）。
     行首缩进≥7居中、3—6缩进、无框文件里≥16靠右；行内两个以上空格隔开的几段排成等宽栏。"""
+    esc = lambda x: H.escape(x, quote=False)  # 引号留给 curly_quotes 转成弯引号
     lines = block.split("\n")
     boxed = lines[0].lstrip().startswith("┌")
 
@@ -239,7 +242,7 @@ def mock_html(block):
             continue
         segs = re.split(r" {2,}", t)
         if len(segs) == 2 and re.search(r" {8,}", t):  # 同一行里隔得很远的两项：一左一右（〔底注〕……〔编号〕）
-            rows.append(f'<div class="lr"><span>{H.escape(segs[0])}</span><span>{H.escape(segs[1])}</span></div>')
+            rows.append(f'<div class="lr"><span>{esc(segs[0])}</span><span>{esc(segs[1])}</span></div>')
             continue
         if lead >= 8 and rows and isinstance(rows[-1], list):
             segs = [""] + segs  # 缩进续行：对齐到上一行的第二栏
@@ -249,7 +252,7 @@ def mock_html(block):
         cls = ("c" if all_center else "r" if lead >= 16 and not boxed else "i3" if t.startswith("□") and lead >= 3
                else "r" if lead >= 12 and boxed else "c" if lead >= 7 and boxed else "i" if lead >= 3 else "")
         # □选项续行与上一行的选项对齐；框里行首空12格以上的（编号、签名）靠右
-        rows.append(f'<div class="{cls}">{H.escape(t)}</div>')
+        rows.append(f'<div class="{cls}">{esc(t)}</div>')
     out, i = [], 0
     while i < len(rows):  # 连续的分栏行合成一个网格，列宽一致，上下对齐
         if isinstance(rows[i], list):
@@ -258,13 +261,37 @@ def mock_html(block):
                 i += 1
                 grp.append(rows[i])
             n = max(len(g) for g in grp)
-            cells = "".join(f"<span>{H.escape(x)}</span>" for g in grp for x in g + [""] * (n - len(g)))
+            cells = "".join(f"<span>{esc(x)}</span>" for g in grp for x in g + [""] * (n - len(g)))
             cols = "max-content " * (n - 1) + "minmax(0, 1fr)"  # 最后一栏可折行，不撑出版心
             out.append(f'<div class="mk-cols" style="grid-template-columns:{cols}">{cells}</div>')
         else:
             out.append(rows[i])
         i += 1
     return f'\n\n<div class="mock{"" if boxed else " plain"}">{"".join(out)}</div>\n\n'
+
+
+BLOCK_TAG = re.compile(r"</?(?:p|li|td|th|h[1-6]|blockquote|div|span class=\"nb\")\b", re.I)
+
+
+def curly_quotes(h):
+    """正文里的直引号 " ' 换成中文弯引号“”‘’（按段落成对）。直引号前后都不许断行，会把两端对齐的行撑开；弯引号可以正常断行。"""
+    out, state = [], {'"': 0, "'": 0}
+    pairs = {'"': "“”", "'": "‘’"}
+    for tok in re.split(r"(<[^>]+>)", h):
+        if tok.startswith("<"):
+            if BLOCK_TAG.match(tok) and not tok.startswith("<span"):
+                state = {'"': 0, "'": 0}
+            out.append(tok)
+            continue
+        buf = []
+        for ch in tok:
+            if ch in pairs:
+                buf.append(pairs[ch][state[ch]])
+                state[ch] ^= 1
+            else:
+                buf.append(ch)
+        out.append("".join(buf))
+    return "".join(out)
 
 
 def md_html(md_text, name=None, script=False):
@@ -280,6 +307,7 @@ def md_html(md_text, name=None, script=False):
         nw = 0 < len(txt) <= 7 and "<br" not in m.group(2)
         cls = ' class="nw"' if nw else ""
         return f"<{m.group(1)}{cls}>{m.group(2)}</{m.group(1)}>"
+    h = curly_quotes(h)
     h = CELL_RE.sub(cell, h)
     h = re.sub(r"<table>(\s*<thead>\s*<tr>\s*<th[^>]*>✅)", r'<table class="intel">\1', h)
     h = re.sub(r"<table>(\s*<thead>\s*<tr>\s*<th[^>]*>物料</th>\s*<th[^>]*>尺寸)", r'<table class="spec">\1', h)
@@ -290,7 +318,7 @@ def md_html(md_text, name=None, script=False):
                lambda m: m.group(0) if re.search(r"[。！？”\"]</strong>$", m.group(1)) else f'<p class="lead">{m.group(1)}</p>', h, flags=re.S)
     h = re.sub(r"<p>(?=(?:(?!</?p[ >]).)*[：:]</p>)", '<p class="lead">', h, flags=re.S)
     # 引用块：三行以上的允许跨页（前一页至少留3行），免得整块连同引导语推到下一页、留下大片空白
-    h = re.sub(r"<blockquote>((?:(?!</blockquote>).){150,}?)</blockquote>", r'<blockquote class="long">\1</blockquote>', h, flags=re.S)
+    h = re.sub(r"<blockquote>((?:(?!</blockquote>).){210,}?)</blockquote>", r'<blockquote class="long">\1</blockquote>', h, flags=re.S)
 
     def lead_before_block(m):  # 短段落后面紧跟引用块／表格／卡片：和后面排在一起
         txt = re.sub(r"<[^>]+>", "", m.group(2))
@@ -299,7 +327,7 @@ def md_html(md_text, name=None, script=False):
     tagnb = lambda x: re.sub(r"【[^】<]{1,10}】", lambda m: f'<span class="nb">{m.group(0)}</span>', x)
     # 台本里的【可删】【6人局跳过】不拆行（台词左对齐，不会撑开字距）；正文两端对齐，不加
     h = tagnb(h) if script else re.sub(r'<div class="yanyi"[^>]*>.*?</div>', lambda m: tagnb(m.group(0)), h, flags=re.S)
-    h = re.sub(r"(第.幕|哪一幕)·第.条", lambda m: f'<span class="nb">{m.group(0)}</span>', h)
+    h = re.sub(r"(第.幕|终局|哪一幕)·第.条", lambda m: f'<span class="nb">{m.group(0)}</span>', h)
     h = re.sub(r"\d+×\d+mm", lambda m: f'<span class="nb">{m.group(0)}</span>', h)
 
     def short_table(m):
