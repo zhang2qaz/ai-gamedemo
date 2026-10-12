@@ -22,11 +22,8 @@ TRIM_W, TRIM_H = 148.0, 210.0
 BLEED = A.BLEED
 FOOT = "Ascham工作室 · 城限欢乐阵营本 · 6–8人 · 约6小时"
 
-# 补做封面（海报裁切）的党派与身份；出品方原图自带文字，不用这一项
-STANDIN = {"01-lajiao": "驴友党 · 网红议员", "03-andefu": "驴友党 · 党鞭",
-           "04-mei": "驴友党 · 通讯总监", "05-maike": "大象党 · 播客之王"}
 # 册名缎带：位置（原图1024宽坐标的中心x）按各封面画面避让
-RIBBON_X = {"02-gaowen": 958, "07-qianduoduo": 958}
+RIBBON_X = {"01-lajiao": 958, "02-gaowen": 958, "03-andefu": 958, "04-mei": 958, "05-maike": 958, "07-qianduoduo": 958}
 ACTS = [  # 断开的一级标题、册名、拉丁小字、缎带底色、停读标记
     (None, "第一幕册", "ACT I", "#7c1e22", "■ 第一幕 完 ■"),
     ("# 第二幕", "第二幕册", "ACT II", "#1d3a63", "■ 第二幕 完 ■"),
@@ -131,50 +128,8 @@ table.kv td:first-child {{ width: 26%; white-space: nowrap; font-family: 'Noto S
 
 DEFS = """<defs>
 <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbedbd"/><stop offset=".55" stop-color="#d9b46a"/><stop offset="1" stop-color="#a77b31"/></linearGradient>
-<linearGradient id="goldh" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a77b31"/><stop offset=".5" stop-color="#f3dc9a"/><stop offset="1" stop-color="#a77b31"/></linearGradient>
-<linearGradient id="bronze" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a7434"/><stop offset=".45" stop-color="#6e4c1c"/><stop offset="1" stop-color="#3f2a0f"/></linearGradient>
 <filter id="sh" x="-20%" y="-5%" width="140%" height="115%"><feGaussianBlur stdDeviation="3"/></filter>
 </defs>"""
-
-
-def _corner(x, y, sx, sy):
-    return (f'<g transform="translate({x},{y}) scale({sx},{sy})" fill="none" stroke="url(#gold)" stroke-width="1.6">'
-            '<path d="M0,40 C2,22 8,10 18,6 C26,3 32,8 28,14 C25,19 18,16 20,11"/>'
-            '<path d="M40,0 C22,2 10,8 6,18 C3,26 8,32 14,28 C19,25 16,18 11,20"/>'
-            '<path d="M8,8 L13,13" stroke-width="2.4"/></g>')
-
-
-FRAME_GAP = {"05": (150, 640)}  # 麦克播紧贴海报左边，左框线在他脸的高度断开（人物压在框前）
-
-
-def frame(x, y, w, h, sw, gap=None):
-    if not gap:
-        return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="none" stroke="url(#gold)" stroke-width="{sw}"/>'
-    g0, g1 = gap
-    return (f'<path d="M{x},{g0} V{y} H{x + w} V{y + h} H{x} V{g1}" fill="none" stroke="url(#gold)" stroke-width="{sw}"/>')
-
-
-def standin_layer(no, name, party_role):
-    """补做封面的金框、编号、ASCHAM、角色名、党派身份、标语，仿出品方封面版式。"""
-    ls = 40 if len(name) == 2 else 10
-    gap = FRAME_GAP.get(no)
-    out = [
-        frame(11, 11, 1002, 1514, 2.4, gap), frame(17, 17, 990, 1502, .9, gap),
-        _corner(17, 17, 1, 1), _corner(1007, 17, -1, 1), _corner(17, 1519, 1, -1), _corner(1007, 1519, -1, -1),
-        f'<text x="42" y="80" font-family="Cormorant Garamond" font-weight="600" font-size="50" fill="#140c04" opacity=".55" '
-        f'filter="url(#sh)" style="font-variant-numeric: lining-nums; font-feature-settings: \'lnum\' 1">{no}</text>',
-        f'<text x="42" y="80" font-family="Cormorant Garamond" font-weight="600" font-size="50" fill="url(#gold)" style="font-variant-numeric: lining-nums; font-feature-settings: \'lnum\' 1">{no}</text>',
-        '<text x="516" y="50" text-anchor="middle" font-family="Cinzel" font-weight="500" font-size="17" letter-spacing="9" fill="url(#gold)">ASCHAM</text>',
-        '<path d="M462,64 H500 M524,64 H562" stroke="url(#goldh)" stroke-width="1.2"/><path d="M512,58 L518,64 L512,70 L506,64 Z" fill="url(#gold)"/>',
-        f'<text x="{512 + ls / 2}" y="1326" text-anchor="middle" font-family="Noto Serif SC" font-weight="900" font-size="150" letter-spacing="{ls}" fill="#2a1a06" opacity=".22" filter="url(#sh)" transform="translate(3,5)">{name}</text>',
-        f'<text x="{512 + ls / 2}" y="1326" text-anchor="middle" font-family="Noto Serif SC" font-weight="900" font-size="150" letter-spacing="{ls}" fill="url(#bronze)">{name}</text>',
-        '<path d="M292,1366 H488 M536,1366 H732" stroke="#8b6a2e" stroke-width="1.5"/>'
-        '<path d="M512,1356 L522,1366 L512,1376 L502,1366 Z" fill="#8b6a2e"/>'
-        '<circle cx="492" cy="1366" r="2.6" fill="#8b6a2e"/><circle cx="532" cy="1366" r="2.6" fill="#8b6a2e"/>',
-        f'<text x="514" y="1418" text-anchor="middle" font-family="Noto Serif SC" font-weight="700" font-size="37" letter-spacing="4" fill="#3a2812">{party_role}</text>',
-        '<text x="512" y="1480" text-anchor="middle" font-family="Noto Serif SC" font-weight="700" font-size="31" letter-spacing="7" fill="#3a2812">摇摆！　<tspan font-weight="400" fill="#8b6a2e">|</tspan>　两边都是我的人</text>',
-    ]
-    return "".join(out)
 
 
 def ribbon(cx, title, latin, color, top=-70, bottom=332):
@@ -418,8 +373,7 @@ def character_jobs(key, src, cv):
         sub = act_title.group(2) if act_title else ""
         label = f"摇摆！· {name} · {book}"
         css = page_css(label, color)
-        layer = (standin_layer(no, name, STANDIN[key]) if key in STANDIN else "") + \
-            ribbon(RIBBON_X.get(key, 912), book, latin, rcolor)
+        layer = ribbon(RIBBON_X.get(key, 912), book, latin, rcolor)
         common = "不能出示本册原文；线索卡和拍到的遗物线索可以给人看，不能转手。"
         if i == 0:
             note = (f"本角色本共四册，终局册末尾另订两张封口结局页。DM发哪一册才读哪一册；本册读到“{stop}”立即合上，等待DM指示。"

@@ -1,7 +1,6 @@
 """封面美术：把封面原图排成带出血的整页底图。
-- art/src/：出品方提供的原图（02、06、07、08 单人封面和全员海报 poster），1024×1536。
-- art/gen/：01、03、04、05 没有单人封面，从全员海报裁切后用 EDSR×4 超分（见 sr_crops）；
-  02-gaowen-fix.webp 是烦高原图标语去掉多余叹号的修图（见 fix_02）。都已提交，重做才需要 OpenCV-contrib。
+- art/src/：出品方提供的原图（01—08 八张单人封面和全员海报 poster），1024×1536。
+- art/gen/02-gaowen-fix.webp：烦高原图标语去掉多余叹号的修图（见 fix_02，需要 OpenCV；已提交）。
 - art/out/：本脚本生成的整页底图（不提交）。封面＝原图缩到高204mm居中，四周把原图最外一圈颜色往外延展成柔和渐变，补满到出血；
   封底＝同图大幅模糊压暗。尺寸按 A5（148×210）加 3mm 出血、300dpi。
 只依赖 Pillow 和 numpy。"""
@@ -36,36 +35,9 @@ def px2mm(px):
 ART_BOX = dict(left=px2mm(ART_X), top=px2mm(ART_Y), width=px2mm(ART_PX_W), height=px2mm(ART_PX_H))
 
 # 出品方原图
-PROVIDED = {"02-gaowen": "02-gaowen.webp", "06-gengen": "06-gengen.webp",
+PROVIDED = {"01-lajiao": "01-lajiao.webp", "02-gaowen": "02-gaowen.webp", "03-andefu": "03-andefu.webp",
+            "04-mei": "04-mei.webp", "05-maike": "05-maike.webp", "06-gengen": "06-gengen.webp",
             "07-qianduoduo": "07-qianduoduo.webp", "08-linda": "08-linda.webp", "poster": "poster.webp"}
-# 海报裁切（海报像素坐标，2:3）
-CROPS = {"01-lajiao": (34, 74, 444, 649), "03-andefu": (514, 236, 896, 772),
-         "04-mei": (199, 236, 591, 786), "05-maike": (34, 628, 368, 1097)}
-# 补做的四张按整页（含出血 154×216）比例裁，直接满版，不用补边
-# 裁进来的别的角色的脸做虚化压暗，当背景人物（页面比例坐标 x0, y0, x1, y1）
-# 每项：x0, y0, x1, y1, 模糊半径, 亮度倍数, 羽化半径
-SOFTEN = {"01-lajiao": [(.57, .34, 1.05, .78, 26, .3, 70)],
-          "03-andefu": [(.7, -.05, 1.05, .34, 22, .42, 65), (.6, -.05, .75, .07, 22, .42, 25)],
-          "04-mei": [(-.05, .08, .13, .62, 18, .5, 40), (.87, .1, 1.05, .66, 18, .5, 40),
-                     (.15, -.05, .30, .075, 18, .5, 15), (.12, .26, .2, .58, 14, .6, 20)],
-          "05-maike": [(.64, .14, 1.05, .70, 22, .42, 70), (.45, -.05, 1.05, .1, 18, .5, 30),
-                       (-.05, -.05, .2, .1, 0, .55, 40)]}  # 最后一项只压暗不模糊：编号“05”底下
-
-
-def sr_crops(model_path, keys=None):
-    """重做 art/gen：裁海报四人并用 EDSR×4 超分。需要 opencv-contrib-python 和 EDSR_x4.pb。"""
-    import cv2
-    poster = cv2.cvtColor(np.array(Image.open(os.path.join(SRC, "poster.webp")).convert("RGB")), cv2.COLOR_RGB2BGR)
-    sr = cv2.dnn_superres.DnnSuperResImpl_create()
-    sr.readModel(model_path)
-    sr.setModel("edsr", 4)
-    os.makedirs(GEN, exist_ok=True)
-    for key, (x0, y0, x1, y1) in CROPS.items():
-        if keys and key not in keys:
-            continue
-        up = sr.upsample(poster[y0:y1, x0:x1])
-        Image.fromarray(cv2.cvtColor(up, cv2.COLOR_BGR2RGB)).save(os.path.join(GEN, f"{key}.jpg"), quality=93)
-        print("超分", key, up.shape)
 
 
 def fix_02():
@@ -93,94 +65,11 @@ def provided_path(key):
     return fixed if os.path.exists(fixed) else os.path.join(SRC, PROVIDED[key])
 
 
-def _noise(w, h, scale, rng):
-    """低频噪声场，0—1。"""
-    small = rng.random((max(2, h // scale), max(2, w // scale)))
-    im = Image.fromarray((small * 255).astype("uint8")).resize((w, h), Image.BICUBIC)
-    im = im.filter(ImageFilter.GaussianBlur(scale / 2))
-    a = np.asarray(im, dtype=np.float32) / 255
-    return (a - a.min()) / max(1e-6, a.max() - a.min())
-
-
-def parchment_panel(w, h, top, seed):
-    """大理石羊皮纸底栏（RGBA），top 以上透明；上沿是带雾气的不规则边。"""
-    rng = np.random.default_rng(seed)
-    base = np.array([241, 231, 207], np.float32)
-    mott = _noise(w, h, 90, rng)[..., None] - .5
-    grain = rng.normal(0, 1, (h, w, 1)).astype(np.float32)
-    rgb = base + mott * np.array([22, 20, 16]) + grain * 3.2
-    img = Image.fromarray(np.clip(rgb, 0, 255).astype("uint8"), "RGB")
-    # 金色纹理
-    veins = Image.new("L", (w * 2, h * 2), 0)
-    d = ImageDraw.Draw(veins)
-    for i in range(7):
-        x, y = rng.uniform(-.1, .4) * w * 2, rng.uniform(top / h, 1.0) * h * 2
-        ang = rng.uniform(-.5, .3)
-        pts = [(x, y)]
-        for _ in range(140):
-            ang += rng.normal(0, .09)
-            x += np.cos(ang) * 22
-            y += np.sin(ang) * 22
-            pts.append((x, y))
-        d.line(pts, fill=int(rng.uniform(120, 200)), width=int(rng.integers(2, 5)))
-        for b in range(3):
-            j = int(rng.integers(10, 120))
-            bx, by = pts[j]
-            ba = ang + rng.choice([-1, 1]) * rng.uniform(.6, 1.1)
-            bp = [(bx, by)]
-            for _ in range(int(rng.integers(15, 45))):
-                ba += rng.normal(0, .12)
-                bx += np.cos(ba) * 16
-                by += np.sin(ba) * 16
-                bp.append((bx, by))
-            d.line(bp, fill=int(rng.uniform(70, 140)), width=2)
-    veins = veins.resize((w, h), Image.LANCZOS).filter(ImageFilter.GaussianBlur(1.1))
-    gold = Image.new("RGB", (w, h), (190, 150, 86))
-    img = Image.composite(gold, img, veins.point(lambda v: int(v * .42)))
-    # 上沿：低频起伏＋细碎抖动，边缘柔化
-    xs = np.arange(w)
-    walk = np.cumsum(rng.normal(0, 1, w))
-    walk = np.convolve(walk - walk.mean(), np.ones(61) / 61, mode="same")
-    edge = top + walk / max(1e-6, np.abs(walk).max()) * h * .012 + rng.normal(0, 1.2, w)
-    yy = np.arange(h)[:, None]
-    alpha = np.clip((yy - edge[None, :]) / 10 + .5, 0, 1)
-    # 雾：上沿以上一段乳白渐隐，带云状起伏
-    fog_h = h * .07
-    cloud = _noise(w, h, 40, rng)
-    fog = np.clip(1 - (edge[None, :] - yy) / fog_h, 0, 1) ** 1.6 * (.55 + .45 * cloud)
-    fog = np.where(yy < edge[None, :], fog * .85, 0)
-    a = np.maximum(alpha, fog)
-    out = img.convert("RGBA")
-    out.putalpha(Image.fromarray((a * 255).astype("uint8")))
-    return out
-
-
-def standin_page(key):
-    """补做封面的整页底图（含出血）：海报裁切超分图满版，顶部压暗，下方羊皮纸底栏（文字由版式叠加层另排）。
-    底栏上沿对齐原图框的 73.5% 高度处，和出品方封面的位置一致。"""
-    im = Image.open(os.path.join(GEN, f"{key}.jpg")).convert("RGB").resize((FULL_W, FULL_H), Image.LANCZOS)
-    im = im.filter(ImageFilter.UnsharpMask(radius=1.0, percent=35, threshold=2))
-    im = ImageEnhance.Brightness(im).enhance(1.06)
-    for x0, y0, x1, y1, blur, bright, feather in SOFTEN.get(key, []):
-        soft = ImageEnhance.Brightness(im.filter(ImageFilter.GaussianBlur(blur)) if blur else im).enhance(bright)
-        m = Image.new("L", im.size, 0)
-        ImageDraw.Draw(m).rectangle([int(x0 * FULL_W), int(y0 * FULL_H), int(x1 * FULL_W), int(y1 * FULL_H)], fill=255)
-        im = Image.composite(soft, im, m.filter(ImageFilter.GaussianBlur(feather)))
-    shade = np.clip(1 - np.arange(FULL_H) / (FULL_H * .14), 0, 1)[:, None, None] * .38
-    im = Image.fromarray((np.asarray(im, np.float32) * (1 - shade)).astype("uint8"))
-    panel = parchment_panel(FULL_W, FULL_H, ART_Y + int(ART_PX_H * .735), seed=sum(map(ord, key)))
-    im = im.convert("RGBA")
-    im.alpha_composite(panel)
-    return im.convert("RGB")
-
-
 def art_canvas(key):
-    """封面原图缩放到 ART_PX_W×ART_PX_H；补做的四张取整页底图中原图框那一块（只给封底用）。"""
-    if key in PROVIDED:
-        im = Image.open(provided_path(key)).convert("RGB")
-        im = im.resize((ART_PX_W, ART_PX_H), Image.LANCZOS)
-        return im.filter(ImageFilter.UnsharpMask(radius=1.2, percent=55, threshold=2))
-    return standin_page(key).crop((ART_X, ART_Y, ART_X + ART_PX_W, ART_Y + ART_PX_H))
+    """封面原图缩放到 ART_PX_W×ART_PX_H。"""
+    im = Image.open(provided_path(key)).convert("RGB")
+    im = im.resize((ART_PX_W, ART_PX_H), Image.LANCZOS)
+    return im.filter(ImageFilter.UnsharpMask(radius=1.2, percent=55, threshold=2))
 
 
 def _cover_fill(im, w, h):
@@ -191,8 +80,6 @@ def _cover_fill(im, w, h):
 
 
 def cover_page(key):
-    if key not in PROVIDED:
-        return standin_page(key)
     art = art_canvas(key)
     # 补边：取原图最外3像素以内的颜色往外延展（不会把画面内容或金框重复一遍），
     # 再沿边方向大幅柔化成渐变（去掉条纹），越往外越暗一点
@@ -231,8 +118,7 @@ def ensure(key):
     """生成（或复用）封面、封底底图，返回两个文件路径。"""
     os.makedirs(OUT, exist_ok=True)
     cov, back = os.path.join(OUT, f"{key}-cover.jpg"), os.path.join(OUT, f"{key}-back.jpg")
-    srcs = [provided_path(key)] if key in PROVIDED else [os.path.join(GEN, f"{key}.jpg")]
-    newest = max(os.path.getmtime(p) for p in srcs + [os.path.abspath(__file__)])
+    newest = max(os.path.getmtime(p) for p in (provided_path(key), os.path.abspath(__file__)))
     if not (os.path.exists(cov) and os.path.getmtime(cov) >= newest):
         cover_page(key).save(cov, quality=90, optimize=True, dpi=(DPI, DPI))
     if not (os.path.exists(back) and os.path.getmtime(back) >= newest):
@@ -242,10 +128,8 @@ def ensure(key):
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) > 2 and sys.argv[1] == "sr":
-        sr_crops(sys.argv[2], sys.argv[3:])
-    elif len(sys.argv) > 1 and sys.argv[1] == "fix02":
+    if len(sys.argv) > 1 and sys.argv[1] == "fix02":
         fix_02()
     else:
-        for k in list(PROVIDED) + list(CROPS):
+        for k in PROVIDED:
             print(k, *ensure(k))
