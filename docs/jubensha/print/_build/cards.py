@@ -13,6 +13,7 @@ SRC = os.path.join(B.P3, "public", "cards-print.md")
 FOLDER = os.path.join(P.PRESS, "卡牌物料")
 NO = {"皮拉提": "01", "烦高": "02", "下木": "03", "梅戏": "04", "麦克播": "05", "半步爹": "06", "建国钱": "07", "狗登罗": "08"}
 CREAM, INK, GOLD = "#f7f0e1", "#1b1a17", "#a9843a"
+GOLD_TX = "#8a6d2e"  # 金色小字用深一档，米色底上看得清
 DONKEY, ELEPHANT = "#2f5aa8", "#a8352f"
 
 
@@ -53,6 +54,7 @@ def inline(s):
     """表格单元格 → HTML：转义，保留 <br>，**粗体**；句末落款（——某某）整体不断开。"""
     s = H.escape(s, quote=False).replace("&lt;br&gt;", "<br>")
     s = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", s)
+    s = re.sub(r"(?<![A-Za-z0-9.−-])(\d+(?:[.:：]\d+)*[人米岁年月日号页张块次个名家条分秒％%]?)(?![^<]*>)", r'<span class="nw">\1</span>', s)
     return re.sub(r"(——[^—<]{1,10})$", r'<span class="nw">\1</span>', s)
 
 
@@ -85,18 +87,20 @@ def css(w, h, bleed):
     return P.font_faces() + f"""
 @page {{ size: {W + 2 * PAD}mm {Hh + 2 * PAD}mm; margin: 0; }}
 html {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
-body {{ margin: 0; font-family: 'Noto Serif SC'; color: {INK}; text-spacing-trim: space-all; }}
+body {{ margin: 0; font-family: 'Noto Serif SC'; color: {INK}; text-spacing-trim: space-all; }}  /* 标点保持全角：开挤压时行末“。”会多占半格超出版心 */
 .pg {{ position: relative; width: {W + PAD + .4}mm; height: {Hh + PAD + .4}mm; overflow: hidden; break-after: page; }}
 .pg:last-child {{ break-after: auto; }}
-.cd {{ position: absolute; left: {PAD}mm; top: {PAD}mm; width: {W}mm; height: {Hh}mm; overflow: hidden; }}
+.cd {{ position: absolute; left: {PAD}mm; top: {PAD}mm; width: {W}mm; height: {Hh}mm; }}
+.cd::before {{ content: ""; position: absolute; inset: -{PAD}mm; background: inherit; z-index: -1; }}  /* 底色往外多铺，盖住取整留下的细白边 */
 .f {{ background: {CREAM}; }}
 .b {{ background: {INK}; }}
 .fr {{ position: absolute; inset: {b + FRAME}mm; border: 0.35mm solid {GOLD}; }}
 .fr::after {{ content: ""; position: absolute; inset: 0.8mm; border: 0.15mm solid {GOLD}; }}
+.b .fr::after {{ border-width: 0.22mm; }}
 .b .fr, .b .fr::after {{ border-color: #c9a75e; }}
 .safe {{ position: absolute; left: {b + INSET}mm; right: {b + INSET}mm; top: {b + INSET - .2}mm; bottom: {b + INSET - .6}mm;
         display: flex; flex-direction: column; overflow: hidden; }}
-.hd {{ font-family: 'Noto Sans SC'; font-weight: 900; letter-spacing: .08em; color: {GOLD}; border-bottom: 0.3mm solid {GOLD};
+.hd {{ font-family: 'Noto Sans SC'; font-weight: 900; letter-spacing: .08em; color: {GOLD_TX}; border-bottom: 0.3mm solid {GOLD};
       padding-bottom: 1.3mm; margin-bottom: 2.2mm; }}
 .body {{ flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: safe center; }}
 .body.top {{ justify-content: flex-start; }}
@@ -113,7 +117,7 @@ body {{ margin: 0; font-family: 'Noto Serif SC'; color: {INK}; text-spacing-trim
 .grow {{ flex: 1; }}
 .ln {{ display: inline-block; border-bottom: 0.25mm solid {INK}; min-width: 18mm; height: 1em; vertical-align: -0.15em; }}
 .box {{ display: inline-block; width: 0.82em; height: 0.82em; border: 0.3mm solid {INK}; vertical-align: -0.08em; margin-right: 1.2mm; box-sizing: border-box; }}
-.b .pat {{ position: absolute; inset: 0; opacity: .08;
+.b .pat {{ position: absolute; inset: -{PAD}mm; opacity: .08;
           background: repeating-linear-gradient(45deg, #c9a75e 0 0.3mm, transparent 0.3mm 3mm); }}
 .bk {{ position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #e8d39b; }}
 .bk .ms {{ display: flex; gap: 1.2mm; margin-bottom: 2.6mm; }}
@@ -125,8 +129,8 @@ body {{ margin: 0; font-family: 'Noto Serif SC'; color: {INK}; text-spacing-trim
 .s .bk .bt {{ font-size: 8pt; }} .m .bk .bt {{ font-size: 9.5pt; }}
 .bk .bs {{ font-family: 'Noto Sans SC'; letter-spacing: .1em; margin-top: 1.4mm; color: #cdb98a; }}
 .s .bk .bs {{ font-size: 6.8pt; }} .m .bk .bs {{ font-size: 8pt; }}
-.mk {{ position: absolute; left: 0; right: 0; bottom: {b + FRAME + 2.4}mm; text-align: center; font-family: 'Cinzel'; font-size: 5pt;
-      letter-spacing: .45em; margin-left: .45em; color: #8c7a4f; }}
+.mk {{ position: absolute; left: 0; right: 0; bottom: {b + FRAME + 2.4}mm; text-align: center; font-family: 'Cinzel'; font-size: 5.5pt;
+      letter-spacing: .45em; margin-left: .45em; color: #a8925f; }}
 """
 
 
@@ -150,7 +154,7 @@ def back(title, sub=""):
 
 
 def donkey(size):
-    return f'''<svg viewBox="0 0 100 100" width="{size}" height="{size}">
+    return f'''<svg viewBox="0 -5 100 100" width="{size}" height="{size}">
  <g stroke="#16305f" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">
   <path d="M40,36 C33,26 31,13 34,6 C41,10 45,22 45,34 Z" fill="#fff"/><path d="M60,36 C67,26 69,13 66,6 C59,10 55,22 55,34 Z" fill="#fff"/>
   <path d="M38.5,31 C36,23 35.5,15 36.5,10.5 C40,14 42,21 42.5,29" fill="#f2c9cf" stroke="none"/>
@@ -164,7 +168,7 @@ def donkey(size):
 
 
 def elephant(size):
-    return f'''<svg viewBox="0 0 100 100" width="{size}" height="{size}">
+    return f'''<svg viewBox="0 4 100 100" width="{size}" height="{size}">
  <g stroke="#5c1a16" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">
   <path d="M34,34 C20,26 9,36 11,51 C13,64 25,68 34,60 Z" fill="#fff"/><path d="M66,34 C80,26 91,36 89,51 C87,64 75,68 66,60 Z" fill="#fff"/>
   <path d="M32,38 C23,34 16,40 17,50 C18,58 25,61 31,56 Z" fill="#f2c9cf" stroke="none"/>
@@ -181,9 +185,10 @@ def elephant(size):
 # ───────────────────────── 各种物料 ─────────────────────────
 
 class Card:
-    def __init__(self, key, name, w, h, pages, extra_css="", bleed=3.0, note=""):
+    def __init__(self, key, name, w, h, pages, extra_css="", bleed=3.0, note="", label=None):
         self.key, self.name, self.w, self.h, self.pages = key, name, w, h, pages
         self.extra_css, self.bleed, self.note = extra_css, bleed, note
+        self.label = label or f"{w}×{h}mm"  # 文件名里的尺寸
 
 
 def auction(md):
@@ -196,6 +201,7 @@ def auction(md):
           border-top: 0.25mm solid #a99e86; border-bottom: 0.25mm solid #a99e86; padding: 1.4mm 5mm; }
 .au .kv b { color: #8a6d2e; font-weight: 700; margin-right: 2mm; }
 .au .ft .sm { flex: 1; text-align: center; border-top: 0.25mm dashed #a99e86; padding-top: 1.6mm; }
+.score { padding: 0 1.6mm; }
 .score table { border-collapse: collapse; width: 100%; font-family: 'Noto Sans SC'; font-size: 8.4pt; }
 .score th, .score td { border: 0.25mm solid #6d8a5a; padding: 1.8mm 1.2mm; text-align: center; color: #23401a; }
 .score th { background: #e3ecd6; }
@@ -204,7 +210,7 @@ def auction(md):
 .score .ttl { font-family: 'Noto Sans SC'; font-weight: 900; font-size: 13pt; color: #23401a; text-align: center; margin-bottom: 1mm; }
 .score .sub { font-family: 'Noto Sans SC'; font-size: 7.5pt; color: #4f5d45; text-align: center; margin-bottom: 3mm; }
 .score .ft .sm { margin-left: auto; text-align: right; color: #4f5d45; font-size: 6.4pt; }
-.phone { flex: 1; border: 0.5mm solid #333; border-radius: 4mm; background: #f4f4f6; padding: 3mm 2.8mm; display: flex; flex-direction: column; }
+.phone { flex: 1; width: 64mm; align-self: center; margin: 1mm 0 2mm; border: 0.5mm solid #333; border-radius: 4mm; background: #f4f4f6; padding: 3mm 2.8mm; display: flex; flex-direction: column; }
 .phone .bar { font-family: 'Noto Sans SC'; font-size: 6.6pt; color: #777; display: flex; justify-content: space-between; }
 .phone .from { margin: 1mm 0 4.5mm; height: 7mm; border-radius: 1mm; background: #cfcfd3;
    -webkit-mask: linear-gradient(#000, #000) 0 1.4mm / 100% 100% no-repeat, conic-gradient(from -45deg at 50% 1.4mm, #000 90deg, transparent 0) 0 0 / 2.8mm 1.4mm repeat-x; }
@@ -293,6 +299,8 @@ def iou(md):
 .iou .tx { font-size: 9.4pt; line-height: 1.8; }
 .iou .sm { color: #3f5236; font-size: 6.8pt; line-height: 1.6; }
 .iou .fr, .iou .fr::after { border-color: #6d8a5a; }
+.iou .opt { display: flex; }
+.iou .gl { inset: -1mm; }
 """
     f_lines = [l.strip() for l in box_lines(fs[0]) if l.strip()]
     b_lines = [l.strip() for l in box_lines(fs[1]) if l.strip()]
@@ -306,7 +314,7 @@ def iou(md):
     tail = [l for l in b_lines if l.startswith(("签名的人", "当场", "他没钱", "下一轮", "以交给", "用完"))]
     body = ('<div class="tx" style="font-weight:700;font-size:10.4pt">请签名的人投1资金</div>'
             '<div class="tx" style="margin-top:3mm">州：<span class="ln" style="min-width:30mm"></span></div>'
-            '<div class="tx" style="margin-top:1.5mm">投给：<span class="box"></span>驴友党提名票<br><span style="padding-left:3em"></span><span class="box"></span>大象党提名票</div>'
+            '<div class="tx opt" style="margin-top:1.5mm"><span>投给：</span><span><span class="box"></span>驴友党提名票<br><span class="box"></span>大象党提名票</span></div>'
             f'<div class="sm" style="margin-top:4mm">{"".join(esc(x) for x in tail)}</div>')
     pages.append(front(body, None, cls="iou", under=gl))
     return Card("03", "欠条", 63, 88, pages, css_, note="双面，同款；可签字的哑光卡纸，正面淡绿色票据纹；8人局印27张＋备用6张")
@@ -331,11 +339,12 @@ def answer_sheet(md):
 
 
 def badges(md):
-    # 文件每页70×70mm：中间直径58mm是胸章正面，外圈是包到背后的部分；图文都在中间直径50mm以内
+    # 成品：直径70mm圆形纸片压进58mm胸章，中间直径58mm是正面，外圈包到背后；TrimBox 是70mm圆的外接正方形，四周再铺2mm
+    # 图文都在中间直径约46mm以内（扣面开始弯的地方不放细线）
     css_ = """
 .bd { background: transparent !important; display: flex; align-items: center; justify-content: center; }
-.bd .disc { position: absolute; inset: 0; }
-.bd .ring { position: absolute; left: 9.5mm; top: 9.5mm; width: 51mm; height: 51mm; box-sizing: border-box; border-radius: 50%; border: 0.4mm solid rgba(255,255,255,.6); }
+.bd .disc { position: absolute; inset: -1mm; }
+.bd .ring { position: absolute; left: 13mm; top: 13mm; width: 48mm; height: 48mm; box-sizing: border-box; border-radius: 50%; border: 0.4mm solid rgba(255,255,255,.6); }
 .bd .in { position: relative; text-align: center; color: #fff; }
 .bd .in svg { display: block; margin: 0.6mm auto 0; }
 .bd .pn { font-family: 'Noto Sans SC'; font-weight: 900; font-size: 10.5pt; letter-spacing: .3em; margin-left: .3em; }
@@ -348,8 +357,8 @@ def badges(md):
         icon = donkey("23mm") if party == "驴友党" else elephant("23mm")
         pages.append(f'<section class="pg bd"><div class="disc" style="background:{color}"></div><div class="ring"></div>'
                      f'<div class="in"><div class="pn">{party}</div>{icon}<div class="cn">{cn}</div></div></section>')
-    return Card("05", "胸牌", 58, 58, pages, css_, bleed=6.0,
-                note="直径58mm马口铁胸章，8枚各不相同；文件每页70×70mm，含包边，成品圆直径58mm居中；两党图样同风格、同饱和度，不印任何与心有关的字或色")
+    return Card("05", "胸牌", 70, 70, pages, css_, bleed=2.0, label="直径58mm胸章",
+                note="直径58mm马口铁胸章，8枚各不相同。按直径70mm圆刀裁纸（TrimBox 是这个圆的外接正方形，四周另有2mm出血），中间直径58mm是正面，外圈包到背后；不要按 TrimBox 裁成方片。两党图样同风格、同饱和度，不印任何与心有关的字或色")
 
 
 def dirt(md):
@@ -366,7 +375,8 @@ def ledger(md):
     rows = tables(sec)[0][1:]
     css_ = """
 .lg, .lgb { background: #ecebe6 !important; }
-.lg .post { position: absolute; left: 11mm; right: 11mm; top: 13mm; bottom: 13mm; background: #fff; border: 0.3mm solid #d8d4ca;
+.lg { display: flex; align-items: center; justify-content: center; }
+.lg .post { width: calc(100% - 22mm); max-height: calc(100% - 26mm); box-sizing: border-box; background: #fff; border: 0.3mm solid #d8d4ca;
             border-radius: 3.5mm; padding: 8mm 9mm 6mm; display: flex; flex-direction: column; overflow: hidden; }
 .lg .who { display: flex; align-items: center; gap: 3.2mm; }
 .lg .av { width: 12mm; height: 12mm; border-radius: 50%; background: #1b1a17; color: #f0dca6; font-family: 'Noto Serif SC'; font-weight: 900;
@@ -375,15 +385,19 @@ def ledger(md):
 .lg .pt { font-family: 'Noto Sans SC'; font-weight: 700; font-size: 10.5pt; margin: 7mm 0 4.5mm; color: #555; }
 .lg .bd2 { font-size: 14pt; line-height: 2; text-align: justify; }
 .lg .hand { font-family: 'Long Cang'; font-size: 19pt; line-height: 1.8; text-align: left; }
-.lg .sig { font-family: 'Noto Sans SC'; font-size: 7.5pt; color: #999; text-align: right; letter-spacing: .05em; margin-top: 3mm; }
+.lg .hand .sf { font-family: 'Noto Serif SC'; font-size: 14pt; }
+.lg .sig { font-family: 'Noto Sans SC'; font-size: 7.5pt; color: #999; text-align: right; letter-spacing: .05em; margin-top: 9mm; }
 .lgb .dmline { position: absolute; left: 13mm; bottom: 13mm; font-family: 'Noto Sans SC'; font-size: 8pt; color: #555; }
 """
     pages = []
     for page, who, when, text in rows:
         n = re.match(r"第(\d)页", page).group(1)
         hand = " hand" if n == "9" else ""
+        body_text = inline(text)
+        if hand:
+            body_text = re.sub(r"(——|：)", r'<span class="sf">\1</span>', body_text)
         body = (f'<div class="post"><div class="who"><div class="av">账</div><div class="hn">@午夜账房</div></div>'
-                f'<div class="pt">账本·第{n}页（共九页）</div><div class="bd2{hand}">{inline(text)}</div><div class="grow"></div>'
+                f'<div class="pt">账本·第{n}页（共九页）</div><div class="bd2{hand}">{body_text}</div>'
                 f'<div class="sig">签名 8302-7716-5590-4418-0001</div></div>')
         pages.append(f'<section class="pg lg">{body}</section>')
         who2 = "结账" if n == "9" else who
@@ -400,7 +414,8 @@ def clues(md):
     css_ = """
 .cl .loc { font-family: 'Noto Sans SC'; font-weight: 700; font-size: 9pt; }
 .cl .tx { font-size: 11.6pt; line-height: 1.85; }
-.cl .ft .sm { max-width: 62mm; }
+.cl .ft { flex-direction: column; align-items: stretch; gap: 0.8mm; }
+.cl .ft .no { align-self: flex-end; }
 """
     pages = []
     scene = {"B": "超级星期二之夜", "C": "同夜党代会"}
@@ -424,20 +439,21 @@ def place_cards(md):
 .pl .hf { position: absolute; left: 7mm; right: 7mm; top: 4mm; bottom: 7mm; border: 0.35mm solid #a9843a; }
 .pl .hf::after { content: ""; position: absolute; inset: 0.8mm; border: 0.15mm solid #a9843a; }
 .pl .face { position: absolute; left: 9mm; right: 9mm; top: 6mm; bottom: 9mm; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.pl .big.lg2 { font-size: 18pt; }
 .pl .big { font-family: 'Noto Serif SC'; font-weight: 900; font-size: 21pt; line-height: 1.3; letter-spacing: .08em; margin-left: .08em; }
 .pl .orn { color: #a9843a; font-size: 6pt; letter-spacing: .8em; margin: 2.6mm 0 2mm .8em; }
 .pl .scn { font-family: 'Noto Sans SC'; font-size: 8.5pt; letter-spacing: .15em; color: #7a6a45; }
-.pl .fold { position: absolute; left: 0; right: 0; top: 50%; border-top: 0.2mm dashed rgba(169,132,58,.3); }
 """
     pages = []
     for scn, locs in t:
         for loc in locs.split("／"):
             big = re.sub(r"（[^）]*）", lambda m: f'<span class="nw">{m.group(0)}</span>', esc(loc))
-            face = (f'<div class="hf"></div><div class="face"><div class="big">{big}</div><div class="orn">◆◆◆</div>'
+            lg2 = " lg2" if len(loc) >= 10 else ""
+            face = (f'<div class="hf"></div><div class="face"><div class="big{lg2}">{big}</div><div class="orn">◆◆◆</div>'
                     f'<div class="scn">{esc(scn.split("（")[0])}</div></div>')
-            pages.append(f'<section class="pg f pl"><div class="half top">{face}</div><div class="fold"></div><div class="half bot">{face}</div></section>')
+            pages.append(f'<section class="pg f pl"><div class="half top">{face}</div><div class="half bot">{face}</div></section>')
     return Card("09", "地点牌", 100, 140, pages, css_,
-                note="17块（16块＋7、6人局加摆的律所前台）；单面印，沿中线对折成立牌，上半面倒印，立起后两面同文")
+                note="17块（16块＋7、6人局加摆的律所前台）；单面印，沿中线（成品70mm处）压痕对折成立牌，上半面倒印，立起后两面同文")
 
 
 def envelopes(md):
@@ -543,13 +559,15 @@ def state_board(md):
     sec = section(md, "十五、州板")
     t = tables(sec)[0]
     css_ = """
+.sb .fr { inset: 11mm; }
+.sb .safe { left: 17mm; right: 17mm; top: 16mm; bottom: 15mm; }
 .sb .tt { font-family: 'Noto Serif SC'; font-weight: 900; font-size: 30pt; text-align: center; letter-spacing: .3em; margin: 1mm 0 5mm .3em; }
 .sb table { width: 100%; border-collapse: collapse; font-family: 'Noto Sans SC'; table-layout: fixed; }
 .sb th { background: #1b1a17; color: #f3e9d4; font-weight: 700; padding: 2.5mm 3mm; font-size: 15pt; height: 15mm; }
 .sb th:nth-child(1) { width: 25%; } .sb th:nth-child(2) { width: 9%; } .sb th:nth-child(3) { width: 14%; }
 .sb th.d { background: #2f5aa8; } .sb th.e { background: #a8352f; }
 .sb th .ic { display: inline-flex; align-items: center; gap: 2.5mm; }
-.sb td { border: 0.4mm solid #8a7d62; padding: 2mm 4mm; height: 29mm; text-align: center; font-size: 19pt; }
+.sb td { border: 0.5mm solid #8a7d62; padding: 2mm 4mm; height: 27mm; text-align: center; font-size: 19pt; }
 .sb td.st { font-weight: 900; font-size: 21pt; text-align: left; }
 .sb tr.fixed td { background: #efe5cf; height: 22mm; font-size: 16pt; }
 .sb .ft2 { font-family: 'Noto Sans SC'; font-weight: 900; font-size: 17pt; text-align: center; margin-top: 5mm; }
@@ -569,7 +587,7 @@ def state_board(md):
 def poll(md):
     css_ = """
 .pc .ttl { font-family: 'Noto Sans SC'; font-weight: 900; font-size: 12pt; text-align: center; letter-spacing: .5em; margin: 0 0 2mm .5em; }
-.pc .sc { flex: 1; display: flex; flex-direction: column-reverse; }
+.pc .sc { flex: 1; display: flex; flex-direction: column-reverse; margin: 1mm 0 1.6mm; }
 .pc .sc div { flex: 1; display: flex; align-items: center; justify-content: space-between; border-top: 0.25mm solid #b9ae98;
               font-family: 'Noto Sans SC'; font-weight: 900; font-size: 13pt; }
 .pc .sc div:first-child { border-bottom: 0.25mm solid #b9ae98; }
@@ -589,16 +607,17 @@ def primary_slip(md):
 def chips(md):
     css_ = """
 .ch { background: transparent !important; display: flex; align-items: center; justify-content: center; }
-.ch .disc { position: absolute; inset: 0; background: radial-gradient(circle at 42% 38%, #f6e6b0, #c9a75e 58%, #8a6a1f); }
-.ch .ring { position: absolute; left: 5.5mm; top: 5.5mm; width: 25mm; height: 25mm; box-sizing: border-box; border-radius: 50%; border: 0.4mm solid #6d531c; }
+.ch .disc { position: absolute; inset: -1mm; background: radial-gradient(circle at 42% 38%, #f6e6b0, #c9a75e 58%, #8a6a1f); }
+.ch .ring { position: absolute; left: 7mm; top: 7mm; width: 22mm; height: 22mm; box-sizing: border-box; border-radius: 50%; border: 0.4mm solid #6d531c; }
 .ch .in { position: relative; text-align: center; color: #3f2a0f; }
 .ch .in svg { display: block; margin: 0 auto 0.6mm; }
-.ch .two { font-family: 'Cinzel'; font-weight: 700; font-size: 22pt; line-height: .8; }
+.ch .two { font-family: 'Cinzel'; font-weight: 700; font-size: 19pt; line-height: .8; }
 """
-    flag = ('<svg viewBox="0 0 40 24" width="9mm" height="5.4mm"><path d="M4,2 V23" stroke="#3f2a0f" stroke-width="1.6"/>'
+    flag = ('<svg viewBox="0 0 40 24" width="7.6mm" height="4.6mm"><path d="M4,2 V23" stroke="#3f2a0f" stroke-width="1.6"/>'
             '<path d="M5,3 C12,0 18,6 26,3 C30,2 34,2 37,3 V13 C30,11 26,15 18,13 C12,11 9,12 5,13 Z" fill="#3f2a0f"/></svg>')
     page = f'<section class="pg ch"><div class="disc"></div><div class="ring"></div><div class="in">{flag}<div class="two">2</div></div></section>'
-    return Card("19", "撑场圆片", 30, 30, [page], css_, note="直径30mm圆片，单面，同款，只印一面小旗和“2”；8人局印8块")
+    return Card("19", "撑场圆片", 30, 30, [page], css_, label="直径30mm",
+                note="直径30mm圆片，单面，同款，只印一面小旗和“2”；按直径30mm圆刀模切（TrimBox 是这个圆的外接正方形）；8人局印8块")
 
 
 def spec(md=None):
@@ -621,7 +640,7 @@ def jobs():
         style = css(c.w, c.h, c.bleed) + c.extra_css
         sz = size_class(c.w)
         pages = [P.curly_quotes(PG_RE.sub(rf'<section class="pg"><div class="cd {sz} \1"\2>\3</div></section>', p)) for p in c.pages]
-        out_path = os.path.join(FOLDER, f"{c.key}-{c.name}（{c.w}×{c.h}mm）.pdf")
+        out_path = os.path.join(FOLDER, f"{c.key}-{c.name}（{c.label}）.pdf")
         j = P.Job(out_path, f"摇摆！· {c.name}", style, pages, lambda: [], lambda k: 0, trim=(c.w, c.h))
         j.card = c
         j.crop = (PAD, PAD, c.w + 2 * c.bleed, c.h + 2 * c.bleed)
