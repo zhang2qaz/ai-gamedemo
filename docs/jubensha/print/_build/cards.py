@@ -418,12 +418,13 @@ def clues(md):
 .cl .ft .no { align-self: flex-end; }
 """
     pages = []
-    scene = {"B": "超级星期二之夜", "C": "同夜党代会"}
+    # 背面幕名照卡面册“背面”一条（与地点牌下行小字一致）
+    m = re.search(r'第二幕8张印"(.+?) · 〔地点〕"，第三幕8张印"(.+?) · 〔地点〕"', sec)
+    scene = {"B": m.group(1), "C": m.group(2)}
     for t in tbs:
         for no, loc, kind, face in t[1:]:
             code = re.search(r"线([BC]\d)", no).group(1)
-            alt = "（7、6人局版）" in no
-            label = f"线{code}{'（7、6人局版）' if alt else ''}"
+            label = f"线{code}"  # 7、6人局版的编号也只印“线B6”，DM凭正文区分
             pages.append(front(f'<div class="tx">{inline(face)}</div>', f"线索 · {kind}卡", no=label, cls="cl", foot=notes[kind],
                                lead=f'<div class="loc">地点：{esc(loc)}</div>'))
             pages.append(back(scene[code[0]], esc(loc)))
