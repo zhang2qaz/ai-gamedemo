@@ -702,6 +702,8 @@ def write_manifest(groups):
     for j in groups.get("rules", []):
         if "节目单" in j.out:
             other.append((rel(j), j.pages, "A5", "双面，骑马钉", 8, 7, 6, "片头每人一份"))
+        elif "第一幕" in j.out:
+            other.append((rel(j), j.pages, "A5", "单面", 8, 7, 6, "片头随节目单发（装进座位袋），每人一张"))
         else:
             other.append((rel(j), j.pages, "A5", "单面", 8, 7, 6, "当幕开场每人一张"))
     for j in groups.get("scripts", []):

@@ -448,6 +448,7 @@ def place_cards(md):
     pages = []
     for scn, locs in t:
         for loc in locs.split("／"):
+            loc = re.sub(r"（[^）]*人局[^）]*）", "", loc)  # “（7、6人局加摆；括注不印）”这类说明不上牌
             big = re.sub(r"（[^）]*）", lambda m: f'<span class="nw">{m.group(0)}</span>', esc(loc))
             lg2 = " lg2" if len(loc) >= 10 else ""
             face = (f'<div class="hf"></div><div class="face"><div class="big{lg2}">{big}</div><div class="orn">◆◆◆</div>'
