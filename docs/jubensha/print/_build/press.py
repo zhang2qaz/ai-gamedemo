@@ -471,7 +471,7 @@ def rules_jobs():
 def scripts_jobs():
     jobs = []
     for i, (t, f) in enumerate(SCRIPTS):
-        md = open(os.path.join(P3, "shared", f), encoding="utf-8").read()
+        md = B.player_script(open(os.path.join(P3, "shared", f), encoding="utf-8").read())  # 玩家版：不带DM标记
         css = page_css(f"摇摆！· 全员演绎台本 · {t}", "#7a5c2e")
         jobs.append(Job(os.path.join(PRESS, "演绎台本", f"台本-{i + 1}-{t}.pdf"), f"摇摆！· 演绎台本 · {t}", css,
                         [f'<main><div class="yanyi">{md_html(md, script=True)}</div></main>'], lambda: [], lambda k: k % 2))

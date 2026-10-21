@@ -67,14 +67,34 @@ SHARED = {"序幕": "prologue.md", "第二幕": "act2.md", "第三幕": "act3.md
 YANYI_RE = re.compile(r"<!--\s*演绎[:：]\s*(\S+?)\s*-->")
 
 
+MARK_RE = re.compile(r"【可删】|【[^】]*人局[^】]*】")
+
+
+def player_script(txt):
+    """台本玩家版：去掉只给DM看的标记（开头的主持说明、【可删】、【N人局…】、舞台说明里的“DM宣布：…”）。
+    shared/*.md 原文是DM朗读版，DM手册附录照原样印。"""
+    out = []
+    for line in txt.split("\n"):
+        if line.startswith("*（括号里是动作"):
+            continue
+        line = MARK_RE.sub("", line).rstrip()
+        line = re.sub(r"[。；，]?\s*DM宣布：[^）]*", "", line)
+        if re.fullmatch(r"\*（\s*）\*", line.strip()):
+            continue
+        out.append(line)
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(out))
+
+
 def inject_yanyi(md_text, name):
-    """把 <!--演绎:X--> 替换为共享台本，本人台词所在段落标记为 mine。"""
+    """把 <!--演绎:X--> 替换为共享台本，本人台词所在段落标记为 mine。注入角色本（name 不为空）时用玩家版。"""
     def rep(m):
         f = SHARED.get(m.group(1))
         path = os.path.join(P3, "shared", f) if f else None
         if not path or not os.path.exists(path):
             return "> （全员演绎台本待补：" + m.group(1) + "）"
         txt = open(path, encoding="utf-8").read()
+        if name:
+            txt = player_script(txt)
         html = markdown.markdown(txt, extensions=["tables", "sane_lists"])
         if name:
             html = html.replace(f"<p><strong>{name}</strong>", f'<p class="mine"><strong>{name}</strong>')
