@@ -4,7 +4,7 @@
 输出：../印刷文件/   交印厂的文件（A5＋3mm出血，TrimBox 已标；装订册页数为4的倍数，可骑马钉）
 依赖：python-markdown、Pillow、numpy、pypdf、Playwright Chromium（node）。"""
 import html as H
-import json, os, re, shutil, subprocess, sys
+import json, os, re, shutil, subprocess, sys, unicodedata
 import markdown
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import RectangleObject
@@ -70,8 +70,7 @@ def page_css(label, color):
 .titlepage .t4 {{ font-family: 'Noto Sans SC'; font-weight: 900; font-size: 13pt; color: {color}; margin: 1mm 0 0; letter-spacing: .08em; }}
 .notes, .blank {{ page: bare; break-before: page; }}
 .notes .nt {{ font-family: 'Noto Sans SC'; font-weight: 700; font-size: 10pt; color: #8a8270; letter-spacing: .3em; border-bottom: 0.4mm solid #8a8270; padding-bottom: 1.5mm; }}
-.blank {{ height: 172mm; position: relative; }}
-.blank .mark {{ position: absolute; right: 0; top: 80mm; width: 30mm; font-family: 'Noto Sans SC'; font-size: 6.5pt; color: #b0a894; text-align: right; line-height: 1.5; }}
+.blank {{ height: 172mm; }}
 .seal {{ break-before: page; }}
 .seal .stop {{ break-after: auto; margin: 0 0.6mm 6mm 0; }}
 .sealintro {{ break-before: page; }}
@@ -207,8 +206,9 @@ def notes_html(n):
     return page * n
 
 
-def blank_html(mark=""):
-    return f'<section class="blank"><div class="mark">{mark}</div></section>'
+def blank_html():
+    """整页空白（不印页码）。封口前那页也不印贴封口的提示，玩家看得见；贴法和页码写在印刷清单里。"""
+    return '<section class="blank"></section>'
 
 
 FENCE_RE = re.compile(r"^```[^\n]*\n(.*?)\n```[ \t]*$", re.M | re.S)
@@ -433,9 +433,9 @@ def character_jobs(key, src, cv):
                 box = ("<div class=\"sealbox\">下面两张是<strong>封口页</strong>，出厂时各用一枚封口贴封住。"
                        "复盘时DM报“结局一”只撕开封口页一，报“结局二”只撕开封口页二；另一张整局不拆。</div>")
                 return [f'<section class="sealintro">{md_html(intro)}{box}</section>',
-                        blank_html("封口一：本页与右页沿外侧开口边贴封口贴"),
+                        blank_html(),
                         f'<section class="seal">{md_html(e1)}</section>',
-                        blank_html("封口二：本页与右页沿外侧开口边贴封口贴"),
+                        blank_html(),
                         f'<section class="seal">{md_html(e2)}</section>',
                         blank_html(), notes_html(1),
                         back_html(key, f"No.{no}　{name} · {book}", b4)]
@@ -672,6 +672,25 @@ def run(jobs):
         print(f"{j.pages:3d}页  {os.path.relpath(j.out, OUT)}")
 
 
+SEAL_RE = re.compile(r"■封口[页⻚]([一二])■")
+
+
+def seal_pages(pdf):
+    """终局册PDF里“■ 封口页一 ■”“■ 封口页二 ■”各在第几页（从1数）；读不出、或不是各出现一次，返回 None。"""
+    found = {"一": [], "二": []}
+    try:
+        for i, pg in enumerate(PdfReader(pdf).pages):
+            # 抽出的字里有一部分是康熙部首（⼝⼀⼆），NFKC 还原；简化字部首“⻚”NFKC 不管，正则里兼收
+            t = re.sub(r"\s+", "", unicodedata.normalize("NFKC", pg.extract_text() or ""))
+            for k in SEAL_RE.findall(t):
+                found[k].append(i + 1)
+    except Exception:
+        return None
+    if len(found["一"]) != 1 or len(found["二"]) != 1:
+        return None
+    return found["一"][0], found["二"][0]
+
+
 def write_manifest(groups):
     """印刷清单：和本目录文件同步，每次全量出图时重写。"""
     rel = lambda j: os.path.relpath(j.out, PRESS)
@@ -679,10 +698,10 @@ def write_manifest(groups):
          "> 本清单由排版程序（print/_build/press.py）随文件一起生成，页数与本目录文件一致。",
          "", "## 通用要求", "",
          "- **成品尺寸**：角色本、规则书、演绎台本、DM手册、卡面册是 A5（148×210mm），PDF 每页已含四边各 3mm 出血（154×216mm）；DM台账与评星表是 A4；卡牌物料各按成品尺寸加出血，见“卡牌物料”一节。每页都标了 TrimBox（裁切框）和 BleedBox。",
-         "- **颜色**：PDF 为 RGB，请印厂按常规转 CMYK。封面、封底是彩色满版；内页以黑白为主，有少量彩色（党派色标题条、✅⛔🎭小图标、角色本演绎段落里本人台词的浅黄底），黑白印也能分辨。",
+         "- **颜色**：PDF 为 RGB，请印厂按常规转 CMYK。封面、封底是彩色满版；内页以黑白为主，有少量彩色（党派色标题条、角色本演绎段落里本人台词的浅黄底），黑白印也能分辨。",
          "- **字体**：已全部嵌入。",
          "- **装订**：角色本每册、节目单册、DM手册、卡面册的页数都是 4 的倍数，按页序骑马钉即可；第1页是封面，最后一页是封底。如要用厚封面纸：第1、2页和最后两页在同一张纸上。DM手册 " + (f"{groups['dm'][0].pages} 页，" if groups.get("dm") else "") + "骑马钉或胶装都可以。",
-         "- **单页物料**：规则卡单面印；演绎台本一张正反两面；DM台账与评星表是 A4 单面。",
+         "- **单页物料**：规则卡单面印；演绎台本双面印（每场几张见下表）；DM台账与评星表是 A4 单面。",
          "- **卡牌与其他物料**（拍品卡、欠条、线索卡、账本页等）：逐张排好的印刷文件在 卡牌物料/，见下文“卡牌物料”一节；《卡面与物料印刷册》是卡面正文和印制要求的依据，供印厂和DM核对。",
          "", "## 角色本（每人四册，按人数印）", "",
          "8人局印全部 8 套；7人局不印 08 狗登罗；6人局再不印 04 梅戏。每套四册分开装订，片头发第一幕册，以后每幕开头发当幕一册。", "",
@@ -691,12 +710,15 @@ def write_manifest(groups):
         if not k[:2].isdigit():
             continue
         fin = g[3]
-        s1 = 1 + fin.k + fin.pad + 1
-        seal = f"第{s1 + 1}页与第{s1 + 2}页（结局一）、第{s1 + 3}页与第{s1 + 4}页（结局二）"
+        pp = seal_pages(fin.out)
+        seal = (f"第{pp[0] - 1}页与第{pp[0]}页（封口页一）、第{pp[1] - 1}页与第{pp[1]}页（封口页二）" if pp
+                else "封口页一／二所在的那一张，各与前一张空白页")
         name = os.path.basename(os.path.dirname(fin.out))
         L.append(f"| {name} | " + " | ".join(f"{j.pages}页" for j in g) + f" | {seal} |")
-    L += ["", "**封口页**：终局册末尾的两张结局页要各自封住。上表“第x页与第y页”是相对的两页（左页空白、右页是结局），"
-          "沿外侧开口边贴一枚封口贴，把这两页粘在一起；每册两枚，8 套共 16 枚。复盘时 DM 报到哪一张，玩家才撕开哪一张。", "",
+    L += ["", "**封口页**：每本终局册末尾有两张封口页，页面顶上印着“■ 封口页一 ■”“■ 封口页二 ■”（都是右手页）。"
+          "每张封口页各自与前一张空白页（左手页）相对合上，沿外侧开口边用一枚封口贴封住，把这两页粘在一起；"
+          "页码见上表“终局册封口贴位置”（排版程序从终局册PDF里找到这两页算出）。"
+          "空白页上不印任何贴封口的提示（玩家看得见），请按上表页码贴。每册两枚，8 套共 16 枚。复盘时 DM 报到哪一张，玩家才撕开哪一张。", "",
           "## 其余文件", "", "| 文件 | 页数 | 尺寸 | 印法 | 8人局 | 7人局 | 6人局 | 用途 |", "|---|---|---|---|---|---|---|---|"]
     other = []
     for j in groups.get("rules", []):
@@ -707,7 +729,8 @@ def write_manifest(groups):
         else:
             other.append((rel(j), j.pages, "A5", "单面", 8, 7, 6, "当幕开场每人一张"))
     for j in groups.get("scripts", []):
-        other.append((rel(j), j.pages, "A5", "一张双面", 9, 8, 7, "演绎前发，演完收；含DM一份"))
+        sheets = "一张双面" if j.pages <= 2 else f"{(j.pages + 1) // 2}张双面"
+        other.append((rel(j), j.pages, "A5", sheets, 8, 7, 6, "演绎前发，演完收；DM照手册附录念"))
     for j in groups.get("dm", []):
         other.append((rel(j), j.pages, "A5", "双面，骑马钉或胶装", 1, 1, 1, "DM专用，含机密"))
     for j in groups.get("forms", []):

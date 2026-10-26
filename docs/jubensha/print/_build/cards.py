@@ -622,6 +622,38 @@ def chips(md):
                 note="直径30mm圆片，单面，同款，只印一面小旗和“2”；按直径30mm圆刀模切（TrimBox 是这个圆的外接正方形）；8人局印8块")
 
 
+def runs(nos):
+    """["补01", "补02", "补03", "补05"] → "补01—补03、补05"（连号并成一段）。"""
+    out, i = [], 0
+    while i < len(nos):
+        j = i
+        while j + 1 < len(nos) and int(nos[j + 1][1:]) == int(nos[j][1:]) + 1:
+            j += 1
+        out.append(nos[i] if i == j else f"{nos[i]}—{nos[j]}")
+        i = j + 1
+    return "、".join(out)
+
+
+def task_slips(md):
+    """人数任务条（第十七节）：表里每行一张，单面。上方印“收件人 · 幕名”（“半步爹·第一幕册”印成“半步爹 · 第一幕”），
+    中间印纸条正文，右下角小字印编号；“用于”一列只供DM挑条，不上卡。"""
+    rows = tables(section(md, "十七、人数任务条"))[0][1:]
+    css_ = ".ts .hd { font-size: 8pt; } .ts .tx { font-size: 10.4pt; line-height: 1.85; }"
+    names = re.compile("|".join(NO))  # 人名不拆在两行（“麦克／播”）
+    pages, use = [], {"7": [], "6": []}
+    for no, used, to, text in rows:
+        who, book = re.split(r"\s*·\s*", to, maxsplit=1)
+        act = re.sub(r"册$", "", book)
+        body = names.sub(lambda m: f'<span class="nw">{m.group(0)}</span>', inline(text))
+        pages.append(front(f'<div class="tx">{body}</div>', f"{esc(who)} · {esc(act)}", no=esc(no), cls="ts"))
+        for n in re.findall(r"[67]", used):
+            use[n].append(no)
+    return Card("20", "人数任务条", 63, 88, pages, css_,
+                note=(f"{len(pages)}张单面（{runs([r[0] for r in rows])}），背面空白，每个编号印1张；"
+                      f"7人局用{runs(use['7'])}，6人局用{runs(use['6'])}，开本前DM挑出夹进对应角色那一幕的册子；"
+                      "正面只印收件人与幕名、纸条正文、右下角编号，不印人数"))
+
+
 def spec(md=None):
     """卡面册印制总表：物料名 → (尺寸, 正反, 8人局, 7人局, 6人局, 备注)。"""
     md = md or open(SRC, encoding="utf-8").read()
@@ -630,7 +662,7 @@ def spec(md=None):
 
 
 ALL = [auction, money_slip, iou, answer_sheet, badges, dirt, ledger, clues, place_cards, envelopes,
-       hotline, hot_cards, debate, surface, handover, state_board, poll, primary_slip, chips]
+       hotline, hot_cards, debate, surface, handover, state_board, poll, primary_slip, chips, task_slips]
 PG_RE = re.compile(r'^<section class="pg ([^"]*)"([^>]*)>(.*)</section>$', re.S)
 
 
