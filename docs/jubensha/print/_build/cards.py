@@ -230,7 +230,7 @@ def auction(md):
         if n == "1":  # 真记分卡样式
             names = re.findall(r"([^、：（]+)（(\d+)岁）", back_text)
             trs = "".join(f"<tr><td>{esc(a.strip())}</td><td>{b}</td><td></td><td></td></tr>" for a, b in names)
-            note = re.search(r"（卡背角落小字）(.+)$", back_text)
+            note = re.search(r"<br>([^<]+)$", back_text)  # 最后一行（"按本会惯例……"）印在背面角落小字
             body = (f'<div class="score"><div class="holes"><i></i><i></i><i></i></div><div class="ttl">第18洞记分卡</div>'
                     f'<div class="sub">最后一组 · 四人</div>'
                     f'<table><tr><th>球员</th><th>年龄</th><th>杆数</th><th>签名</th></tr>{trs}</table></div>')
@@ -409,8 +409,7 @@ def ledger(md):
 def clues(md):
     sec = section(md, "八、线索卡")
     tbs = tables(sec)
-    notes = {"公开": "公开卡：翻开后当众照念。",
-             "私密": "私密卡：只给翻卡人看，可以转述，也可以撒谎。地点或正文写着你的名字、职务或你的州时，改为当众照念。"}
+    notes = {k: esc(v) for k, v in re.findall(r'^- (公开|私密)卡："(.+)"$', sec, re.M)}  # 底注从卡面册"底注两种"读
     css_ = """
 .cl .loc { font-family: 'Noto Sans SC'; font-weight: 700; font-size: 9pt; }
 .cl .tx { font-size: 11.6pt; line-height: 1.85; }
@@ -510,12 +509,15 @@ def debate(md):
 
 
 def surface(md):
-    t = tables(section(md, "十四、表层秘密卡"))[0][1:]
+    sec = section(md, "十四、表层秘密卡")
+    t = tables(sec)[0][1:]
+    hd = re.search(r'\*\*正面\*\*："(.+?) · 〔角色名〕"', sec).group(1)  # 卡头照卡面册"正面"一条
+    bk = re.search(r'\*\*背面\*\*：统一印"(.+?)"', sec).group(1)
     pages = []
     for who, text in t:
-        pages.append(front(f'<div class="tx">{inline(text)}</div>', f"表层秘密 · {esc(who)}"))
-        pages.append(back("开盒"))
-    return Card("14", "表层秘密卡", 63, 88, pages, note="8张双面；背面统一“开盒”")
+        pages.append(front(f'<div class="tx">{inline(text)}</div>', f"{esc(hd)} · {esc(who)}"))
+        pages.append(back(esc(bk)))
+    return Card("14", "表层秘密卡", 63, 88, pages, note=f"8张双面；正面卡头“{hd} · 角色名”，背面统一“{bk}”")
 
 
 def handover(md):
