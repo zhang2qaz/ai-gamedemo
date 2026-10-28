@@ -44,14 +44,14 @@ def demand(path, phase3=True, y28=True):
     ces = {"A":0.0,"B":0.8,"C":1.0}[path]
     # pre-order deposits -> deliveries (85%); list drivers
     if path in ("B","C"):
-        dep_jan=int(round((1500*ces+3000)*0.04)); dep_feb=int(round((2000+800+420)*0.04))
+        dep_jan=int(round((2500*ces+1500)*0.04)); dep_feb=int(round((1500+800+420)*0.04))
         deliver={"2027-02":int(round(dep_jan*0.85)),"2027-03":int(round(dep_feb*0.85))}
     else:
         dep_feb=int(round((5000+800+420+300)*0.04)); deliver={"2027-03":int(round(dep_feb*0.85))}
     for m,u in deliver.items(): s["pre"][m]=u
     amz27={"2027-01":("amz_fbm",30 if path!="A" else 0),"2027-02":("amz_launch",42),"2027-03":("amz_launch",44),"2027-04":("amz_list",60),"2027-05":("amz_list",62),"2027-06":("amz_list",60),
            "2027-07":("amz_promo",81),"2027-08":("amz_list",68),"2027-09":("amz_list",66),"2027-10":("amz_list",68),"2027-11":("amz_bf",105),"2027-12":("amz_promo",93)}
-    for m,(c,u) in amz27.items(): s[c][m]+=int(round(u*(1+0.10*ces)))
+    for m,(c,u) in amz27.items(): s[c][m]+=int(round(u*(1+0.15*ces)))
     # NYC DTC: popup Feb 42; web Mar-Jun; H2 web + store incremental (phase3)
     nyc={"2027-02":42,"2027-03":60,"2027-04":90,"2027-05":120,"2027-06":130,"2027-07":130,"2027-08":140,"2027-09":150,"2027-10":160,"2027-11":190,"2027-12":170}
     store={"2027-08":60,"2027-09":90,"2027-10":110,"2027-11":150,"2027-12":120}
@@ -98,20 +98,21 @@ def oneoff(path, alofty_terms="80/20"):
     if path=="C":
         if alofty_terms=="80/20": o["Alofty 制作 24.0 万（报价条款 80/20）"]={"2026-11":192000,"2027-01":48000}
         else: o["Alofty 制作 24.0 万（目标条款 40/40/20）"]={"2026-11":96000,"2026-12":96000,"2027-01":48000}
-        o["展馆官方费用（预留）"]={"2027-01":28000}; o["CES 运营（预留）"]={"2026-12":30000,"2027-01":65000}
+        o["展馆官方费用（预留）"]={"2027-01":28000}; o["CES 运营（预留 8.0）"]={"2026-12":25000,"2027-01":55000}
         o["CES 公关（预留）"]={"2026-12":15000,"2027-01":10000}; o["CES 预备金"]={"2027-01":20000}
     elif path=="B":
         o["租赁结构搭建（待报价）"]={"2026-12":60000,"2027-01":40000}; o["展馆官方费用（预留）"]={"2027-01":28000}
         o["CES 运营（精简）"]={"2026-12":20000,"2027-01":40000}; o["CES 公关（预留）"]={"2026-12":15000,"2027-01":10000}; o["预备金"]={"2027-01":10000}
     else:
         o["纽约发布会（2 月）"]={"2027-02":20000}; o["芝加哥家居展观展（3 月）"]={"2027-03":15000}
+        o["同等媒体覆盖所需额外公关和拍摄"]={m:5000 for m in M27[:10]}
     return o
 PHASE={"P1":{"2026-11":8000,"2026-12":32000,"2027-01":24000,"2027-02":35000},
        "P2":{"2027-03":30000,"2027-04":32000,"2027-05":23000,"2027-06":23000},
        "P3":{"2027-07":90000,"2027-08":45000,"2027-09":55000,"2027-10":40000,"2027-11":42000,"2027-12":45000},
        "P28":{m:38000 for m in MONTHS if m.startswith("2028")}}
 # marketing cost attributable to acquisition, by month (for CAC) -- subset of PHASE
-ACQ={"pre":{"2026-12":12000,"2027-01":12000,"2027-02":6000},     # paid list 2.4 + part of content
+ACQ={"pre":{"2026-12":8000,"2027-01":8000,"2027-02":4400},     # paid list 2.4 + part of content
      "nyc":{"2027-02":20000,"2027-03":13000,"2027-04":13000,"2027-05":13000,"2027-06":13000,"2027-07":15000,"2027-08":15000,"2027-09":15000,"2027-10":15000,"2027-11":15000,"2027-12":15000}}
 SEED={"2027-01":30,"2027-03":20}; VINE={"2027-01":20}; SAMPLES={"2027-01":10,"2027-04":5}; SPARES={"2027-01":5}
 # ------------- engine -------------
@@ -132,7 +133,7 @@ def run(path, phase3=True, y28=True, phases=("P1","P2","P3","P28"), alofty_terms
             for m in dem[c]:
                 if m>stop_month: dem[c][m]=0
     # arrivals: first batch 176 Dec; batch2 200 ordered 1/9 arr 3/15; then sized to cover next 2 months + 40 safety, ordered 2 months ahead
-    arr={"2026-12":176,"2027-03":300}
+    arr={"2026-12":176,"2027-01":300,"2027-03":300} if path in ("B","C") else {"2026-12":176,"2027-03":300}
     if arrivals_override: arr.update(arrivals_override)
     fixed=fixed_costs(path,phase3); one=oneoff(path,alofty_terms)
     stock=0; rows=[]; inv_rows=[]; cum=0; peak=(0,""); cin=zeros(); cout=zeros(); ar=zeros(); ap=zeros()
@@ -158,6 +159,7 @@ def run(path, phase3=True, y28=True, phases=("P1","P2","P3","P28"), alofty_terms
         inv_rows.append(dict(m=m,opening=opening,arrival=arr.get(m,0),use=use,sold=m_sold,returns=returns,closing=stock,unmet=lost[m]))
         rev=sum(sold[c][m]*pr[c] for c in CH); contrib=sum(sold[c][m]*uc[c] for c in CH)
         fx=sum(fixed[m].values()); oo=sum(v.get(m,0) for v in one.values()); ph=sum(PHASE[p].get(m,0) for p in phases if (p!="P3" or phase3) and (p!="P28" or (y28 and phase3)))
+        if path in ("B","C") and m=="2027-01" and "P1" in phases: ph-=9600
         if stop_month and m>stop_month: ph=0; fx=fixed[m]["adlink"]*(1 if m<="2027-10" else 0)+fixed[m]["cs_ins"]  # after stop: adlink to contract end (Oct 2027), cs/ins
         units_cost=use*LAND
         ebit=contrib-fx-oo-ph-units_cost
@@ -200,32 +202,33 @@ def run(path, phase3=True, y28=True, phases=("P1","P2","P3","P28"), alofty_terms
 OUT={}
 for p in "ABC": OUT[p]=run(p,label=p)
 OUT["C4040"]=run("C",alofty_terms="40/40/20",label="C 40/40/20")
-base=OUT["A"]
+base=OUT["C"]
 # scenarios on base path A
-OUT["A_down"]=run("A",phase3=False,y28=True,scale={"pre":0.4,"nyc":0.6,"b2b":0.4,"nat":0.5,"amz_launch":0.7,"amz_list":0.7,"amz_promo":0.7,"amz_bf":0.7},label="down")
-OUT["A_up"]=run("A",scale={"pre":1.6,"nyc":1.4,"b2b":1.6,"nat":1.4,"amz_launch":1.2,"amz_list":1.2,"amz_promo":1.2,"amz_bf":1.2,"le":1.5,"gift":1.5},label="up")
-OUT["A_half"]=run("A",scale={c:0.5 for c in CH},label="half")
-OUT["A_nomedia"]=run("A",scale={"pre":0.3,"nyc":0.4,"nat":0.4,"amz_launch":0.7,"amz_list":0.7,"amz_promo":0.7,"amz_bf":0.7},label="nomedia")
-OUT["A_delivery"]=run("A",nyc_courier=175,fba_big=202,label="delivery+")
-OUT["A_both"]=run("A",scale={c:0.5 for c in CH},nyc_courier=175,fba_big=202,label="half+delivery")
-dl=demand("A")
+OUT["A_down"]=run("C",phase3=False,y28=True,scale={"pre":0.4,"nyc":0.6,"b2b":0.4,"nat":0.5,"amz_launch":0.7,"amz_list":0.7,"amz_promo":0.7,"amz_bf":0.7},label="down")
+OUT["A_up"]=run("C",scale={"pre":1.6,"nyc":1.4,"b2b":1.6,"nat":1.4,"amz_launch":1.2,"amz_list":1.2,"amz_promo":1.2,"amz_bf":1.2,"le":1.5,"gift":1.5},label="up")
+OUT["A_half"]=run("C",scale={c:0.5 for c in CH},label="half")
+OUT["A_nomedia"]=run("C",scale={"pre":0.3,"nyc":0.4,"nat":0.4,"amz_launch":0.7,"amz_list":0.7,"amz_promo":0.7,"amz_bf":0.7},label="nomedia")
+OUT["A_delivery"]=run("C",nyc_courier=175,fba_big=202,label="delivery+")
+OUT["A_both"]=run("C",scale={c:0.5 for c in CH},nyc_courier=175,fba_big=202,label="half+delivery")
+dl=demand("C")
 for c in dl:
     for m in list(dl[c]):
         if m in ("2027-02","2027-03") and c in ("pre","nyc","amz_launch"): 
             dl[c]["2027-04"]=dl[c].get("2027-04",0)+int(dl[c][m]*0.6); dl[c][m]=0
-OUT["A_delay"]=run("A",dem_override=dl,arrivals_override={"2027-03":0,"2027-04":200},label="delay")
+OUT["A_delay"]=run("C",dem_override=dl,arrivals_override={"2027-01":0,"2027-03":300},label="delay")
 # stops on path A: stop at 2027-02 (P1 fail), 2027-06 (P2 fail)
-OUT["A_stop_feb"]=run("A",phase3=False,y28=False,phases=("P1",),stop_month="2027-02",label="stop feb",scale={"pre":0.4,"nyc":0.6,"amz_launch":0.7,"amz_list":0.7})
-OUT["A_stop_jun"]=run("A",phase3=False,y28=False,phases=("P1","P2"),stop_month="2027-06",label="stop jun",scale={"pre":0.4,"nyc":0.6,"b2b":0.4,"amz_launch":0.7,"amz_list":0.7})
+OUT["A_stop_feb"]=run("C",phase3=False,y28=False,phases=("P1",),stop_month="2027-02",label="stop feb",scale={"pre":0.4,"nyc":0.6,"amz_launch":0.7,"amz_list":0.7})
+OUT["A_stop_jun"]=run("C",phase3=False,y28=False,phases=("P1","P2"),stop_month="2027-06",label="stop jun",scale={"pre":0.4,"nyc":0.6,"b2b":0.4,"amz_launch":0.7,"amz_list":0.7})
 # CES increment: C vs A, 2027+2028 contribution and cost
 def inc(a,b):
     return dict(contrib27=b["y27"]["contrib"]-a["y27"]["contrib"],contrib28=b["y28"]["contrib"]-a["y28"]["contrib"],oneoff=b["y26"]["oneoff"]+b["y27"]["oneoff"]-a["y26"]["oneoff"]-a["y27"]["oneoff"],ebit27=b["y27"]["ebit"]+b["y26"]["ebit"]-a["y27"]["ebit"]-a["y26"]["ebit"],ebit28=b["y28"]["ebit"]-a["y28"]["ebit"],peak=b["peak"][0]-a["peak"][0])
 OUT["inc_C"]=inc(OUT["A"],OUT["C"]); OUT["inc_B"]=inc(OUT["A"],OUT["B"])
+OUT["inc_C"]["contrib29"]=1500*OUT["C"]["uc"]["b2b"]
 # CAC per channel (path A, 2027)
 cac={}
 for c,costs in ACQ.items():
-    u=sum(OUT["A"]["sold"][c][m] for m in M27); k=sum(v for m,v in costs.items() if m in M27 or m.startswith("2026"))
-    cac[c]=dict(units=u,cost=k,cac=k/u if u else None,uc=OUT["A"]["uc"][c],net=OUT["A"]["uc"][c]-(k/u if u else 0))
+    u=sum(OUT["C"]["sold"][c][m] for m in M27); k=sum(v for m,v in costs.items() if m in M27 or m.startswith("2026"))
+    cac[c]=dict(units=u,cost=k,cac=k/u if u else None,uc=OUT["C"]["uc"][c],net=OUT["C"]["uc"][c]-(k/u if u else 0))
 OUT["cac"]=cac
 
 # ---- stop settlement (path A) ----
@@ -253,25 +256,26 @@ OUT["settle_jun"]=settlement(OUT["A_stop_jun"],"2027-06",0)
 # cancel now
 OUT["settle_now"]=dict(sunk=223881+49500,obligations=49500+85790/FX+20276,note="取消 CES 且不启动第一阶段")
 # ---- CES break-even: extra DTC units or B2B units needed to cover incremental cost ----
-OUT["ces_be"]={"C":dict(cost=OUT["inc_C"]["oneoff"],dtc_units=OUT["inc_C"]["oneoff"]/OUT["A"]["uc"]["nyc"],b2b_units=OUT["inc_C"]["oneoff"]/OUT["A"]["uc"]["b2b"]),
+OUT["ces_be"]={"C":dict(cost=OUT["inc_C"]["oneoff"],ret=OUT["inc_C"]["contrib27"]+OUT["inc_C"]["contrib28"]+OUT["inc_C"]["contrib29"],dtc_units=OUT["inc_C"]["oneoff"]/OUT["A"]["uc"]["nyc"],b2b_units=OUT["inc_C"]["oneoff"]/OUT["A"]["uc"]["b2b"]),
                "B":dict(cost=OUT["inc_B"]["oneoff"],dtc_units=OUT["inc_B"]["oneoff"]/OUT["A"]["uc"]["nyc"],b2b_units=OUT["inc_B"]["oneoff"]/OUT["A"]["uc"]["b2b"])}
 # ---- gate economics ----
-A_=OUT["A"]
+A_=OUT["C"]
 cum_oct=sum(r["units"] for r in A_["rows"] if "2027-01"<=r["m"]<="2027-10")
 store_inc=sum(A_["sold"]["nyc"][m] for m in ("2027-08","2027-09","2027-10","2027-11","2027-12"))  # includes web; store incremental assumed 530
 OUT["gates"]=dict(cum_oct=cum_oct,store_monthly_cost=12000+10000+5000,store_breakeven_units=(12000+10000+5000)/A_["uc"]["nyc"],
-                  p1_deposits_base=int(round((5000+800+420+300)*0.04)),p1_deliver_base=int(round((5000+800+420+300)*0.04*0.85)),
+                  p1_deposits_base=int(round((2500+1500)*0.04))+int(round((1500+800+420)*0.04)),p1_deliver_base=int(round((2500+1500)*0.04*0.85))+int(round((1500+800+420)*0.04*0.85)),
                   batch2=300,first_sellable=111)
 # ---- 2028 cash reconciliation (path A) ----
 OUT["recon28"]=dict(ebit=A_["y28"]["ebit"],cash=A_["y28"]["cash"],diff=A_["y28"]["cash"]-A_["y28"]["ebit"],cum_end28=A_["cash"][-1]["cum"])
 
-json.dump(OUT,open("/tmp/claude-0/-home-user-ai-gamedemo/b143fa9f-d94c-50cb-9503-e400b8d7eac0/scratchpad/final/out2.json","w"),ensure_ascii=False,default=str)
+json.dump(OUT,open("/tmp/claude-0/-home-user-ai-gamedemo/b143fa9f-d94c-50cb-9503-e400b8d7eac0/scratchpad/final/out3.json","w"),ensure_ascii=False,default=str)
 W=lambda x:f"{x/1e4:6.1f}"
 for k in ("A","B","C","C4040","A_down","A_up","A_half","A_nomedia","A_delivery","A_both","A_delay","A_stop_feb","A_stop_jun"):
     r=OUT[k]; print(f"{k:10s} 27u {r['y27']['units']:5d} rev{W(r['y27']['rev'])} ctr{W(r['y27']['contrib'])} fx{W(r['y27']['fixed'])} oo{W(r['y26']['oneoff']+r['y27']['oneoff'])} ph{W(r['y26']['phase']+r['y27']['phase'])} ebit26-27{W(r['y26']['ebit']+r['y27']['ebit'])} cash27end{W(r['end27'])} peak{W(r['peak'][0])} {r['peak'][1]} 28u {r['y28']['units']} ebit28{W(r['y28']['ebit'])} cash28{W(r['y28']['cash'])} payback {r['payback']} unmet {r['unmet']} payable{W(r['payable_end27'])} inv {r['inv_end27']}")
 print("incC",{k:round(v/1e4,1) for k,v in OUT["inc_C"].items()}); print("incB",{k:round(v/1e4,1) for k,v in OUT["inc_B"].items()})
 print("cac",{c:{k:(round(v) if isinstance(v,(int,float)) else v) for k,v in d.items()} for c,d in cac.items()})
-for r in OUT["A"]["inv"][:9]: print(r)
+for r in OUT["C"]["inv"][:9]: print(r)
+print("incC",{k:round(v/1e4,1) for k,v in OUT["inc_C"].items()})
 
 print("settle_feb",{k:(round(v/1e4,1) if isinstance(v,float) and abs(v)>100 else v) for k,v in OUT["settle_feb"].items()})
 print("settle_jun",{k:(round(v/1e4,1) if isinstance(v,float) and abs(v)>100 else v) for k,v in OUT["settle_jun"].items()})
