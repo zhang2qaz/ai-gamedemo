@@ -518,6 +518,7 @@ table { border-collapse: collapse; width: calc(100% - 0.8mm); }
 th, td { border: 0.25mm solid #6d675c; padding: 0.3mm 1.2mm; vertical-align: middle; height: 5.2mm; line-height: 1.2; }
 th { background: #ece4d3; font-weight: 700; font-size: 7.8pt; }
 td.c { text-align: center; }
+.s1 th, .s1 td { height: 4.7mm; }
 td.w { height: 5.2mm; }
 .grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 8mm; }
 .grid h3 { margin-top: 2mm; }
@@ -551,7 +552,7 @@ def forms_job():
                     f"<td>{'<b>4问全对</b>' if n in STRICT else '①对＋另三题对≥2'}</td><td class=\"c\">{box}</td></tr>"
                     for n, m in CAST)
     scenes = "".join(f"{n}{m}{box}　" for n, m in CAST)
-    sheet1 = f"""<section class="sheet"><div class="hd"><b>摇摆！· DM台账（一）</b><span>DM手册1.5 · 全程只有DM看 · 开本前每局打印一份</span></div>
+    sheet1 = f"""<section class="sheet s1"><div class="hd"><b>摇摆！· DM台账（一）</b><span>DM手册1.5 · 全程只有DM看 · 开本前每局打印一份</span></div>
 <h3>1 闭眼举牌记录<small>每格记“锤／洗”或“信／不信”；下木的党鞭点票来查这里</small></h3>
 <table><tr><th style="width:31mm">哪一次</th>{heads}<th style="width:16mm">结果</th></tr>{s1}</table>
 <h3>2 技能<small>用一次划一格，旁边记何时、结果；半步爹钱发到手就打勾（DM手册1.6）</small></h3>
